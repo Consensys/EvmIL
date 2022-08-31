@@ -14,7 +14,7 @@ impl ToHexString for [u8] {
         // Prepend "0x"
         write!(hexstr,"0x").unwrap();
         // Write each byte
-        for b in self { write!(hexstr, "{:02X}", b).unwrap(); }
+        for b in self { write!(hexstr, "{:02x}", b).unwrap(); }
         // Done
         hexstr
     }

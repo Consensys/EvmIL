@@ -34,7 +34,7 @@ fn translate_assert(expr: &Term, code: &mut Bytecode) -> Result {
     // Translate expression
     expr.translate(code)?;
     // Implement dynamic branching
-    code.push(Instruction::PUSHL(0)); // FIXME: broken.
+    code.push(Instruction::PUSHL(code.num_labels()));
     code.push(Instruction::JUMPI);
     code.push(Instruction::INVALID);
     code.push(Instruction::JUMPDEST);

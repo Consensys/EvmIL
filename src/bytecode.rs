@@ -22,15 +22,41 @@ pub enum CompileError {
 
 #[derive(Debug)]
 pub enum CodeGenError {
-    PushEmpty,
-    PushOverflow
+    /// A push instruction cannot push zero bytes and, likewise,
+    /// cannot push more than 32 bytes.
+    InvalidPush,
+    /// A label cannot exceed the 24Kb limit imposed by the EVM.
+    InvalidLabelOffset
+}
+
+// ============================================================================
+// Label Offsets
+// ============================================================================
+
+/// Used to simplify calculation of label offsets.
+#[derive(PartialEq,Copy,Clone)]
+pub struct Offset(u16);
+
+impl Offset {
+    /// Determine the width of this offset (in bytes).
+    pub fn width(&self) -> u16 {
+        if self.0 > 255 { 2 } else { 1 }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        if self.0 > 255 {
+            vec![(self.0/256) as u8,(self.0%256) as u8]
+        } else {
+            vec![self.0 as u8]
+        }
+    }
 }
 
 // ============================================================================
 // Bytecode Instructions
 // ============================================================================
 
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum Instruction {
     // 0s: Stop and Arithmetic Operations
     STOP,
@@ -60,20 +86,42 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn opcode(&self) -> Result<u8,CodeGenError> {
+    /// Determine the opcode for a given instruction.  In many cases,
+    /// this is a straightforward mapping.  However, in other cases,
+    /// its slightly more involved as a calculation involving the
+    /// operands is required.
+    pub fn opcode(&self, offsets: &[Offset]) -> Result<u8,CodeGenError> {
         let op = match self {
+            // 0s: Stop and Arithmetic Operations
             Instruction::STOP => 0x00,
+            Instruction::ADD => 0x01,
+            Instruction::MUL => 0x02,
+            Instruction::SUB => 0x03,
+            Instruction::DIV => 0x04,
+            // 50s: Stack, Memory, Storage and Flow Operations
+            Instruction::JUMP => 0x56,
+            Instruction::JUMPI => 0x57,
+            // ...
+            Instruction::JUMPDEST => 0x5b,
+            //
             Instruction::PUSH(bs) => {
-                if bs.len() == 0 {
-                    return Err(CodeGenError::PushEmpty);
-                } else if bs.len() > 32 {
-                    return Err(CodeGenError::PushOverflow);
+                if bs.len() == 0 || bs.len() > 32 {
+                    return Err(CodeGenError::InvalidPush);
                 } else {
                     (0x5f + bs.len()) as u8
                 }
             }
+            //
+            Instruction::PUSHL(lab) => {
+                let offset = &offsets[*lab];
+                if offset.width() == 2 { 0x61 }
+                else { 0x60 }
+            }
+            // f0s: System Operations
+            Instruction::INVALID => 0xfe,
+            //
             _ => {
-                panic!("Invalid instruction");
+                panic!("Invalid instruction ({:?})",self);
             }
         };
         //
@@ -107,6 +155,12 @@ impl Bytecode {
         self.bytecodes.push(insn);
     }
 
+    /// Return the number of labels in the instruction sequence thus
+    /// far.
+    pub fn num_labels(&self) -> usize {
+        self.labels
+    }
+
     /// Translate this sequence of bytecode instructions into a
     /// sequence of raw bytes.  This can still fail in a number of
     /// ways.  For example, the target for a `PUSHL` does not match
@@ -118,15 +172,14 @@ impl Bytecode {
         //
         for b in &self.bytecodes {
             // Push opcode
-            bytes.push(b.opcode()?);
+            bytes.push(b.opcode(&offsets)?);
             // Push operands (if applicable)
             match b {
                 Instruction::PUSH(args) => {
                     bytes.extend(args);
                 }
                 Instruction::PUSHL(idx) => {
-                    let offset = offsets[*idx] as u8;
-                    bytes.push(offset);
+                    bytes.extend(offsets[*idx].to_bytes());
                 }
                 _ => {
                     // All other instructions have no operands.
@@ -137,22 +190,41 @@ impl Bytecode {
         Ok(bytes)
     }
 
-    fn determine_offsets(&self) -> Vec<usize> {
+    /// Determine the offsets of all labels within the instruction
+    /// sequence.  This is non-trivial because labels which are
+    /// further away affect the overall size of the bytecode sequence
+    /// (hence, a label can affect the offset of itself or other
+    /// labels).
+    fn determine_offsets(&self) -> Vec<Offset> {
+        let mut offsets = self.init_offsets();
+        // Iterate to a fixpoint.
+        while self.update_offsets(&mut offsets) {
+            // Keep going!
+        }
+        //
+        offsets
+    }
+
+    /// Construct the initial set of offsets.  This is considered an
+    /// "initial" set because it makes assumptions about how far
+    /// labels are away (i.e. that their offset can be encoded in a
+    /// single byte).
+    fn init_offsets(&self) -> Vec<Offset> {
         let mut offsets = Vec::new();
-        let mut offset = 0;
+        let mut offset = 0u16;
         // Calculate label offsets
         for b in &self.bytecodes {
             match b {
-                Instruction::JUMPDEST => {
-                    offsets.push(offset);
-                }
-                Instruction::PUSH(bs) => {
-                    offset = offset + bs.len();
-                }
-                Instruction::PUSHL(_) => {
-                    // FIXME: this is a false assumption once the
-                    // instruction sequence gets sufficiently long.
-                    offset = offset + 1;
+                Instruction::JUMPDEST => offsets.push(Offset(offset as u16)),
+                Instruction::PUSH(bs) => offset = offset + (bs.len() as u16),
+                Instruction::PUSHL(lab) => {
+                    if *lab < offsets.len() {
+                        // We can make an accurate estimate here.
+                        offset = offset + offsets[*lab].width()
+                    } else {
+                        // We can only make a guess here.
+                        offset = offset + 1;
+                    }
                 }
                 _ => {}
             }
@@ -160,6 +232,43 @@ impl Bytecode {
         }
         //
         offsets
+    }
+
+    /// Update the offset information, noting whether or not anything
+    /// actually changed.
+    fn update_offsets(&self, offsets: &mut [Offset]) -> bool {
+        let mut changed = false;
+        let mut offset = 0u16;
+        let mut lab = 0;
+        // Calculate label offsets
+        for b in &self.bytecodes {
+            match b {
+                Instruction::JUMPDEST => {
+                    // Extract old offset
+                    let oldoff = offsets[lab];
+                    // Construct new offset
+                    let newoff = Offset(offset);
+                    // Check!
+                    if oldoff != newoff {
+                        // Offset has changed, but the key thing is
+                        // whether or not its _width_ has changed.
+                        changed |= oldoff.width() != newoff.width();
+                        // Update new offset.
+                        offsets[lab] = newoff;
+                    }
+                    lab = lab + 1;
+                }
+                Instruction::PUSH(bs) => offset = offset + (bs.len() as u16),
+                Instruction::PUSHL(lab) => {
+                    // This time calculate a more accurate figure.
+                    offset = offset + offsets[*lab].width()
+                }
+                _ => {}
+            }
+            offset = offset + 1;
+        }
+        //
+        changed
     }
 }
 
