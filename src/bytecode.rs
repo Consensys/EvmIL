@@ -196,46 +196,20 @@ impl Bytecode {
     /// (hence, a label can affect the offset of itself or other
     /// labels).
     fn determine_offsets(&self) -> Vec<Offset> {
-        let mut offsets = self.init_offsets();
+        // Construct initial set of empty offsets
+        let mut offsets = vec![Offset(0); self.labels];
         // Iterate to a fixpoint.
         while self.update_offsets(&mut offsets) {
-            // Keep going!
-        }
-        //
-        offsets
-    }
-
-    /// Construct the initial set of offsets.  This is considered an
-    /// "initial" set because it makes assumptions about how far
-    /// labels are away (i.e. that their offset can be encoded in a
-    /// single byte).
-    fn init_offsets(&self) -> Vec<Offset> {
-        let mut offsets = Vec::new();
-        let mut offset = 0u16;
-        // Calculate label offsets
-        for b in &self.bytecodes {
-            match b {
-                Instruction::JUMPDEST => offsets.push(Offset(offset as u16)),
-                Instruction::PUSH(bs) => offset = offset + (bs.len() as u16),
-                Instruction::PUSHL(lab) => {
-                    if *lab < offsets.len() {
-                        // We can make an accurate estimate here.
-                        offset = offset + offsets[*lab].width()
-                    } else {
-                        // We can only make a guess here.
-                        offset = offset + 1;
-                    }
-                }
-                _ => {}
-            }
-            offset = offset + 1;
+            // Keep going until no more changes!
         }
         //
         offsets
     }
 
     /// Update the offset information, noting whether or not anything
-    /// actually changed.
+    /// actually changed.  The key is that as we recalculate offsets
+    /// we may find the width has changed.  If this happens, we have
+    /// to recalculate all offsets again assuming the larger width(s).
     fn update_offsets(&self, offsets: &mut [Offset]) -> bool {
         let mut changed = false;
         let mut offset = 0u16;

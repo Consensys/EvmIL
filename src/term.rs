@@ -2,6 +2,7 @@ use crate::{Bytecode,CompileError,Instruction};
 
 type Result = std::result::Result<(),CompileError>;
 
+#[derive(Clone)]
 pub enum Term {
     // Statements
     Assert(Box<Term>),
