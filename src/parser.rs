@@ -1,14 +1,15 @@
 use crate::Term;
-use crate::lexer::{Lexer,Token,TokenType};
+use crate::lexer;
+use crate::lexer::{Lexer,Token};
 
-pub struct Parser<'a> {
+pub struct Parser {
     /// Provides access to our token stream.
-    lexer: Lexer<'a>
+    lexer: Lexer
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(input: &'a str) -> Self {
-        Self { lexer: Lexer::new(input) }
+impl Parser {
+    pub fn new(input: &str) -> Self {
+        Self { lexer: lexer::create(input) }
     }
 
     /// Parse a line of text into a term.
@@ -24,7 +25,7 @@ impl<'a> Parser<'a> {
     	let lookahead = self.lexer.peek();
     	//
     	let stmt = match lookahead.kind {
-    	    TokenType::Assert => self.parse_stmt_assert(),
+    	    Token::Assert => self.parse_stmt_assert(),
             _ => {
                 // Unknown statement
                 Err(())
@@ -36,7 +37,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse_stmt_assert(&mut self) -> Result<Term,()> {
         println!("parse_stmt_assert()");
-    	let tok = self.snap(TokenType::Assert)?;
+    	let tok = self.snap(Token::Assert)?;
     	let expr = self.parse_expr()?;
         todo!("implement parse_stmt_assert()");
     }
@@ -49,12 +50,11 @@ impl<'a> Parser<'a> {
         // Skip whitespace
         self.skip_whitespace();
         //
-        let start = self.lexer.offset();
     	let lookahead = self.lexer.peek();
     	//
     	let expr = match lookahead.kind {
-    	    TokenType::Integer => self.parse_literal_int()?,
-    	    TokenType::LeftBrace => self.parse_expr_bracketed()?,
+    	    Token::Integer => self.parse_literal_int()?,
+    	    Token::LeftBrace => self.parse_expr_bracketed()?,
     	    _ => {
     		return Err(());
     	    }
@@ -64,15 +64,15 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr_bracketed(&mut self) -> Result<Term,()> {
-    	self.snap(TokenType::LeftBrace)?;
+    	self.snap(Token::LeftBrace)?;
     	let expr = self.parse_expr();
-    	self.snap(TokenType::RightBrace)?;
+    	self.snap(Token::RightBrace)?;
         expr
     }
 
     pub fn parse_literal_int(&mut self) -> Result<Term,()> {
-        let tok = self.snap(TokenType::Integer)?;
-        let val = tok.as_int();
+        let tok = self.snap(Token::Integer)?;
+        //let val = self.lexer.get_int(tok);
         todo!("implement parse_literal_int()");
     }
 
@@ -83,7 +83,7 @@ impl<'a> Parser<'a> {
     /// Match a given token type in the current stream.  If the kind
     /// matches, then the token stream advances.  Otherwise, it
     /// remains at the same position and an error is returned.
-    fn snap(&mut self, kind : TokenType) -> Result<Token<'a>,()> {
+    fn snap(&mut self, kind : Token) -> Result<Token,()> {
 	// Peek at the next token
 	let lookahead = self.lexer.peek();
 	// Check it!
@@ -91,7 +91,7 @@ impl<'a> Parser<'a> {
 	    // Accept it
 	    self.lexer.next();
 	    //
-	    Ok(lookahead)
+	    Ok(lookahead.kind)
 	} else {
 	    // Reject
 	    Err(())
@@ -102,10 +102,10 @@ impl<'a> Parser<'a> {
         let lookahead = self.lexer.peek();
         //
         match lookahead.kind {
-            TokenType::EOF => {
+            Token::EOF => {
                 Ok(())
             }
-            TokenType::Gap => {
+            Token::Gap => {
                 self.snap(lookahead.kind)?;
                 self.skip_whitespace()
             }
