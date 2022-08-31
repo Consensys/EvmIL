@@ -2,6 +2,7 @@ mod bytecode;
 mod hex;
 mod parser;
 mod term;
+mod lexer;
 
 pub use crate::bytecode::*;
 pub use crate::hex::*;

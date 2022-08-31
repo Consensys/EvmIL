@@ -46,6 +46,9 @@ fn compile(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     //
     for l in input.lines() {
         let t = Parser::new(l).parse();
+        if t.is_err() {
+            println!("Error: {}",l);
+        }
     }
     //
     Ok(true)
