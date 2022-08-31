@@ -23,6 +23,9 @@ pub enum Instruction {
     // 30s: Environmental Information
     // 40s: Block Information
     // 50s: Stack, Memory, Storage and Flow Operations
+    JUMP,
+    JUMPI,
+    JUMPDEST,
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
     PUSHL(u32), // Push label offset.
@@ -32,6 +35,8 @@ pub enum Instruction {
     SWAP(u8),
     // a0s: Logging Operations
     LOG(u8),
+    // f0s: System Operations
+    INVALID
 }
 
 /// Represents a sequence of zero or more bytecodes which can be
