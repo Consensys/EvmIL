@@ -1,0 +1,9 @@
+[package]
+name = "evmil"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "An low-level immediate language for compiling to EVM bytecode"
+repository = "https://github.com/DavePearce/EvmIL"
+
+[dependencies]
