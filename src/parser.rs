@@ -100,6 +100,7 @@ impl Parser {
     	//
     	let expr = match lookahead.kind {
     	    Token::Integer => self.parse_literal_int()?,
+    	    Token::Hex => self.parse_literal_hex()?,
     	    Token::LeftBrace => self.parse_expr_bracketed()?,
     	    _ => {
     		return Err(Error::new(lookahead,ErrorCode::UnexpectedToken));
@@ -118,15 +119,22 @@ impl Parser {
 
     pub fn parse_literal_int(&mut self) -> Result<Term> {
         let tok = self.lexer.snap(Token::Integer)?;
-        let x = self.lexer.get_int(tok);
-        // FIXME: this is not ideal :)
-        let b1 : u8 = ((x >> 24) & 0xff) as u8;
-        let b2 : u8 = ((x >> 16) & 0xff) as u8;
-        let b3 : u8 = ((x >> 8) & 0xff) as u8;
-        let b4 : u8 = (x & 0xff) as u8;
-        let bytes = [b1, b2, b3, b4];
-        //
-        Ok(Term::Int(bytes.to_vec()))
+        // Extract characters making up literal
+        let chars = self.lexer.get_str(tok);
+        // Convert characters into digits
+        let digits = chars.chars().map(|c| c.to_digit(10).unwrap() as u8).collect();
+        // All good!
+        Ok(Term::Int(digits))
+    }
+
+    pub fn parse_literal_hex(&mut self) -> Result<Term> {
+        let tok = self.lexer.snap(Token::Hex)?;
+        // Extract characters making up literal
+        let chars = &self.lexer.get_str(tok)[2..];
+        // Convert characters into digits
+        let digits = chars.chars().map(|c| c.to_digit(16).unwrap() as u8).collect();
+        // All good!
+        Ok(Term::Hex(digits))
     }
 
     // =========================================================================
