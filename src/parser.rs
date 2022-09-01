@@ -9,7 +9,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(input: &str) -> Self {
-        Self { lexer: lexer::create(input) }
+        Self { lexer: Lexer::new(input) }
     }
 
     /// Parse a line of text into a term.

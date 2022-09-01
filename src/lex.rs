@@ -122,9 +122,10 @@ impl<T:Tokenizer> Lexer<T> {
         return Self { input, offset: 0, tokeniser }
     }
 
-    /// Check whether the lexer is at the end of file.
-    pub fn is_eof(&self) -> bool {
-        self.offset >= self.input.len()
+    /// Get the slice which corresponds to a given span from the
+    /// underlying sequence.
+    pub fn get(&self, span: Span<T::Token>) -> &[T::Item] {
+        &self.input[span.range()]
     }
 
     /// Peek at the next token in the sequence, or none if we have
