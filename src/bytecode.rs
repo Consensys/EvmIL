@@ -17,7 +17,8 @@ use crate::{Term};
 
 #[derive(Debug)]
 pub enum CompileError {
-
+    /// An integer (or hex) literal is too large (i.e. exceeds `2^256`).
+    LiteralOverflow
 }
 
 #[derive(Debug)]

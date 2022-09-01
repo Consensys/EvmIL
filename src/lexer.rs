@@ -12,6 +12,7 @@ pub enum Token {
     EOF,
     EqualsEquals,
     Gap,
+    Hex,
     If,
     Identifier,
     Integer,
@@ -39,9 +40,20 @@ const IF : &'static [char] = &['i','f'];
 /// rules.
 type Result = std::result::Result<Span<Token>,()>;
 
-/// Scan an integer.
-fn scan_integer(input: &[char]) -> Result {
+/// Scan an (unsigned) integer literal.
+fn scan_uint_literal(input: &[char]) -> Result {
     scan_whilst(input, Token::Integer, |c| c.is_digit(10))
+}
+
+/// Scan a hex literal (e.g. `0x12ffc`).
+fn scan_hex_literal(input: &[char]) -> Result {
+    if input.len() < 2 || input[0] != '0' || input[1] != 'x' {
+        Err(())
+    } else {
+        let r = scan_whilst(&input[2..], Token::Hex, |c| c.is_digit(16))?;
+        // Update span information
+        Ok(Span::new(Token::Hex,0..r.region.end+2))
+    }
 }
 
 /// Scan a keyword, which is simple identifier matching a predefined
@@ -170,7 +182,8 @@ static RULES : &'static [Scanner<char,Token>] = &[
     scan_single_operators,
     scan_keyword,
     scan_identifier,
-    scan_integer,
+    scan_hex_literal,
+    scan_uint_literal,
     scan_gap,
     scan_newline,
     scan_eof
@@ -211,6 +224,10 @@ impl Lexer {
         let chars = self.lexer.get(t);
         // Convert to string
         chars.into_iter().collect()
+    }
+
+    pub fn get(&self, t: Span<Token>) -> &[char] {
+        self.lexer.get(t)
     }
 
     /// Pass through request to underlying lexer
