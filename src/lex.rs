@@ -18,6 +18,11 @@ impl Region {
     pub fn len(&self) -> usize {
         self.end - self.start
     }
+
+    pub fn shift(&mut self, delta: usize) {
+        self.start += delta;
+        self.end += delta;
+    }
 }
 
 /// Simple mechanism for constructing a `Region` from a `Range`.
@@ -25,6 +30,10 @@ impl From<Range<usize>> for Region {
     fn from(r: Range<usize>) -> Region {
        Region{start:r.start,end:r.end}
     }
+}
+
+impl Into<Range<usize>> for Region {
+    fn into(self) -> Range<usize> { self.start .. self.end }
 }
 
 // =================================================================
@@ -61,54 +70,61 @@ where T:Clone+Copy+PartialEq {
     pub fn len(&self) -> usize {
         self.region.end - self.region.start
     }
+
+    /// Extract the underlying region covered by this span as a
+    /// `Range`.  This is really just for convenience.
+    pub fn range(&self) -> Range<usize> { self.start() .. self.end() }
+
+    /// Shift the span to a different position in the underlying
+    /// sequence.  The position is taken as a delta from the current
+    /// position (e.g. `delta==1` means we shift one up the sequence).
+    pub fn shift(&mut self, delta: usize) {
+        self.region.shift(delta);
+    }
 }
 
 // =================================================================
-// Rule
+// Tokenizer
 // =================================================================
 
+/// Provides a generic description of something which splits items in
+/// the input sequence up into tokens.
 pub trait Tokenizer {
+    /// Identifies items in the underlying sequence being tokenized.
+    type Item;
     /// Identifies the token type produced by this tokenizer.
     type Token:Clone+Copy+PartialEq;
     /// Responsible for producing a token from a given position in the
     /// input.
-    fn scan(&self, offset: usize, input: &[char]) -> Span<Self::Token>;
+    fn scan(&self, input: &[Self::Item]) -> Span<Self::Token>;
 }
 
 // =================================================================
 // Lexer
 // =================================================================
 
-/// Provides machinery for splitting up a string slice into a sequence
-/// of tokens.
+/// Provides machinery for splitting up an _underlying sequence_ of
+/// items into a sequence of tokens, where each token can correspond
+/// to one or more items in the underlying sequence.
 pub struct Lexer<T:Tokenizer> {
-    /// Character sequence being tokenised
-    chars: Vec<char>,
+    /// Underlying sequence being tokenised
+    input: Vec<T::Item>,
     /// Current position in character sequence
     offset: usize,
     /// Responsible for dividing characters into tokens
     tokeniser: T
 }
 
-/// An acceptor determines whether or not a character is part of a
-/// given token.
-type Acceptor = fn(char)->bool;
-
-/// An acceptor determines whether or not a pair of characters is matched.
-type Acceptor2 = fn(char,char)->bool;
-
 impl<T:Tokenizer> Lexer<T> {
     /// Construct a new lexer for a given string slice.
-    pub fn new(input: &str, tokeniser: T) -> Self {
-        // Extract character sequence
-        let chars = input.chars().collect();
+    pub fn new(input: Vec<T::Item>, tokeniser: T) -> Self {
         // Construct lexer
-        return Self { chars, offset: 0, tokeniser }
+        return Self { input, offset: 0, tokeniser }
     }
 
     /// Check whether the lexer is at the end of file.
     pub fn is_eof(&self) -> bool {
-        self.offset >= self.chars.len()
+        self.offset >= self.input.len()
     }
 
     /// Peek at the next token in the sequence, or none if we have
@@ -127,7 +143,51 @@ impl<T:Tokenizer> Lexer<T> {
     /// character.  The actual work is offloaded to a helper based on
     /// this.
     fn scan(&self, start: usize) -> Span<T::Token> {
-        let ch = self.chars[start];
-        todo!("got here");
+        // Scan next token
+        let mut span = self.tokeniser.scan(&self.input[start..]);
+        // Shift to correct position
+        span.shift(start);
+        // Done
+        span
+    }
+}
+
+// =================================================================
+// Table Tokenizer
+// =================================================================
+
+/// Defines a very simple concept of a scanner which requires no
+/// state.  Tokenizers can be built out of scanners, for example.
+pub type Scanner<S,T> = fn(&[S])->Result<Span<T>,()>;
+
+/// A tokenizer construct from one or more tokenizers which are tried
+/// in order of appearance.
+pub struct TableTokenizer<S,T>
+where T: Copy+Clone+PartialEq {
+    /// The table of tokenizers to use for scanning.
+    table : Vec<Scanner<S,T>>
+}
+
+impl<S,T> TableTokenizer<S,T>
+where T: Copy+Clone+PartialEq {
+    /// Construct a new tokenizer from a given table.
+    pub fn new(table: Vec<Scanner<S,T>>) -> Self {
+        Self{table}
+    }
+}
+
+impl<S,T> Tokenizer for TableTokenizer<S,T>
+where T: Copy+Clone+PartialEq {
+    type Item = S;
+    type Token = T;
+
+    fn scan(&self, input: &[Self::Item]) -> Span<Self::Token> {
+        for s in &self.table {
+            match s(input) {
+                Ok(s) => { return s; }
+                _ => {}
+            }
+        }
+        panic!("PROBLEM");
     }
 }
