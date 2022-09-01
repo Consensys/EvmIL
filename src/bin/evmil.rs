@@ -1,11 +1,14 @@
-use evmil::Parser;
-use clap::{arg, Arg, ArgMatches, Command};
+use std::convert::TryFrom;
 use std::error::Error;
 use std::fs;
+
+use clap::{arg, Arg, ArgMatches, Command};
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::{PatternEncoder};
+//
+use evmil::{Bytecode,Parser,ToHexString};
 
 fn main() -> Result<(),Box<dyn Error>> {
     // Parse command-line arguments
@@ -43,13 +46,18 @@ fn compile(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     let filename = args.get_one::<String>("file").unwrap();
     // Read the test file
     let input = fs::read_to_string(filename)?;
+    let mut terms = Vec::new();
     //
     for l in input.lines() {
-        let t = Parser::new(l).parse();
-        if t.is_err() {
-            println!("Error: {}",l);
-        }
+        let t= Parser::new(l).parse()?;
+        terms.push(t);
     }
+    // Translate statements into bytecode instructions
+    let code = Bytecode::try_from(terms.as_slice()).unwrap();
+    // Translate instructions into bytes
+    let bytes : Vec<u8> = code.try_into().unwrap();
+    // Print the final hex string
+    println!("{}",bytes.to_hex_string());
     //
     Ok(true)
 }

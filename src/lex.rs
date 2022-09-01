@@ -1,5 +1,20 @@
 use std::ops::Range;
 
+// =================================================================
+// Errors
+// =================================================================
+
+/// Indicates that a particular kind of token was expected, but that
+/// we actually found something else.
+pub type SnapError<T> = (T,Span<T>);
+
+/// The type of error which can be returned from `snap()`.
+pub type SnapResult<T> = Result<Span<T>,SnapError<T>>;
+
+// =================================================================
+// Region
+// =================================================================
+
 /// Basically the same as `std::ops::Range`, but implements `Copy`.
 /// Note, like `Range`, this is _half open_.  That means `start`
 /// identifies the first index in the region, whilst `end` is one past
@@ -138,6 +153,24 @@ impl<T:Tokenizer> Lexer<T> {
         let t = self.scan(self.offset);
         self.offset = t.end();
         t
+    }
+
+    /// Match a given token type in the current stream.  If the kind
+    /// matches, then the token stream advances.  Otherwise, it
+    /// remains at the same position and an error is returned.
+    pub fn snap(&mut self, kind : T::Token) -> SnapResult<T::Token> {
+	// Peek at the next token
+	let lookahead = self.peek();
+	// Check it!
+	if lookahead.kind == kind {
+	    // Accept it
+	    self.next();
+	    //
+	    Ok(lookahead)
+	} else {
+	    // Reject
+	    Err((kind,lookahead))
+	}
     }
 
     /// Begin process of scanning a token based on its first

@@ -1,6 +1,53 @@
+use std::fmt;
 use crate::Term;
-use crate::lexer;
 use crate::lexer::{Lexer,Token};
+use crate::lex::{Span,SnapError};
+
+// =========================================================================
+// Error
+// =========================================================================
+
+#[derive(Clone,Debug,PartialEq)]
+pub enum ErrorCode {
+    UnexpectedToken,
+    UnexpectedEof,
+    ExpectedToken(Token),
+    ExpectedTokenIn(Vec<Token>)
+}
+
+/// Identifies possible errors stemming from the parser.
+#[derive(Debug)]
+pub struct Error {
+    pub span: Span<Token>,
+    pub code: ErrorCode
+}
+
+impl Error {
+    pub fn new(span: Span<Token>, code: ErrorCode) -> Error {
+	Error{span,code}
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // temporary for now.
+        write!(f,"{:?}",self)
+    }
+}
+
+impl std::error::Error for Error { }
+
+impl From<SnapError<Token>> for Error {
+    fn from(p:(Token,Span<Token>)) -> Error {
+        Error{span:p.1,code:ErrorCode::ExpectedToken(p.0)}
+    }
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+// =========================================================================
+// Parser
+// =========================================================================
 
 pub struct Parser {
     /// Provides access to our token stream.
@@ -13,7 +60,7 @@ impl Parser {
     }
 
     /// Parse a line of text into a term.
-    pub fn parse(&mut self) -> Result<Term,()> {
+    pub fn parse(&mut self) -> Result<Term> {
         self.parse_stmt()
     }
 
@@ -21,32 +68,31 @@ impl Parser {
     // Statements
     // =========================================================================
 
-    fn parse_stmt(&mut self) -> Result<Term,()> {
+    fn parse_stmt(&mut self) -> Result<Term> {
     	let lookahead = self.lexer.peek();
     	//
     	let stmt = match lookahead.kind {
     	    Token::Assert => self.parse_stmt_assert(),
             _ => {
                 // Unknown statement
-                Err(())
+                Err(Error::new(lookahead,ErrorCode::UnexpectedToken))
             }
         };
         //
         stmt
     }
 
-    pub fn parse_stmt_assert(&mut self) -> Result<Term,()> {
-        println!("parse_stmt_assert()");
-    	let tok = self.snap(Token::Assert)?;
+    pub fn parse_stmt_assert(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::Assert)?;
     	let expr = self.parse_expr()?;
-        todo!("implement parse_stmt_assert()");
+        Ok(Term::Assert(Box::new(expr)))
     }
 
     // =========================================================================
     // Expressions
     // =========================================================================
 
-    pub fn parse_expr(&mut self) -> Result<Term,()> {
+    pub fn parse_expr(&mut self) -> Result<Term> {
         // Skip whitespace
         self.skip_whitespace();
         //
@@ -56,62 +102,47 @@ impl Parser {
     	    Token::Integer => self.parse_literal_int()?,
     	    Token::LeftBrace => self.parse_expr_bracketed()?,
     	    _ => {
-    		return Err(());
+    		return Err(Error::new(lookahead,ErrorCode::UnexpectedToken));
     	    }
     	};
         // Done
         Ok(expr)
     }
 
-    pub fn parse_expr_bracketed(&mut self) -> Result<Term,()> {
-    	self.snap(Token::LeftBrace)?;
+    pub fn parse_expr_bracketed(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::LeftBrace)?;
     	let expr = self.parse_expr();
-    	self.snap(Token::RightBrace)?;
+    	self.lexer.snap(Token::RightBrace)?;
         expr
     }
 
-    pub fn parse_literal_int(&mut self) -> Result<Term,()> {
-        let tok = self.snap(Token::Integer)?;
-        //let val = self.lexer.get_int(tok);
-        todo!("implement parse_literal_int()");
+    pub fn parse_literal_int(&mut self) -> Result<Term> {
+        let tok = self.lexer.snap(Token::Integer)?;
+        let x = self.lexer.get_int(tok);
+        // FIXME: this is not ideal :)
+        let b1 : u8 = ((x >> 24) & 0xff) as u8;
+        let b2 : u8 = ((x >> 16) & 0xff) as u8;
+        let b3 : u8 = ((x >> 8) & 0xff) as u8;
+        let b4 : u8 = (x & 0xff) as u8;
+        let bytes = [b1, b2, b3, b4];
+        //
+        Ok(Term::Int(bytes.to_vec()))
     }
 
     // =========================================================================
     // Helpers
     // =========================================================================
 
-    /// Match a given token type in the current stream.  If the kind
-    /// matches, then the token stream advances.  Otherwise, it
-    /// remains at the same position and an error is returned.
-    fn snap(&mut self, kind : Token) -> Result<Token,()> {
-	// Peek at the next token
-	let lookahead = self.lexer.peek();
-	// Check it!
-	if lookahead.kind == kind {
-	    // Accept it
-	    self.lexer.next();
-	    //
-	    Ok(lookahead.kind)
-	} else {
-	    // Reject
-	    Err(())
-	}
-    }
-
-    fn skip_whitespace(&mut self) -> Result<(),()> {
+    fn skip_whitespace(&mut self) {
         let lookahead = self.lexer.peek();
         //
         match lookahead.kind {
-            Token::EOF => {
-                Ok(())
-            }
             Token::Gap => {
-                self.snap(lookahead.kind)?;
+                self.lexer.snap(lookahead.kind).unwrap();
                 self.skip_whitespace()
             }
             _ => {
                 // Do nothing!
-                Ok(())
             }
         }
     }
