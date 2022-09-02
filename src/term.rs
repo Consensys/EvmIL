@@ -1,6 +1,22 @@
-use crate::{Bytecode,CompileError,Instruction};
+use crate::{Bytecode,Instruction};
 
 type Result = std::result::Result<(),CompileError>;
+
+// ============================================================================
+// Errors
+// ============================================================================
+
+#[derive(Debug)]
+pub enum CompileError {
+    /// An integer (or hex) literal is too large (i.e. exceeds `2^256`).
+    LiteralOverflow,
+    /// Attempt to read from an invalid memory region.
+    InvalidMemoryAccess
+}
+
+// ============================================================================
+// Terms
+// ============================================================================
 
 #[derive(Clone)]
 pub enum Term {
@@ -8,6 +24,8 @@ pub enum Term {
     Assert(Box<Term>),
     // Expressions
     Binary(BinOp,Box<Term>,Box<Term>),
+    ArrayAccess(Box<Term>,Box<Term>),
+    MemoryAccess(Region),
     // Values
     Int(Vec<u8>),
     Hex(Vec<u8>),
@@ -20,9 +38,12 @@ impl Term {
             Term::Assert(e) => translate_assert(e,code),
             // Expressions
             Term::Binary(bop,e1,e2) => translate_binary(*bop,e1,e2,code),
+            Term::ArrayAccess(src,index) => translate_array_access(src,index,code),
+            Term::MemoryAccess(_) => Err(CompileError::InvalidMemoryAccess),
             // Values
             Term::Int(bytes) => translate_literal(bytes,10,code),
             Term::Hex(bytes) => translate_literal(bytes,16,code),
+            //
         }
     }
 }
@@ -45,7 +66,7 @@ fn translate_assert(expr: &Term, code: &mut Bytecode) -> Result {
 }
 
 // ============================================================================
-// Expressions
+// Binary Expressions
 // ============================================================================
 
 #[derive(Copy,Clone,PartialEq,Debug)]
@@ -135,6 +156,53 @@ fn translate_binary_arithmetic(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mu
         }
         _ => {
             unreachable!();
+        }
+    }
+    //
+    Ok(())
+}
+
+// ============================================================================
+// Array Access Expressions
+// ============================================================================
+
+#[derive(Copy,Clone,PartialEq,Debug)]
+pub enum Region {
+    Memory,
+    Storage,
+    CallData
+}
+
+/// Translate an array access of the form `src[index]`.  The actual
+/// form of the translation depends on whether its a direct access
+/// (e.g. to storage or memory), or indirect (e.g. via a pointer to
+/// memory).
+fn translate_array_access(src: &Term, index: &Term, bytecode:
+                          &mut Bytecode) -> Result {
+    match src {
+        Term::MemoryAccess(r) => {
+            translate_memory_access(*r,index,bytecode)
+        }
+        _ => {
+            Err(CompileError::InvalidMemoryAccess)
+        }
+    }
+}
+
+fn translate_memory_access(region: Region, index: &Term, bytecode:
+                           &mut Bytecode) -> Result {
+    // Translate index expression
+    index.translate(bytecode)?;
+    // Dispatch based on region
+    match region {
+        Region::Memory => {
+            bytecode.push(Instruction::MLOAD);
+        }
+        Region::Storage => {
+            bytecode.push(Instruction::SLOAD);
+        }
+        Region::CallData => {
+            bytecode.push(Instruction::CALLDATALOAD);
         }
     }
     //

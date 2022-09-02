@@ -9,17 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::{Term};
+use crate::{CompileError,Term};
 
 // ============================================================================
 // Errors
 // ============================================================================
-
-#[derive(Debug)]
-pub enum CompileError {
-    /// An integer (or hex) literal is too large (i.e. exceeds `2^256`).
-    LiteralOverflow
-}
 
 #[derive(Debug)]
 pub enum CodeGenError {
@@ -91,10 +85,17 @@ pub enum Instruction {
     // 10s: Comparison & Bitwise Logic Operations
     // 20s: Keccak256
     // 30s: Environmental Information
+    CALLDATALOAD,
+    CALLDATASIZE,
+    CALLDATACOPY,
     // 40s: Block Information
     // 50s: Stack, Memory, Storage and Flow Operations
     POP,
-    // ...
+    MLOAD,
+    MSTORE,
+    MSTORE8,
+    SLOAD,
+    SSTORE,
     JUMP,
     JUMPI,
     JUMPDEST(usize),
@@ -146,8 +147,17 @@ impl Instruction {
             Instruction::SHL => 0x1b,
             Instruction::SHR => 0x1c,
             Instruction::SAR => 0x1d,
+            // 30s: Environmental Information
+            Instruction::CALLDATALOAD => 0x35,
+            Instruction::CALLDATASIZE => 0x36,
+            Instruction::CALLDATACOPY => 0x37,
             // 50s: Stack, Memory, Storage and Flow Operations
             Instruction::POP => 0x50,
+            Instruction::MLOAD => 0x51,
+            Instruction::MSTORE => 0x52,
+            Instruction::MSTORE8 => 0x53,
+            Instruction::SLOAD => 0x54,
+            Instruction::SSTORE => 0x55,
             Instruction::JUMP => 0x56,
             Instruction::JUMPI => 0x57,
             // ...

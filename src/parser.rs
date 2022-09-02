@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::{BinOp,Term};
+use crate::{BinOp,Region,Term};
 use crate::lexer::{Lexer,Token};
 use crate::lex::{Span,SnapError};
 
@@ -143,7 +143,7 @@ impl Parser {
     /// level `0` corresponds simply to parsing a unary expression.
     pub fn parse_expr_binary(&mut self, level: usize) -> Result<Term> {
         if level == 0 {
-            self.parse_expr_term()
+            self.parse_expr_postfix()
         } else {
             let tokens = BINARY_CONNECTIVES[level-1];
             // Parse level below
@@ -167,6 +167,29 @@ impl Parser {
         }
     }
 
+    pub fn parse_expr_postfix(&mut self) -> Result<Term> {
+        let mut expr = self.parse_expr_term()?;
+        // Check for postfix unary operator.
+    	let lookahead = self.lexer.peek();
+    	// FIXME: managed nested operators
+        expr = match lookahead.kind {
+            Token::LeftSquare => self.parse_expr_arrayaccess(expr)?,
+            //TokenType::LeftBrace => self.parse_expr_invoke(expr)?,
+            _ => expr
+        };
+        // Done
+        Ok(expr)
+    }
+
+    pub fn parse_expr_arrayaccess(&mut self, src: Term) -> Result<Term> {
+        let tok = self.lexer.snap(Token::LeftSquare)?;
+        let index = self.parse_expr()?;
+        self.lexer.snap(Token::RightSquare)?;
+        let expr = Term::ArrayAccess(Box::new(src),Box::new(index));
+        // Done
+        Ok(expr)
+    }
+
     pub fn parse_expr_term(&mut self) -> Result<Term> {
         // Skip whitespace
         self.skip_whitespace();
@@ -176,6 +199,7 @@ impl Parser {
     	let expr = match lookahead.kind {
     	    Token::Integer => self.parse_literal_int()?,
     	    Token::Hex => self.parse_literal_hex()?,
+            Token::Identifier => self.parse_variable_access()?,
     	    Token::LeftBrace => self.parse_expr_bracketed()?,
     	    _ => {
     		return Err(Error::new(lookahead,ErrorCode::UnexpectedToken));
@@ -183,13 +207,6 @@ impl Parser {
     	};
         // Done
         Ok(expr)
-    }
-
-    pub fn parse_expr_bracketed(&mut self) -> Result<Term> {
-    	self.lexer.snap(Token::LeftBrace)?;
-    	let expr = self.parse_expr();
-    	self.lexer.snap(Token::RightBrace)?;
-        expr
     }
 
     pub fn parse_literal_int(&mut self) -> Result<Term> {
@@ -210,6 +227,30 @@ impl Parser {
         let digits = chars.chars().map(|c| c.to_digit(16).unwrap() as u8).collect();
         // All good!
         Ok(Term::Hex(digits))
+    }
+
+    pub fn parse_variable_access(&mut self) -> Result<Term> {
+    	let tok = self.lexer.snap(Token::Identifier)?;
+        // Extract characters making up literal
+        let chars = self.lexer.get_str(tok);
+        // Match built-ins
+        let expr = match chars.as_str() {
+            "memory" => Term::MemoryAccess(Region::Memory),
+            "storage" => Term::MemoryAccess(Region::Storage),
+            "calldata" => Term::MemoryAccess(Region::CallData),
+    	    _ => {
+    		return Err(Error::new(tok,ErrorCode::UnexpectedToken));
+    	    }
+        };
+        //
+        Ok(expr)
+    }
+
+    pub fn parse_expr_bracketed(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::LeftBrace)?;
+    	let expr = self.parse_expr();
+    	self.lexer.snap(Token::RightBrace)?;
+        expr
     }
 
     // =========================================================================
