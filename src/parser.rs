@@ -1,7 +1,41 @@
 use std::fmt;
-use crate::Term;
+use crate::{BinOp,Term};
 use crate::lexer::{Lexer,Token};
 use crate::lex::{Span,SnapError};
+
+/// Defines the set of tokens which are considered to identify logical
+/// connectives (e.g. `&&`, `||`, etc).
+pub const LOGICAL_CONNECTIVES : &'static [Token] = &[
+    Token::AmpersandAmpersand,
+    Token::BarBar
+];
+
+/// Defines the set of tokens which are considered to identify
+/// arithmetic comparators (e.g. `<`, `<=`, `==`, etc).
+pub const ARITHMETIC_COMPARATORS : &'static [Token] = &[
+    Token::EqualsEquals,
+    Token::ShreakEquals,
+    Token::LeftAngle,
+    Token::LeftAngleEquals,
+    Token::RightAngle,
+    Token::RightAngleEquals
+];
+
+/// Defines the set of tokens which are considered to identify
+/// arithmetic operators (e.g. `+`, `-`, `*`, etc).
+pub const ARITHMETIC_OPERATORS : &'static [Token] = &[
+    Token::Minus,
+    Token::Percent,
+    Token::Plus,
+    Token::RightSlash,
+    Token::Star
+];
+
+pub const BINARY_CONNECTIVES : &'static [ &'static [Token] ] = &[
+    &ARITHMETIC_OPERATORS,
+    &ARITHMETIC_COMPARATORS,
+    &LOGICAL_CONNECTIVES,
+];
 
 // =========================================================================
 // Error
@@ -38,8 +72,15 @@ impl fmt::Display for Error {
 impl std::error::Error for Error { }
 
 impl From<SnapError<Token>> for Error {
-    fn from(p:(Token,Span<Token>)) -> Error {
-        Error{span:p.1,code:ErrorCode::ExpectedToken(p.0)}
+    fn from(p:SnapError<Token>) -> Error {
+        match p {
+            SnapError::Expected(t,s) => {
+                Error{span:s,code:ErrorCode::ExpectedToken(t)}
+            }
+            SnapError::ExpectedIn(ts,s) => {
+                Error{span:s,code:ErrorCode::ExpectedTokenIn(ts)}
+            }
+        }
     }
 }
 
@@ -85,6 +126,7 @@ impl Parser {
     pub fn parse_stmt_assert(&mut self) -> Result<Term> {
     	self.lexer.snap(Token::Assert)?;
     	let expr = self.parse_expr()?;
+        self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Assert(Box::new(expr)))
     }
 
@@ -93,6 +135,39 @@ impl Parser {
     // =========================================================================
 
     pub fn parse_expr(&mut self) -> Result<Term> {
+        self.parse_expr_binary(3)
+    }
+
+    /// Parse a binary expression at a given _level_.  Higher levels
+    /// indicate expressions which bind _less tightly_.  Furthermore,
+    /// level `0` corresponds simply to parsing a unary expression.
+    pub fn parse_expr_binary(&mut self, level: usize) -> Result<Term> {
+        if level == 0 {
+            self.parse_expr_term()
+        } else {
+            let tokens = BINARY_CONNECTIVES[level-1];
+            // Parse level below
+    	    let lhs = self.parse_expr_binary(level-1)?;
+            // Skip remaining whitespace (on this line)
+            self.skip_whitespace();
+	    // Check whether logical connective follows
+    	    let lookahead = self.lexer.snap_any(tokens);
+            //
+            match lookahead {
+                Ok(s) => {
+                    // FIXME: turn this into a loop?
+	            let rhs = self.parse_expr_binary(level)?;
+                    let bop = Self::binop_from_token(s.kind).unwrap();
+	            Ok(Term::Binary(bop,Box::new(lhs),Box::new(rhs)))
+                }
+                Err(_) => {
+                    Ok(lhs)
+                }
+            }
+        }
+    }
+
+    pub fn parse_expr_term(&mut self) -> Result<Term> {
         // Skip whitespace
         self.skip_whitespace();
         //
@@ -153,5 +228,30 @@ impl Parser {
                 // Do nothing!
             }
         }
+    }
+
+    fn binop_from_token(token: Token) -> Option<BinOp> {
+	let bop = match token {
+            // // Equality
+            Token::EqualsEquals => BinOp::Equals,
+            Token::ShreakEquals => BinOp::NotEquals,
+            // // Comparison
+	    Token::LeftAngle => BinOp::LessThan,
+            Token::LeftAngleEquals => BinOp::LessThanOrEquals,
+            Token::RightAngle => BinOp::GreaterThan,
+            Token::RightAngleEquals => BinOp::GreaterThanOrEquals,
+            // Arithmetic
+            Token::Minus => BinOp::Subtract,
+	    Token::Percent => BinOp::Remainder,
+	    Token::Plus => BinOp::Add,
+            Token::RightSlash => BinOp::Divide,
+            Token::Star => BinOp::Multiply,
+            // // Logical
+            Token::AmpersandAmpersand => BinOp::LogicalAnd,
+            Token::BarBar => BinOp::LogicalOr,
+            // No match
+	    _ => { return None; }
+	};
+        Some(bop)
     }
 }

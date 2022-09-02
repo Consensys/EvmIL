@@ -14,8 +14,8 @@ pub fn test_literal_01() {
 
 #[test]
 pub fn test_binop_01() {
-    let s1 = Binary(ADD,Box::new(Int(vec![1])),Box::new(Int(vec![2])));
-    check(&[s1], "0x6001600201");
+    let s1 = Binary(Add,Box::new(Int(vec![1])),Box::new(Int(vec![2])));
+    check(&[s1], "0x6002600101");
 }
 
 // ============================================================================
