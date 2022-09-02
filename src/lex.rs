@@ -6,7 +6,14 @@ use std::ops::Range;
 
 /// Indicates that a particular kind of token was expected, but that
 /// we actually found something else.
-pub type SnapError<T> = (T,Span<T>);
+#[derive(Debug)]
+pub enum SnapError<T>
+where T:Clone+Copy+PartialEq {
+    // Expected type T, but found this token.
+    Expected(T,Span<T>),
+    // Expected one of several types `T`, but found this token.
+    ExpectedIn(Vec<T>,Span<T>)
+}
 
 /// The type of error which can be returned from `snap()`.
 pub type SnapResult<T> = Result<Span<T>,SnapError<T>>;
@@ -169,8 +176,23 @@ impl<T:Tokenizer> Lexer<T> {
 	    Ok(lookahead)
 	} else {
 	    // Reject
-	    Err((kind,lookahead))
+	    Err(SnapError::Expected(kind,lookahead))
 	}
+    }
+
+    /// Match a given token type in the current stream for a set of
+    /// candidates.  If one of the candidates matches, then the token
+    /// stream advances.  Otherwise, it remains at the same position
+    /// and an error is returned.
+    pub fn snap_any(&mut self, kinds: &[T::Token]) -> SnapResult<T::Token> {
+        for k in kinds {
+            match self.snap(*k) {
+                Ok(tok) => { return Ok(tok); }
+                _ => { }
+            }
+        }
+        // Reject
+	Err(SnapError::ExpectedIn(kinds.to_vec(),self.peek()))
     }
 
     /// Begin process of scanning a token based on its first

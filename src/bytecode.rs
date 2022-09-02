@@ -26,6 +26,8 @@ pub enum CodeGenError {
     /// A push instruction cannot push zero bytes and, likewise,
     /// cannot push more than 32 bytes.
     InvalidPush,
+    /// A dup `n` instruction requires `n > 0` and `n <= 32`.
+    InvalidDup,
     /// A label cannot exceed the 24Kb limit imposed by the EVM.
     InvalidLabelOffset
 }
@@ -65,14 +67,37 @@ pub enum Instruction {
     MUL,
     SUB,
     DIV,
+    SDIV,
+    MOD,
+    SMOD,
+    ADDMOD,
+    MULMOD,
+    EXP,
+    SIGNEXTEND,
+    LT,
+    GT,
+    SLT,
+    SGT,
+    EQ,
+    ISZERO,
+    AND,
+    OR,
+    XOR,
+    NOT,
+    BYTE,
+    SHL,
+    SHR,
+    SAR,
     // 10s: Comparison & Bitwise Logic Operations
     // 20s: Keccak256
     // 30s: Environmental Information
     // 40s: Block Information
     // 50s: Stack, Memory, Storage and Flow Operations
+    POP,
+    // ...
     JUMP,
     JUMPI,
-    JUMPDEST,
+    JUMPDEST(usize),
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
     PUSHL(usize), // Push label offset.
@@ -99,12 +124,36 @@ impl Instruction {
             Instruction::MUL => 0x02,
             Instruction::SUB => 0x03,
             Instruction::DIV => 0x04,
+            Instruction::SDIV => 0x05,
+            Instruction::MOD => 0x06,
+            Instruction::SMOD => 0x07,
+            Instruction::ADDMOD => 0x08,
+            Instruction::MULMOD => 0x09,
+            Instruction::EXP => 0x0a,
+            Instruction::SIGNEXTEND => 0x0b,
+            // 10s: Comparison & Bitwise Logic Operations
+            Instruction::LT => 0x10,
+            Instruction::GT => 0x11,
+            Instruction::SLT => 0x12,
+            Instruction::SGT => 0x13,
+            Instruction::EQ => 0x14,
+            Instruction::ISZERO => 0x15,
+            Instruction::AND => 0x16,
+            Instruction::OR => 0x17,
+            Instruction::XOR => 0x18,
+            Instruction::NOT => 0x19,
+            Instruction::BYTE => 0x1a,
+            Instruction::SHL => 0x1b,
+            Instruction::SHR => 0x1c,
+            Instruction::SAR => 0x1d,
             // 50s: Stack, Memory, Storage and Flow Operations
+            Instruction::POP => 0x50,
             Instruction::JUMP => 0x56,
             Instruction::JUMPI => 0x57,
             // ...
-            Instruction::JUMPDEST => 0x5b,
+            Instruction::JUMPDEST(_) => 0x5b,
             //
+            // 60s & 70s: Push Operations
             Instruction::PUSH(bs) => {
                 if bs.len() == 0 || bs.len() > 32 {
                     return Err(CodeGenError::InvalidPush);
@@ -117,6 +166,13 @@ impl Instruction {
                 let offset = &offsets[*lab];
                 if offset.width() == 2 { 0x61 }
                 else { 0x60 }
+            }
+            // 80s: Duplication Operations
+            Instruction::DUP(n) => {
+                if *n == 0 || *n > 32 {
+                    return Err(CodeGenError::InvalidDup);
+                }
+                0x7f + n
             }
             // f0s: System Operations
             Instruction::INVALID => 0xfe,
@@ -150,16 +206,15 @@ impl Bytecode {
     }
 
     pub fn push(&mut self, insn: Instruction) {
-        if insn == Instruction::JUMPDEST {
-            self.labels = self.labels + 1;
-        }
         self.bytecodes.push(insn);
     }
 
     /// Return the number of labels in the instruction sequence thus
     /// far.
-    pub fn num_labels(&self) -> usize {
-        self.labels
+    pub fn fresh_label(&mut self) -> usize {
+        let lab = self.labels;
+        self.labels = self.labels + 1;
+        lab
     }
 
     /// Translate this sequence of bytecode instructions into a
@@ -214,13 +269,12 @@ impl Bytecode {
     fn update_offsets(&self, offsets: &mut [Offset]) -> bool {
         let mut changed = false;
         let mut offset = 0u16;
-        let mut lab = 0;
         // Calculate label offsets
         for b in &self.bytecodes {
             match b {
-                Instruction::JUMPDEST => {
+                Instruction::JUMPDEST(lab) => {
                     // Extract old offset
-                    let oldoff = offsets[lab];
+                    let oldoff = offsets[*lab];
                     // Construct new offset
                     let newoff = Offset(offset);
                     // Check!
@@ -229,9 +283,8 @@ impl Bytecode {
                         // whether or not its _width_ has changed.
                         changed |= oldoff.width() != newoff.width();
                         // Update new offset.
-                        offsets[lab] = newoff;
+                        offsets[*lab] = newoff;
                     }
-                    lab = lab + 1;
                 }
                 Instruction::PUSH(bs) => offset = offset + (bs.len() as u16),
                 Instruction::PUSHL(lab) => {

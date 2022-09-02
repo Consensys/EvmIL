@@ -21,10 +21,13 @@ pub enum Token {
     LeftBrace,
     Minus,
     NewLine,
+    Percent,
     Plus,
     RightAngle,
     RightAngleEquals,
     RightBrace,
+    RightSlash,
+    SemiColon,
     ShreakEquals,
     Star,
 }
@@ -91,9 +94,12 @@ fn scan_single_operators(input: &[char]) -> Result {
             '<' => Token::LeftAngle,
             '(' => Token::LeftBrace,
             '-' => Token::Minus,
+            '%' => Token::Percent,
             '+' => Token::Plus,
             '>' => Token::RightAngle,
             ')' => Token::RightBrace,
+            '/' => Token::RightSlash,
+            ';' => Token::SemiColon,
             '*' => Token::Star,
             _ => { return Err(()); }
         };
@@ -235,6 +241,10 @@ impl Lexer {
     /// Pass through request to underlying lexer
     pub fn snap(&mut self, kind : Token) -> SnapResult<Token> {
         self.lexer.snap(kind)
+    }
+    /// Pass through request to underlying lexer
+    pub fn snap_any(&mut self, kinds : &[Token]) -> SnapResult<Token> {
+        self.lexer.snap_any(kinds)
     }
 }
 

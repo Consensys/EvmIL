@@ -35,10 +35,11 @@ fn translate_assert(expr: &Term, code: &mut Bytecode) -> Result {
     // Translate expression
     expr.translate(code)?;
     // Implement dynamic branching
-    code.push(Instruction::PUSHL(code.num_labels()));
+    let lab = code.fresh_label();
+    code.push(Instruction::PUSHL(lab));
     code.push(Instruction::JUMPI);
     code.push(Instruction::INVALID);
-    code.push(Instruction::JUMPDEST);
+    code.push(Instruction::JUMPDEST(lab));
     //
     Ok(())
 }
@@ -49,33 +50,96 @@ fn translate_assert(expr: &Term, code: &mut Bytecode) -> Result {
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 pub enum BinOp {
-    ADD,
-    SUB,
-    DIV,
-    MUL
+    // Arithmetic
+    Add,
+    Subtract,
+    Divide,
+    Multiply,
+    Remainder,
+    // Comparators
+    Equals,
+    NotEquals,
+    LessThan,
+    LessThanOrEquals,
+    GreaterThan,
+    GreaterThanOrEquals,
+    // Logical
+    LogicalAnd,
+    LogicalOr
 }
 
-impl From<BinOp> for Instruction {
-    fn from(bop: BinOp) -> Instruction {
-        match bop {
-            BinOp::ADD => Instruction::ADD,
-            BinOp::SUB => Instruction::SUB,
-            BinOp::DIV => Instruction::DIV,
-            BinOp::MUL => Instruction::MUL
+/// Translate a binary operation.  Observe that logical operations
+/// exhibit _short-circuit behaviour_.
+fn translate_binary(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mut Bytecode) -> Result {
+    match bop {
+        BinOp::LogicalAnd | BinOp::LogicalOr => {
+            translate_logical_connective(bop,lhs,rhs,bytecode)
+        }
+        _ => {
+            translate_binary_arithmetic(bop,lhs,rhs,bytecode)
         }
     }
 }
 
-/// Translate a binary operation.  This is pretty straightforward, as
-/// we just load items on the stack and perform the op.
-fn translate_binary(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mut Bytecode) -> Result {
+/// Translate one of the logical connectives (e.g. `&&` or `||`).
+/// These are more challenging than standard binary operators because
+/// they exhibit _short circuiting behaviour_.
+fn translate_logical_connective(bop: BinOp, lhs: &Term, rhs: &Term,
+                                bytecode: &mut Bytecode) -> Result {
     lhs.translate(bytecode)?;
+    bytecode.push(Instruction::DUP(1));
+    if bop == BinOp::LogicalAnd {
+        bytecode.push(Instruction::ISZERO);
+    }
+    // Allocate fresh label
+    let lab = bytecode.fresh_label();
+    bytecode.push(Instruction::PUSHL(lab));
+    bytecode.push(Instruction::JUMPI);
+    bytecode.push(Instruction::POP);
     rhs.translate(bytecode)?;
-    bytecode.push(Instruction::from(bop));
-    //
+    bytecode.push(Instruction::JUMPDEST(lab));
+    // Done
     Ok(())
 }
 
+/// Translate a binary arithmetic operation or comparison.  This is
+/// pretty straightforward, as we just load items on the stack and
+/// perform the op.  Observe that the right-hand side is loaded onto
+/// the stack first.
+fn translate_binary_arithmetic(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mut Bytecode) -> Result {
+    rhs.translate(bytecode)?;
+    lhs.translate(bytecode)?;
+    //
+    match bop {
+        // standard
+        BinOp::Add => bytecode.push(Instruction::ADD),
+        BinOp::Subtract => bytecode.push(Instruction::SUB),
+        BinOp::Divide => bytecode.push(Instruction::DIV),
+        BinOp::Multiply => bytecode.push(Instruction::MUL),
+        BinOp::Remainder => bytecode.push(Instruction::MOD),
+        BinOp::Equals => bytecode.push(Instruction::EQ),
+        BinOp::LessThan => bytecode.push(Instruction::LT),
+        BinOp::GreaterThan => bytecode.push(Instruction::GT),
+        // non-standard
+        BinOp::NotEquals => {
+            bytecode.push(Instruction::EQ);
+            bytecode.push(Instruction::ISZERO);
+        }
+        BinOp::LessThanOrEquals => {
+            bytecode.push(Instruction::GT);
+            bytecode.push(Instruction::ISZERO);
+        }
+        BinOp::GreaterThanOrEquals => {
+            bytecode.push(Instruction::LT);
+            bytecode.push(Instruction::ISZERO);
+        }
+        _ => {
+            unreachable!();
+        }
+    }
+    //
+    Ok(())
+}
 
 // ============================================================================
 // Values
