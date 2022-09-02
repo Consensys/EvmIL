@@ -11,7 +11,9 @@ pub enum CompileError {
     /// An integer (or hex) literal is too large (i.e. exceeds `2^256`).
     LiteralOverflow,
     /// Attempt to read from an invalid memory region.
-    InvalidMemoryAccess
+    InvalidMemoryAccess,
+    /// Attempt to write something which doesn't exist, or is not an lval.
+    InvalidLVal
 }
 
 // ============================================================================
@@ -22,6 +24,7 @@ pub enum CompileError {
 pub enum Term {
     // Statements
     Assert(Box<Term>),
+    Assignment(Box<Term>,Box<Term>),
     // Expressions
     Binary(BinOp,Box<Term>,Box<Term>),
     ArrayAccess(Box<Term>,Box<Term>),
@@ -36,6 +39,7 @@ impl Term {
         match self {
             // Statements
             Term::Assert(e) => translate_assert(e,code),
+            Term::Assignment(e1,e2) => translate_assignment(e1,e2,code),
             // Expressions
             Term::Binary(bop,e1,e2) => translate_binary(*bop,e1,e2,code),
             Term::ArrayAccess(src,index) => translate_array_access(src,index,code),
@@ -61,6 +65,52 @@ fn translate_assert(expr: &Term, code: &mut Bytecode) -> Result {
     code.push(Instruction::JUMPI);
     code.push(Instruction::INVALID);
     code.push(Instruction::JUMPDEST(lab));
+    //
+    Ok(())
+}
+
+fn translate_assignment(lhs: &Term, rhs: &Term, code: &mut Bytecode) -> Result {
+    // Translate value being assigned
+    rhs.translate(code)?;
+    // Translate assignent itself
+    match lhs {
+        Term::ArrayAccess(src,idx) => {
+            translate_assignment_array(&src,&idx,code)?;
+        }
+        _ => {
+            return Err(CompileError::InvalidLVal);
+        }
+    }
+    //
+    Ok(())
+}
+
+fn translate_assignment_array(src: &Term, index: &Term, code: &mut Bytecode) -> Result {
+    match src {
+        Term::MemoryAccess(r) => {
+            translate_assignment_memory(*r,index,code)
+        }
+        _ => {
+            Err(CompileError::InvalidMemoryAccess)
+        }
+    }
+}
+
+fn translate_assignment_memory(region: Region, address: &Term, code: &mut Bytecode) -> Result {
+    // Translate index expression
+    address.translate(code)?;
+    // Dispatch based on region
+    match region {
+        Region::Memory => {
+            code.push(Instruction::MSTORE);
+        }
+        Region::Storage => {
+            code.push(Instruction::SSTORE);
+        }
+        _ => {
+            return Err(CompileError::InvalidMemoryAccess);
+        }
+    };
     //
     Ok(())
 }
@@ -91,13 +141,13 @@ pub enum BinOp {
 
 /// Translate a binary operation.  Observe that logical operations
 /// exhibit _short-circuit behaviour_.
-fn translate_binary(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mut Bytecode) -> Result {
+fn translate_binary(bop: BinOp, lhs: &Term, rhs: &Term, code: &mut Bytecode) -> Result {
     match bop {
         BinOp::LogicalAnd | BinOp::LogicalOr => {
-            translate_logical_connective(bop,lhs,rhs,bytecode)
+            translate_logical_connective(bop,lhs,rhs,code)
         }
         _ => {
-            translate_binary_arithmetic(bop,lhs,rhs,bytecode)
+            translate_binary_arithmetic(bop,lhs,rhs,code)
         }
     }
 }
@@ -106,19 +156,19 @@ fn translate_binary(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mut Bytecode)
 /// These are more challenging than standard binary operators because
 /// they exhibit _short circuiting behaviour_.
 fn translate_logical_connective(bop: BinOp, lhs: &Term, rhs: &Term,
-                                bytecode: &mut Bytecode) -> Result {
-    lhs.translate(bytecode)?;
-    bytecode.push(Instruction::DUP(1));
+                                code: &mut Bytecode) -> Result {
+    lhs.translate(code)?;
+    code.push(Instruction::DUP(1));
     if bop == BinOp::LogicalAnd {
-        bytecode.push(Instruction::ISZERO);
+        code.push(Instruction::ISZERO);
     }
     // Allocate fresh label
-    let lab = bytecode.fresh_label();
-    bytecode.push(Instruction::PUSHL(lab));
-    bytecode.push(Instruction::JUMPI);
-    bytecode.push(Instruction::POP);
-    rhs.translate(bytecode)?;
-    bytecode.push(Instruction::JUMPDEST(lab));
+    let lab = code.fresh_label();
+    code.push(Instruction::PUSHL(lab));
+    code.push(Instruction::JUMPI);
+    code.push(Instruction::POP);
+    rhs.translate(code)?;
+    code.push(Instruction::JUMPDEST(lab));
     // Done
     Ok(())
 }
@@ -127,32 +177,32 @@ fn translate_logical_connective(bop: BinOp, lhs: &Term, rhs: &Term,
 /// pretty straightforward, as we just load items on the stack and
 /// perform the op.  Observe that the right-hand side is loaded onto
 /// the stack first.
-fn translate_binary_arithmetic(bop: BinOp, lhs: &Term, rhs: &Term, bytecode: &mut Bytecode) -> Result {
-    rhs.translate(bytecode)?;
-    lhs.translate(bytecode)?;
+fn translate_binary_arithmetic(bop: BinOp, lhs: &Term, rhs: &Term, code: &mut Bytecode) -> Result {
+    rhs.translate(code)?;
+    lhs.translate(code)?;
     //
     match bop {
         // standard
-        BinOp::Add => bytecode.push(Instruction::ADD),
-        BinOp::Subtract => bytecode.push(Instruction::SUB),
-        BinOp::Divide => bytecode.push(Instruction::DIV),
-        BinOp::Multiply => bytecode.push(Instruction::MUL),
-        BinOp::Remainder => bytecode.push(Instruction::MOD),
-        BinOp::Equals => bytecode.push(Instruction::EQ),
-        BinOp::LessThan => bytecode.push(Instruction::LT),
-        BinOp::GreaterThan => bytecode.push(Instruction::GT),
+        BinOp::Add => code.push(Instruction::ADD),
+        BinOp::Subtract => code.push(Instruction::SUB),
+        BinOp::Divide => code.push(Instruction::DIV),
+        BinOp::Multiply => code.push(Instruction::MUL),
+        BinOp::Remainder => code.push(Instruction::MOD),
+        BinOp::Equals => code.push(Instruction::EQ),
+        BinOp::LessThan => code.push(Instruction::LT),
+        BinOp::GreaterThan => code.push(Instruction::GT),
         // non-standard
         BinOp::NotEquals => {
-            bytecode.push(Instruction::EQ);
-            bytecode.push(Instruction::ISZERO);
+            code.push(Instruction::EQ);
+            code.push(Instruction::ISZERO);
         }
         BinOp::LessThanOrEquals => {
-            bytecode.push(Instruction::GT);
-            bytecode.push(Instruction::ISZERO);
+            code.push(Instruction::GT);
+            code.push(Instruction::ISZERO);
         }
         BinOp::GreaterThanOrEquals => {
-            bytecode.push(Instruction::LT);
-            bytecode.push(Instruction::ISZERO);
+            code.push(Instruction::LT);
+            code.push(Instruction::ISZERO);
         }
         _ => {
             unreachable!();
@@ -177,11 +227,11 @@ pub enum Region {
 /// form of the translation depends on whether its a direct access
 /// (e.g. to storage or memory), or indirect (e.g. via a pointer to
 /// memory).
-fn translate_array_access(src: &Term, index: &Term, bytecode:
+fn translate_array_access(src: &Term, index: &Term, code:
                           &mut Bytecode) -> Result {
     match src {
         Term::MemoryAccess(r) => {
-            translate_memory_access(*r,index,bytecode)
+            translate_memory_access(*r,index,code)
         }
         _ => {
             Err(CompileError::InvalidMemoryAccess)
@@ -189,20 +239,20 @@ fn translate_array_access(src: &Term, index: &Term, bytecode:
     }
 }
 
-fn translate_memory_access(region: Region, index: &Term, bytecode:
+fn translate_memory_access(region: Region, index: &Term, code:
                            &mut Bytecode) -> Result {
     // Translate index expression
-    index.translate(bytecode)?;
+    index.translate(code)?;
     // Dispatch based on region
     match region {
         Region::Memory => {
-            bytecode.push(Instruction::MLOAD);
+            code.push(Instruction::MLOAD);
         }
         Region::Storage => {
-            bytecode.push(Instruction::SLOAD);
+            code.push(Instruction::SLOAD);
         }
         Region::CallData => {
-            bytecode.push(Instruction::CALLDATALOAD);
+            code.push(Instruction::CALLDATALOAD);
         }
     }
     //
@@ -213,7 +263,7 @@ fn translate_memory_access(region: Region, index: &Term, bytecode:
 // Values
 // ============================================================================
 
-fn translate_literal(digits: &[u8], radix: u32, bytecode: &mut Bytecode) -> Result {
+fn translate_literal(digits: &[u8], radix: u32, code: &mut Bytecode) -> Result {
     let mut bytes : Vec<u8> = Vec::new();
     let mut val = from_be_digits(digits,radix);
     // Convert digits in a given radix into bytes (in little endian)
@@ -232,7 +282,7 @@ fn translate_literal(digits: &[u8], radix: u32, bytecode: &mut Bytecode) -> Resu
         // Too big!!
         Err(CompileError::LiteralOverflow)
     } else {
-        bytecode.push(Instruction::PUSH(bytes));
+        code.push(Instruction::PUSH(bytes));
         Ok(())
     }
 }

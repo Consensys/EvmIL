@@ -112,15 +112,10 @@ impl Parser {
     fn parse_stmt(&mut self) -> Result<Term> {
     	let lookahead = self.lexer.peek();
     	//
-    	let stmt = match lookahead.kind {
+    	match lookahead.kind {
     	    Token::Assert => self.parse_stmt_assert(),
-            _ => {
-                // Unknown statement
-                Err(Error::new(lookahead,ErrorCode::UnexpectedToken))
-            }
-        };
-        //
-        stmt
+            _ => self.parse_stmt_assign()
+        }
     }
 
     pub fn parse_stmt_assert(&mut self) -> Result<Term> {
@@ -128,6 +123,15 @@ impl Parser {
     	let expr = self.parse_expr()?;
         self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Assert(Box::new(expr)))
+    }
+
+    pub fn parse_stmt_assign(&mut self) -> Result<Term> {
+    	let lhs = self.parse_expr()?;
+        self.skip_whitespace();
+        self.lexer.snap(Token::Equals)?;
+    	let rhs = self.parse_expr()?;
+        self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Assignment(Box::new(lhs),Box::new(rhs)))
     }
 
     // =========================================================================

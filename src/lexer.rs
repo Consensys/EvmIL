@@ -10,6 +10,7 @@ pub enum Token {
     Assert,
     BarBar,
     EOF,
+    Equals,
     EqualsEquals,
     Gap,
     Hex,
@@ -93,6 +94,7 @@ fn scan_single_operators(input: &[char]) -> Result {
         Err(())
     } else {
         let t = match input[0] {
+            '=' => Token::Equals,
             '<' => Token::LeftAngle,
             '(' => Token::LeftBrace,
             '[' => Token::LeftSquare,
