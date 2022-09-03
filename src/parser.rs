@@ -119,9 +119,12 @@ impl Parser {
     	// Dispatch on lookahead
     	match self.lexer.peek().kind {
     	    Token::Assert => self.parse_stmt_assert(),
+    	    Token::Fail => self.parse_stmt_fail(),
     	    Token::Goto => self.parse_stmt_goto(),
     	    Token::If => self.parse_stmt_if(),
             Token::Dot => self.parse_stmt_label(),
+    	    Token::Revert => self.parse_stmt_revert(),
+            Token::Succeed => self.parse_stmt_succeed(),
             _ => self.parse_stmt_assign()
         }
     }
@@ -131,6 +134,21 @@ impl Parser {
     	let expr = self.parse_expr()?;
         self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Assert(Box::new(expr)))
+    }
+
+    pub fn parse_stmt_assign(&mut self) -> Result<Term> {
+    	let lhs = self.parse_expr()?;
+        self.skip_whitespace();
+        self.lexer.snap(Token::Equals)?;
+    	let rhs = self.parse_expr()?;
+        self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Assignment(Box::new(lhs),Box::new(rhs)))
+    }
+
+    pub fn parse_stmt_fail(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::Fail)?;
+    	self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Fail)
     }
 
     pub fn parse_stmt_goto(&mut self) -> Result<Term> {
@@ -158,13 +176,18 @@ impl Parser {
         Ok(Term::Label(self.lexer.get_str(target)))
     }
 
-    pub fn parse_stmt_assign(&mut self) -> Result<Term> {
-    	let lhs = self.parse_expr()?;
-        self.skip_whitespace();
-        self.lexer.snap(Token::Equals)?;
-    	let rhs = self.parse_expr()?;
-        self.lexer.snap(Token::SemiColon)?;
-        Ok(Term::Assignment(Box::new(lhs),Box::new(rhs)))
+    pub fn parse_stmt_revert(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::Revert)?;
+        let exprs = self.parse_expr_list(Token::SemiColon)?;
+    	self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Revert(exprs))
+    }
+
+    pub fn parse_stmt_succeed(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::Succeed)?;
+        let exprs = self.parse_expr_list(Token::SemiColon)?;
+    	self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Succeed(exprs))
     }
 
     // =========================================================================
@@ -289,6 +312,22 @@ impl Parser {
     	self.lexer.snap(Token::RightBrace)?;
         expr
     }
+
+    /// Parse a sequence of expression separated by a comma.
+    pub fn parse_expr_list(&mut self, terminator: Token) -> Result<Vec<Term>> {
+        let mut exprs = Vec::new();
+        while !self.lexer.is_eof() && self.lexer.peek().kind != terminator {
+            if exprs.len() > 0 {
+                self.skip_whitespace();
+                self.lexer.snap(Token::Comma)?;
+            }
+            exprs.push(self.parse_expr()?);
+        }
+        // Done
+        Ok(exprs)
+    }
+
+
 
     // =========================================================================
     // Helpers

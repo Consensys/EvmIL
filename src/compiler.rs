@@ -56,9 +56,12 @@ impl<'a> Compiler<'a> {
             // Statements
             Term::Assert(e) => self.translate_assert(e),
             Term::Assignment(e1,e2) => self.translate_assignment(e1,e2),
+            Term::Fail => self.translate_fail(),
             Term::Goto(l) => self.translate_goto(l),
             Term::IfGoto(e,l) => self.translate_ifgoto(e,l),
             Term::Label(l) => self.translate_label(l),
+            Term::Revert(es) => self.translate_revert(es),
+            Term::Succeed(es) => self.translate_succeed(es),
             // Expressions
             Term::Binary(bop,e1,e2) => self.translate_binary(*bop,e1,e2),
             Term::ArrayAccess(src,index) => self.translate_array_access(src,index),
@@ -129,6 +132,11 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    fn translate_fail(&mut self) -> Result {
+        self.bytecode.push(Instruction::INVALID);
+        Ok(())
+    }
+
     fn translate_goto(&mut self, label: &str) -> Result {
         // Allocate labels branch target
         let lab = self.label(label);
@@ -152,6 +160,38 @@ impl<'a> Compiler<'a> {
         // Construct corresponding JumpDest
         self.bytecode.push(Instruction::JUMPDEST(lab));
         // Done
+        Ok(())
+    }
+
+    fn translate_revert(&mut self, exprs: &[Term]) -> Result {
+        self.translate_succeed_revert(Instruction::REVERT,exprs)
+    }
+
+    fn translate_succeed(&mut self, exprs: &[Term]) -> Result {
+        if exprs.len() == 0 {
+            self.bytecode.push(Instruction::STOP);
+            Ok(())
+        } else {
+            self.translate_succeed_revert(Instruction::RETURN,exprs)
+        }
+    }
+
+    fn translate_succeed_revert(&mut self, insn: Instruction, exprs: &[Term]) -> Result {
+        if exprs.len() == 0 {
+            self.bytecode.push(Instruction::PUSH(vec![0]));
+            self.bytecode.push(Instruction::PUSH(vec![0]));
+        } else {
+            for i in 0 .. exprs.len() {
+                let addr = (i * 0x20) as u128;
+                self.translate(&exprs[i])?;
+                self.bytecode.push(make_push(addr)?);
+                self.bytecode.push(Instruction::MSTORE);
+            }
+            let len = (exprs.len() * 0x20) as u128;
+            self.bytecode.push(Instruction::PUSH(vec![0]));
+            self.bytecode.push(make_push(len)?);
+        }
+        self.bytecode.push(insn);
         Ok(())
     }
 
@@ -310,28 +350,41 @@ impl<'a> Compiler<'a> {
     // ============================================================================
 
     fn translate_literal(&mut self, digits: &[u8], radix: u32) -> Result {
-        let mut bytes : Vec<u8> = Vec::new();
         let mut val = from_be_digits(digits,radix);
-        // Convert digits in a given radix into bytes (in little endian)
-        if val == 0 {
-            bytes.push(0);
-        } else {
-            while val != 0 {
-                bytes.push((val % 256) as u8);
-                val = val >> 8;
-            }
-        }
-        // Convert from big endian to little endian format.
-        bytes.reverse();
-        // Sanity check size of literal
-        if bytes.len() > 32 {
-            // Too big!!
-            Err(Error::LiteralOverflow)
-        } else {
-            self.bytecode.push(Instruction::PUSH(bytes));
-            Ok(())
+        self.bytecode.push(make_push(val)?);
+        Ok(())
+    }
+}
+
+/// Construct a push instruction from a value.
+fn make_push(val: u128) -> std::result::Result<Instruction,Error> {
+    let mut bytes = to_be_bytes(val);
+    // Sanity check size of literal
+    if bytes.len() > 32 {
+        // Too big!!
+        Err(Error::LiteralOverflow)
+    } else {
+        Ok(Instruction::PUSH(bytes))
+    }
+}
+
+/// Convert a 128bit value into the smallest possible byte sequence
+/// (in big endian order).
+fn to_be_bytes(mut val: u128) -> Vec<u8> {
+    let mut bytes : Vec<u8> = Vec::new();
+    // Convert digits in a given radix into bytes (in little endian)
+    if val == 0 {
+        bytes.push(0);
+    } else {
+        while val != 0 {
+            bytes.push((val % 256) as u8);
+            val = val >> 8;
         }
     }
+    // Convert from big endian to little endian format.
+    bytes.reverse();
+    //
+    bytes
 }
 
 /// Convert a sequence of digits into a u128.
