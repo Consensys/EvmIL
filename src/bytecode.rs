@@ -111,6 +111,9 @@ pub enum Instruction {
     // a0s: Logging Operations
     LOG(u8),
     // f0s: System Operations
+    RETURN,
+    // ..
+    REVERT,
     INVALID
 }
 
@@ -187,6 +190,8 @@ impl Instruction {
                 0x7f + n
             }
             // f0s: System Operations
+            Instruction::RETURN => 0xf3,
+            Instruction::REVERT => 0xfd,
             Instruction::INVALID => 0xfe,
             //
             _ => {

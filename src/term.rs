@@ -10,6 +10,9 @@ pub enum Term {
     Goto(String),
     IfGoto(Box<Term>,String),
     Label(String),
+    Succeed(Vec<Term>),
+    Revert(Vec<Term>),
+    Fail,
     // Expressions
     Binary(BinOp,Box<Term>,Box<Term>),
     ArrayAccess(Box<Term>,Box<Term>),
