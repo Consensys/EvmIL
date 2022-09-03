@@ -7,6 +7,7 @@ pub enum Term {
     // Statements
     Assert(Box<Term>),
     Assignment(Box<Term>,Box<Term>),
+    Goto(String),
     IfGoto(Box<Term>,String),
     Label(String),
     // Expressions

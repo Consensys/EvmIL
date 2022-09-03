@@ -119,6 +119,7 @@ impl Parser {
     	// Dispatch on lookahead
     	match self.lexer.peek().kind {
     	    Token::Assert => self.parse_stmt_assert(),
+    	    Token::Goto => self.parse_stmt_goto(),
     	    Token::If => self.parse_stmt_if(),
             Token::Dot => self.parse_stmt_label(),
             _ => self.parse_stmt_assign()
@@ -130,6 +131,14 @@ impl Parser {
     	let expr = self.parse_expr()?;
         self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Assert(Box::new(expr)))
+    }
+
+    pub fn parse_stmt_goto(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::Goto)?;
+        self.skip_whitespace();
+    	let target = self.lexer.snap(Token::Identifier)?;
+        self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Goto(self.lexer.get_str(target)))
     }
 
     pub fn parse_stmt_if(&mut self) -> Result<Term> {
