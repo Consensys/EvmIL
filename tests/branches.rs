@@ -1,47 +1,37 @@
 use evmil::{Bytecode,Parser,ToHexString};
 
 // ============================================================================
-// Memory
+// If/Goto
 // ============================================================================
 
 #[test]
-pub fn test_memory_01() {
-    let p = "memory[0] = 1;";
-    check(&p, "0x6001600052");
+pub fn test_ifgoto_01() {
+    let p = "if 1 goto lab;";
+    check(&p, "0x6001600057");
 }
 
 #[test]
-pub fn test_memory_02() {
-    let p = "memory[0+1] = 2;";
-    check(&p, "0x6002600160000152");
+pub fn test_ifgoto_02() {
+    let p = "if 1 goto lab; .lab";
+    check(&p, "0x60016005575b");
 }
 
 #[test]
-pub fn test_memory_03() {
-    let p = "memory[0] = 1+2;";
-    check(&p, "0x6002600101600052");
-}
-
-// ============================================================================
-// Storage
-// ============================================================================
-
-#[test]
-pub fn test_storage_01() {
-    let p = "storage[0] = 1;";
-    check(&p, "0x6001600055");
+pub fn test_ifgoto_03() {
+    let p = "if memory[0] > 0 goto lab; memory[0] = 1; .lab";
+    check(&p, "0x600060005111600e5760016000525b");
 }
 
 #[test]
-pub fn test_storage_02() {
-    let p = "storage[0+1] = 2;";
-    check(&p, "0x6002600160000155");
+pub fn test_ifgoto_04() {
+    let p = "if 1 && 0 goto lab; .lab";
+    check(&p, "0x60018015600a575060005b600e575b");
 }
 
 #[test]
-pub fn test_storage_03() {
-    let p = "storage[0] = 1+2;";
-    check(&p, "0x6002600101600055");
+pub fn test_ifgoto_05() {
+    let p = "if 1 || 0 goto lab; .lab";
+    check(&p, "0x6001806009575060005b600d575b");
 }
 
 // ============================================================================

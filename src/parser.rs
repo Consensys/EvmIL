@@ -101,8 +101,12 @@ impl Parser {
     }
 
     /// Parse a line of text into a term.
-    pub fn parse(&mut self) -> Result<Term> {
-        self.parse_stmt()
+    pub fn parse(&mut self) -> Result<Vec<Term>> {
+        let mut terms = Vec::new();
+        while !self.lexer.is_eof() {
+            terms.push(self.parse_stmt()?);
+        }
+        Ok(terms)
     }
 
     // =========================================================================
@@ -110,10 +114,13 @@ impl Parser {
     // =========================================================================
 
     fn parse_stmt(&mut self) -> Result<Term> {
-    	let lookahead = self.lexer.peek();
-    	//
-    	match lookahead.kind {
+        // Skip any leading whitespace
+        self.skip_whitespace();
+    	// Dispatch on lookahead
+    	match self.lexer.peek().kind {
     	    Token::Assert => self.parse_stmt_assert(),
+    	    Token::If => self.parse_stmt_if(),
+            Token::Dot => self.parse_stmt_label(),
             _ => self.parse_stmt_assign()
         }
     }
@@ -123,6 +130,23 @@ impl Parser {
     	let expr = self.parse_expr()?;
         self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Assert(Box::new(expr)))
+    }
+
+    pub fn parse_stmt_if(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::If)?;
+    	let expr = self.parse_expr()?;
+        self.skip_whitespace();
+    	self.lexer.snap(Token::Goto)?;
+        self.skip_whitespace();
+    	let target = self.lexer.snap(Token::Identifier)?;
+        self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::IfGoto(Box::new(expr),self.lexer.get_str(target)))
+    }
+
+    pub fn parse_stmt_label(&mut self) -> Result<Term> {
+        self.lexer.snap(Token::Dot)?;
+    	let target = self.lexer.snap(Token::Identifier)?;
+        Ok(Term::Label(self.lexer.get_str(target)))
     }
 
     pub fn parse_stmt_assign(&mut self) -> Result<Term> {
@@ -186,7 +210,7 @@ impl Parser {
     }
 
     pub fn parse_expr_arrayaccess(&mut self, src: Term) -> Result<Term> {
-        let tok = self.lexer.snap(Token::LeftSquare)?;
+        self.lexer.snap(Token::LeftSquare)?;
         let index = self.parse_expr()?;
         self.lexer.snap(Token::RightSquare)?;
         let expr = Term::ArrayAccess(Box::new(src),Box::new(index));
@@ -265,7 +289,7 @@ impl Parser {
         let lookahead = self.lexer.peek();
         //
         match lookahead.kind {
-            Token::Gap => {
+            Token::Gap|Token::NewLine => {
                 self.lexer.snap(lookahead.kind).unwrap();
                 self.skip_whitespace()
             }

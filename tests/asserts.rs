@@ -1,6 +1,4 @@
-use evmil::{Bytecode,Parser,Term,ToHexString};
-use evmil::Term::*;
-use evmil::BinOp::*;
+use evmil::{Bytecode,Parser,ToHexString};
 
 // ============================================================================
 // Integer encodings
@@ -258,9 +256,9 @@ pub fn test_array_access_03() {
 /// hex string.
 fn check(stmt: &str, hex: &str) {
     // Parse statement into a term
-    let t = Parser::new(stmt).parse().unwrap();
+    let ts = Parser::new(stmt).parse().unwrap();
     // Translate statements into bytecode instructions
-    let code = Bytecode::try_from(&[t]).unwrap();
+    let code = Bytecode::try_from(ts.as_slice()).unwrap();
     // Translate instructions into bytes
     let bytes : Vec<u8> = code.try_into().unwrap();
     // Check against expected hex string

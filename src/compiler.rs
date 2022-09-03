@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::{BinOp,Bytecode,Instruction,Region,Term};
 
 type Result = std::result::Result<(),Error>;
@@ -21,12 +22,33 @@ pub enum Error {
 // ============================================================================
 
 pub struct Compiler<'a> {
-    bytecode: &'a mut Bytecode
+    /// Access to the bytecode stream being constructed.
+    bytecode: &'a mut Bytecode,
+    /// Mapping from label names to their allocated labels in the
+    /// underlying bytecode.
+    labels: HashMap<String, usize>
 }
 
 impl<'a> Compiler<'a> {
     pub fn new(bytecode: &'a mut Bytecode) -> Self {
-        Self{bytecode}
+        Self{bytecode, labels: HashMap::new()}
+    }
+
+    /// Get the underlying bytecode label for a given label
+    /// identifier.  If necessary, this allocates that label in the
+    /// `Bytecode` object.
+    pub fn label(&mut self, l: &str) -> usize {
+        match self.labels.get(l) {
+            Some(idx) => *idx,
+            None => {
+                // Allocate underlying index
+                let idx = self.bytecode.fresh_label();
+                // Cache it for later
+                self.labels.insert(l.to_string(),idx);
+                // Done
+                idx
+            }
+        }
     }
 
     pub fn translate(&mut self, term: &Term) -> Result {
@@ -52,13 +74,13 @@ impl<'a> Compiler<'a> {
     // ============================================================================
 
     fn translate_assert(&mut self, expr: &Term) -> Result {
-        // Translate expression
-        self.translate(expr)?;
-        // Implement dynamic branching
+        // Allocate labels for true/false outcomes
         let lab = self.bytecode.fresh_label();
-        self.bytecode.push(Instruction::PUSHL(lab));
-        self.bytecode.push(Instruction::JUMPI);
+        // Translate conditional branch
+        self.translate_conditional(expr,Some(lab),None)?;
+        // False branch
         self.bytecode.push(Instruction::INVALID);
+        // True branch
         self.bytecode.push(Instruction::JUMPDEST(lab));
         //
         Ok(())
@@ -106,12 +128,56 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn translate_ifgoto(&mut self, cond: &Term, label: &str) -> Result {
-        return Err(Error::InvalidMemoryAccess);
+    fn translate_ifgoto(&mut self, expr: &Term, label: &str) -> Result {
+        // Allocate labels for true/false outcomes
+        let lab = self.label(label);
+        // Translate conditional branch
+        self.translate_conditional(expr,Some(lab),None)
     }
 
     fn translate_label(&mut self, label: &str) -> Result {
-        return Err(Error::InvalidMemoryAccess);
+        // Determine underlying index of label
+        let lab = self.label(label);
+        // Construct corresponding JumpDest
+        self.bytecode.push(Instruction::JUMPDEST(lab));
+        // Done
+        Ok(())
+    }
+
+    // ============================================================================
+    // Conditional Expressions
+    // ============================================================================
+
+    /// Translate a conditional expression using _short circuiting_
+    /// semantics.  Since implementing short circuiting requires
+    /// branching, we can exploit this to optimise other translations
+    /// and reduce the number of branches required.  To do that, this
+    /// method requires either a `true` target or a `false` target.
+    /// If a `true` target is provided then, if the condition
+    /// evaluates to something other than `0` (i.e. is `true`),
+    /// control is transfered to this target.  Likewise, if the
+    /// condition evaluates to `0` (i.e. `false`) the control is
+    /// transfered to the `false` target.
+    fn translate_conditional(&mut self, expr: &Term, true_lab: Option<usize>, false_lab: Option<usize>) -> Result {
+        // Translate conditional expression
+        self.translate(expr)?;
+        //
+        match (true_lab,false_lab) {
+            (Some(lab),None) => {
+                self.bytecode.push(Instruction::PUSHL(lab));
+                self.bytecode.push(Instruction::JUMPI);
+            }
+            (None,Some(lab)) => {
+                self.bytecode.push(Instruction::ISZERO);
+                self.bytecode.push(Instruction::PUSHL(lab));
+                self.bytecode.push(Instruction::JUMPI);
+            }
+            (_,_) => {
+                unreachable!("")
+            }
+        }
+        //
+        Ok(())
     }
 
     // ============================================================================
