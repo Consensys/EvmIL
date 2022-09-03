@@ -9,10 +9,12 @@ pub enum Token {
     AmpersandAmpersand,
     Assert,
     BarBar,
+    Dot,
     EOF,
     Equals,
     EqualsEquals,
     Gap,
+    Goto,
     Hex,
     If,
     Identifier,
@@ -41,6 +43,7 @@ pub enum Token {
 
 const ASSERT : &'static [char] = &['a','s','s','e','r','t'];
 const IF : &'static [char] = &['i','f'];
+const GOTO : &'static [char] = &['g','o','t','o'];
 
 /// Handy type alias for the result type used for all of the lexical
 /// rules.
@@ -70,6 +73,7 @@ fn scan_keyword(input: &[char]) -> Result {
     // Attempt to match it
     let t = match &input[r.range()] {
         ASSERT => Token::Assert,
+        GOTO => Token::Goto,
         IF => Token::If,
         _ => { return Err(()); }
     };
@@ -94,6 +98,7 @@ fn scan_single_operators(input: &[char]) -> Result {
         Err(())
     } else {
         let t = match input[0] {
+            '.' => Token::Dot,
             '=' => Token::Equals,
             '<' => Token::LeftAngle,
             '(' => Token::LeftBrace,
@@ -242,6 +247,8 @@ impl Lexer {
         self.lexer.get(t)
     }
 
+    /// Pass through request to underlying lexer
+    pub fn is_eof(&self) -> bool { self.lexer.is_eof() }
     /// Pass through request to underlying lexer
     pub fn peek(&self) -> Span<Token> { self.lexer.peek() }
     /// Pass through request to underlying lexer

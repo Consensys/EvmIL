@@ -46,12 +46,8 @@ fn compile(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     let filename = args.get_one::<String>("file").unwrap();
     // Read the test file
     let input = fs::read_to_string(filename)?;
-    let mut terms = Vec::new();
-    //
-    for l in input.lines() {
-        let t= Parser::new(l).parse()?;
-        terms.push(t);
-    }
+    // Parse test file
+    let terms = Parser::new(&input).parse()?;
     // Translate statements into bytecode instructions
     let code = Bytecode::try_from(terms.as_slice()).unwrap();
     // Translate instructions into bytes
