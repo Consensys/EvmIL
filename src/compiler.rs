@@ -56,6 +56,7 @@ impl<'a> Compiler<'a> {
             // Statements
             Term::Assert(e) => self.translate_assert(e),
             Term::Assignment(e1,e2) => self.translate_assignment(e1,e2),
+            Term::Goto(l) => self.translate_goto(l),
             Term::IfGoto(e,l) => self.translate_ifgoto(e,l),
             Term::Label(l) => self.translate_label(l),
             // Expressions
@@ -124,6 +125,16 @@ impl<'a> Compiler<'a> {
                 return Err(Error::InvalidMemoryAccess);
             }
         };
+        //
+        Ok(())
+    }
+
+    fn translate_goto(&mut self, label: &str) -> Result {
+        // Allocate labels branch target
+        let lab = self.label(label);
+        // Translate unconditional branch
+        self.bytecode.push(Instruction::PUSHL(lab));
+        self.bytecode.push(Instruction::JUMPI);
         //
         Ok(())
     }
