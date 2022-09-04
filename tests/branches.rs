@@ -47,13 +47,13 @@ pub fn test_ifgoto_03() {
 #[test]
 pub fn test_ifgoto_04() {
     let p = "if 1 && 0 goto lab; .lab";
-    check(&p, "0x60018015600a575060005b600e575b");
+    check(&p, "0x600115600b576000600c575b5b");
 }
 
 #[test]
 pub fn test_ifgoto_05() {
     let p = "if 1 || 0 goto lab; .lab";
-    check(&p, "0x6001806009575060005b600d575b");
+    check(&p, "0x6001600a576000600a575b");
 }
 
 // ============================================================================

@@ -210,6 +210,64 @@ impl<'a> Compiler<'a> {
     /// condition evaluates to `0` (i.e. `false`) the control is
     /// transfered to the `false` target.
     fn translate_conditional(&mut self, expr: &Term, true_lab: Option<usize>, false_lab: Option<usize>) -> Result {
+	match expr {
+	    Term::Binary(BinOp::LogicalAnd,l,r) => self.translate_conditional_conjunct(l,r,true_lab,false_lab),
+	    Term::Binary(BinOp::LogicalOr,l,r) => self.translate_conditional_disjunct(l,r,true_lab,false_lab),		    _ => {
+		self.translate_conditional_other(expr,true_lab,false_lab)
+	    }
+	}
+    }
+
+    /// Translate a logical conjunction as a conditional. Since
+    /// such connectives require short circuiting, these must be
+    /// implementing using branches.
+    fn translate_conditional_conjunct(&mut self, lhs: &Term, rhs: &Term, true_lab: Option<usize>, false_lab: Option<usize>) -> Result {
+	match (true_lab,false_lab) {
+	    (Some(_),None) => {
+		// Harder case
+		let lab = self.bytecode.fresh_label();
+		self.translate_conditional(lhs, None, Some(lab))?;
+		self.translate_conditional(rhs, true_lab, None)?;
+		self.bytecode.push(Instruction::JUMPDEST(lab));
+	    }
+	    (None,Some(_)) => {
+		// Easy case
+		self.translate_conditional(lhs, None, false_lab)?;
+		self.translate_conditional(rhs, true_lab, false_lab)?;
+	    }
+	    (_,_) => unreachable!()
+	}
+        // Done
+        Ok(())
+    }
+
+    /// Translate a logical disjunction as a conditional. Since
+    /// such connectives require short circuiting, these must be
+    /// implementing using branches.
+    fn translate_conditional_disjunct(&mut self, lhs: &Term, rhs: &Term, true_lab: Option<usize>, false_lab: Option<usize>) -> Result {
+	match (true_lab,false_lab) {
+	    (None,Some(_)) => {
+		// Harder case
+		let lab = self.bytecode.fresh_label();
+		self.translate_conditional(lhs, Some(lab), None)?;
+		self.translate_conditional(rhs, None, false_lab)?;
+		self.bytecode.push(Instruction::JUMPDEST(lab));
+	    }
+	    (Some(_),None) => {
+		// Easy case
+		self.translate_conditional(lhs, true_lab, None)?;
+		self.translate_conditional(rhs, true_lab, false_lab)?;
+	    }
+	    (_,_) => unreachable!()
+	}
+        // Done
+        Ok(())
+    }
+
+    /// Translate a conditional expression which cannot be translated
+    /// by exploiting branches.  In such case, we have to generate the
+    /// boolean value and dispatch based on that.
+    fn translate_conditional_other(&mut self, expr: &Term, true_lab: Option<usize>, false_lab: Option<usize>) -> Result {
         // Translate conditional expression
         self.translate(expr)?;
         //
