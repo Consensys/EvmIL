@@ -1,5 +1,6 @@
-use crate::lex::{SnapResult,Scanner,Span,TableTokenizer};
-use crate::lex;
+pub use delta_inc::lex::{SnapError,Span};
+use delta_inc::lex::{SnapResult,Scanner,TableTokenizer};
+use delta_inc::lex;
 
 // =================================================================
 // Token
