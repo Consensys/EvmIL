@@ -11,5 +11,6 @@ name = "evmil"
 
 [dependencies]
 clap="3.1"
+delta_inc="0.3.0"
 log="0.4"
 log4rs="1"

@@ -4,7 +4,6 @@ mod parser;
 mod term;
 mod lexer;
 mod compiler;
-mod lex;
 
 pub use crate::bytecode::*;
 pub use crate::hex::*;
