@@ -1,6 +1,7 @@
 use std::fmt;
 use crate::{BinOp,Region,Term};
-use crate::lexer::{Lexer,Span,SnapError,Token};
+use crate::lexer;
+use crate::lexer::{Lexer,Span,Token};
 
 /// Defines the set of tokens which are considered to identify logical
 /// connectives (e.g. `&&`, `||`, etc).
@@ -70,13 +71,13 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error { }
 
-impl From<SnapError<Token>> for Error {
-    fn from(p:SnapError<Token>) -> Error {
+impl From<lexer::Error<Token>> for Error {
+    fn from(p:lexer::Error<Token>) -> Error {
         match p {
-            SnapError::Expected(t,s) => {
+            lexer::Error::Expected(t,s) => {
                 Error{span:s,code:ErrorCode::ExpectedToken(t)}
             }
-            SnapError::ExpectedIn(ts,s) => {
+            lexer::Error::ExpectedIn(ts,s) => {
                 Error{span:s,code:ErrorCode::ExpectedTokenIn(ts)}
             }
         }

@@ -1,5 +1,5 @@
-pub use delta_inc::lex::{SnapError,Span};
-use delta_inc::lex::{SnapResult,Scanner,TableTokenizer};
+pub use delta_inc::lex::{Error,Result,Span};
+use delta_inc::lex::{Scanner,TableTokenizer};
 use delta_inc::lex;
 
 // =================================================================
@@ -55,15 +55,15 @@ const SUCCEED : &'static [char] = &['s','u','c','c','e','e','d'];
 
 /// Handy type alias for the result type used for all of the lexical
 /// rules.
-type Result = std::result::Result<Span<Token>,()>;
+type ScannerResult = std::result::Result<Span<Token>,()>;
 
 /// Scan an (unsigned) integer literal.
-fn scan_uint_literal(input: &[char]) -> Result {
+fn scan_uint_literal(input: &[char]) -> ScannerResult {
     scan_whilst(input, Token::Integer, |c| c.is_digit(10))
 }
 
 /// Scan a hex literal (e.g. `0x12ffc`).
-fn scan_hex_literal(input: &[char]) -> Result {
+fn scan_hex_literal(input: &[char]) -> ScannerResult {
     if input.len() < 2 || input[0] != '0' || input[1] != 'x' {
         Err(())
     } else {
@@ -75,7 +75,7 @@ fn scan_hex_literal(input: &[char]) -> Result {
 
 /// Scan a keyword, which is simple identifier matching a predefined
 /// pattern.
-fn scan_keyword(input: &[char]) -> Result {
+fn scan_keyword(input: &[char]) -> ScannerResult {
     // Extract keyword identifier (if applicable)
     let r = scan_whilst(input, Token::Gap, |c| c.is_ascii_alphabetic())?;
     // Attempt to match it
@@ -95,7 +95,7 @@ fn scan_keyword(input: &[char]) -> Result {
 /// Scan an identifier which starts with an alpabetic character, or an
 /// underscore and subsequently contains zero or more alpha-number
 /// characters or underscores.
-fn scan_identifier(input: &[char]) -> Result {
+fn scan_identifier(input: &[char]) -> ScannerResult {
     if input.len() > 0 && is_identifier_start(input[0]) {
         scan_whilst(input, Token::Identifier, is_identifier_middle)
     } else {
@@ -104,7 +104,7 @@ fn scan_identifier(input: &[char]) -> Result {
 }
 
 /// Scan all single-character operators.
-fn scan_single_operators(input: &[char]) -> Result {
+fn scan_single_operators(input: &[char]) -> ScannerResult {
     if input.len() == 0 {
         Err(())
     } else {
@@ -132,7 +132,7 @@ fn scan_single_operators(input: &[char]) -> Result {
 }
 
 /// Scan all double-character operators.
-fn scan_double_operators(input: &[char]) -> Result {
+fn scan_double_operators(input: &[char]) -> ScannerResult {
     if input.len() <= 1 {
         Err(())
     } else {
@@ -162,17 +162,17 @@ fn is_identifier_middle(c: char) -> bool {
 }
 
 /// Scan a "gap" which is a sequence of zero or more tabs and spaces.
-fn scan_gap(input: &[char]) -> Result {
+fn scan_gap(input: &[char]) -> ScannerResult {
     scan_whilst(input, Token::Gap, |c| c == ' ' || c == '\t')
 }
 
-fn scan_newline(input: &[char]) -> Result {
+fn scan_newline(input: &[char]) -> ScannerResult {
     scan_one(input,Token::NewLine,'\n')
 }
 
 /// If there is nothing left to scan, then we've reached the
 /// End-Of-File.
-fn scan_eof(input: &[char]) -> Result {
+fn scan_eof(input: &[char]) -> ScannerResult {
     if input.len() == 0 {
         Ok(Span::new(Token::EOF,0..0))
     } else {
@@ -182,7 +182,7 @@ fn scan_eof(input: &[char]) -> Result {
 
 /// Helper which scans an item matching a given predicate.  If no
 /// characters match, then it fails.
-fn scan_whilst<P>(input: &[char], t: Token, pred: P) -> Result
+fn scan_whilst<P>(input: &[char], t: Token, pred: P) -> ScannerResult
 where P: Fn(char) -> bool {
     let mut i = 0;
     // Continue whilst predicate matches
@@ -197,7 +197,7 @@ where P: Fn(char) -> bool {
     }
 }
 
-fn scan_one(input: &[char], t: Token, c: char) -> Result {
+fn scan_one(input: &[char], t: Token, c: char) -> ScannerResult {
     if input.len() > 0 && input[0] == c {
         Ok(Span::new(t, 0..1))
     } else {
@@ -264,11 +264,11 @@ impl Lexer {
     /// Pass through request to underlying lexer
     pub fn peek(&self) -> Span<Token> { self.lexer.peek() }
     /// Pass through request to underlying lexer
-    pub fn snap(&mut self, kind : Token) -> SnapResult<Token> {
+    pub fn snap(&mut self, kind : Token) -> Result<Token> {
         self.lexer.snap(kind)
     }
     /// Pass through request to underlying lexer
-    pub fn snap_any(&mut self, kinds : &[Token]) -> SnapResult<Token> {
+    pub fn snap_any(&mut self, kinds : &[Token]) -> Result<Token> {
         self.lexer.snap_any(kinds)
     }
 }
