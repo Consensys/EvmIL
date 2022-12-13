@@ -1,3 +1,6 @@
+use std::fmt;
+use crate::hex::ToHexString;
+
 // ============================================================================
 // Label Offsets
 // ============================================================================
@@ -55,6 +58,7 @@ pub enum Instruction {
     MULMOD,
     EXP,
     SIGNEXTEND,
+    // 10s: Comparison & Bitwise Logic Operations
     LT,
     GT,
     SLT,
@@ -69,8 +73,8 @@ pub enum Instruction {
     SHL,
     SHR,
     SAR,
-    // 10s: Comparison & Bitwise Logic Operations
     // 20s: Keccak256
+    KECCAK256,
     // 30s: Environmental Information
     CALLDATALOAD,
     CALLDATASIZE,
@@ -85,6 +89,9 @@ pub enum Instruction {
     SSTORE,
     JUMP,
     JUMPI,
+    PC,
+    MSIZE,
+    GAS,
     JUMPDEST(usize),
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
@@ -99,7 +106,10 @@ pub enum Instruction {
     RETURN,
     // ..
     REVERT,
-    INVALID
+    INVALID,
+    // Signals arbitrary data in the contract, rather than bytecode
+    // instructions.
+    DATA(Vec<u8>)
 }
 
 impl Instruction {
@@ -187,7 +197,9 @@ impl Instruction {
             Instruction::SSTORE => 0x55,
             Instruction::JUMP => 0x56,
             Instruction::JUMPI => 0x57,
-            // ...
+            Instruction::PC => 0x58,
+            Instruction::MSIZE => 0x59,
+            Instruction::GAS => 0x5a,
             Instruction::JUMPDEST(_) => 0x5b,
             //
             // 60s & 70s: Push Operations
@@ -229,8 +241,8 @@ impl Instruction {
     /// is because it cannot determine whether a given operand will be
     /// used as a jump destination.  A separate analysis is required
     /// to "lift" `PUSH` instructions to `PUSHL` instructions.
-    pub fn decode(bytes: &[u8]) -> Instruction {
-        let opcode = bytes[0];
+    pub fn decode(pc: usize, bytes: &[u8]) -> Instruction {
+        let opcode = bytes[pc];
         //
         let insn = match opcode {
             // 0s: Stop and Arithmetic Operations
@@ -246,10 +258,78 @@ impl Instruction {
             0x09 => Instruction::MULMOD,
             0x0a => Instruction::EXP,
             0x0b => Instruction::SIGNEXTEND,
+            // 10s: Comparison & Bitwise Logic Operations
+            0x10 => Instruction::LT,
+            0x11 => Instruction::GT,
+            0x12 => Instruction::SLT,
+            0x13 => Instruction::SGT,
+            0x14 => Instruction::EQ,
+            0x15 => Instruction::ISZERO,
+            0x16 => Instruction::AND,
+            0x17 => Instruction::OR,
+            0x18 => Instruction::XOR,
+            0x19 => Instruction::NOT,
+            0x1a => Instruction::BYTE,
+            0x1b => Instruction::SHL,
+            0x1c => Instruction::SHR,
+            0x1d => Instruction::SAR,
+            // 20s: SHA3
+            0x20 => Instruction::KECCAK256,
+            // 30s: Environmental Information
+            0x35 => Instruction::CALLDATALOAD,
+            0x36 => Instruction::CALLDATASIZE,
+            0x37 => Instruction::CALLDATACOPY,
+            // 50s: Stack, Memory, Storage and Flow Operations
+            0x50 => Instruction::POP,
+            0x51 => Instruction::MLOAD,
+            0x52 => Instruction::MSTORE,
+            0x53 => Instruction::MSTORE8,
+            0x54 => Instruction::SLOAD,
+            0x55 => Instruction::SSTORE,
+            0x56 => Instruction::JUMP,
+            0x57 => Instruction::JUMPI,
+            0x58 => Instruction::PC,
+            0x59 => Instruction::MSIZE,
+            0x5a => Instruction::GAS,
+            0x5b => Instruction::JUMPDEST(pc),
+            // 60s & 70s: Push Operations
+            0x60..=0x7f => {
+                let m = pc + 1;
+                let n = pc + ((opcode - 0x5e) as usize);
+                Instruction::PUSH(bytes[m..n].to_vec())
+            }
             // Unknown
             _ => Instruction::INVALID
         };
         //
         insn
+    }
+}
+
+
+// ============================================================================
+// Display
+// ============================================================================
+
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	// Use the default (debug) formatter.  Its only for certain
+	// instructions that we need to do anything different.
+	match self {
+            Instruction::JUMPDEST(n) => {
+                write!(f,"")
+            }
+	    Instruction::PUSH(bytes) => {
+		// Convert bytes into hex string
+		let hex = bytes.to_hex_string();
+		// Print!
+		write!(f,"PUSH{} {}",bytes.len(),hex)
+	    }
+            Instruction::DATA(bytes) => {
+                // Print bytes as hex string
+		write!(f,"{}",bytes.to_hex_string())
+            }
+	    _ => write!(f,"{:?}",self)
+	}
     }
 }

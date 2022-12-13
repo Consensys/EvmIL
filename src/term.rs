@@ -13,6 +13,7 @@ pub enum Term {
     Succeed(Vec<Term>),
     Revert(Vec<Term>),
     Fail,
+    Stop,
     // Expressions
     Binary(BinOp,Box<Term>,Box<Term>),
     ArrayAccess(Box<Term>,Box<Term>),

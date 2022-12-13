@@ -7,19 +7,19 @@ use evmil::{Bytecode,Parser,ToHexString};
 #[test]
 pub fn test_goto_01() {
     let p = "goto lab;";
-    check(&p, "0x600057");
+    check(&p, "0x600056");
 }
 
 #[test]
 pub fn test_goto_02() {
     let p = "goto lab; .lab";
-    check(&p, "0x6003575b");
+    check(&p, "0x6003565b");
 }
 
 #[test]
 pub fn test_goto_03() {
     let p = "goto lab; assert 0; .lab";
-    check(&p, "0x600a576000600957fe5b5b");
+    check(&p, "0x600a566000600957fe5b5b");
 }
 
 // ============================================================================

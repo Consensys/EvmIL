@@ -11,7 +11,7 @@ pub trait ToHexString {
 /// string.
 pub trait FromHexString {
     type Error;
-    
+
     fn from_hex_string(&self) -> Result<Vec<u8>,Self::Error>;
 }
 
@@ -35,10 +35,16 @@ impl FromHexString for str {
     //
     fn from_hex_string(&self) -> Result<Vec<u8>,Self::Error> {
 	let mut bytes : Vec<u8> = Vec::new();
-	
-	for i in (0..self.len()).step_by(2) {
+        // Remove prepended "0x" (only if present)
+        let slice = if self.len() > 2 && &self[0..2] == "0x" {
+            &self[2..]
+        } else {
+            &self
+        };
+        // Parse contents of string
+	for i in (0..slice.len()).step_by(2) {
 	    // Pull out the byte
-	    let byte = u8::from_str_radix(&self[i..i+2], 16)?;
+	    let byte = u8::from_str_radix(&slice[i..i+2], 16)?;
 	    // Push it!
 	    bytes.push(byte);
 	}

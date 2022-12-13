@@ -9,6 +9,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::{PatternEncoder};
 //
 use evmil::{Bytecode,Parser,ToHexString};
+use evmil::{Disassembler,Instruction,FromHexString};
 
 fn main() -> Result<(),Box<dyn Error>> {
     // Parse command-line arguments
@@ -22,6 +23,11 @@ fn main() -> Result<(),Box<dyn Error>> {
                 .about("Compile EvmIL code to EVM bytecode")
                 .arg(Arg::new("file").required(true))
                 .visible_alias("c"))
+        .subcommand(
+	    Command::new("disassemble")
+                .about("Disassemble a raw hex string into EVM bytecode")
+                .arg(Arg::new("code").required(true))
+                .visible_alias("d"))
 	.get_matches();
     // Extract top-level flags
     let verbose = matches.is_present("verbose");
@@ -32,6 +38,7 @@ fn main() -> Result<(),Box<dyn Error>> {
     // Dispatch on outcome
     let ok = match matches.subcommand() {
 	Some(("compile", args)) => compile(args),
+        Some(("disassemble",args)) => disassemble(args),
 	_ => unreachable!()
     }?;
     // Determine appropriate exit code
@@ -58,6 +65,23 @@ fn compile(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     Ok(true)
 }
 
+/// Disassemble a given bytecode sequence.
+fn disassemble(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
+    // Extract hex string to be disassembled.
+    let hex = args.get_one::<String>("code").unwrap();
+    // Parse hex string into bytes
+    let bytes = hex.from_hex_string().unwrap();
+    // Disassemble bytes into instructions
+    let instructions = Disassembler::new(&bytes).disassemble().to_vec();
+    // Print them all out.
+    let mut pc = 0;
+    for insn in instructions {
+	println!("{:#08x}: {}",pc,insn);
+        pc = pc + insn.length(&[]); // broken
+    }
+    // TODO
+    Ok(true)
+}
 
 /// Initialise logging using a suitable pattern.
 pub fn init_logging(level: LevelFilter) {

@@ -120,6 +120,7 @@ impl Parser {
     	match self.lexer.peek().kind {
     	    Token::Assert => self.parse_stmt_assert(),
     	    Token::Fail => self.parse_stmt_fail(),
+    	    Token::Stop => self.parse_stmt_stop(),
     	    Token::Goto => self.parse_stmt_goto(),
     	    Token::If => self.parse_stmt_if(),
             Token::Dot => self.parse_stmt_label(),
@@ -149,6 +150,12 @@ impl Parser {
     	self.lexer.snap(Token::Fail)?;
     	self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Fail)
+    }
+
+    pub fn parse_stmt_stop(&mut self) -> Result<Term> {
+    	self.lexer.snap(Token::Stop)?;
+    	self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Stop)
     }
 
     pub fn parse_stmt_goto(&mut self) -> Result<Term> {
