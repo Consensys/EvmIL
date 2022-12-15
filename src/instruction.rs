@@ -76,10 +76,31 @@ pub enum Instruction {
     // 20s: Keccak256
     KECCAK256,
     // 30s: Environmental Information
+    ADDRESS,
+    BALANCE,
+    ORIGIN,
+    CALLER,
+    CALLVALUE,
     CALLDATALOAD,
     CALLDATASIZE,
     CALLDATACOPY,
+    CODESIZE,
+    CODECOPY,
+    GASPRICE,
+    EXTCODESIZE,
+    EXTCODECOPY,
+    RETURNDATASIZE,
+    RETURNDATACOPY,
+    EXTCODEHASH,
     // 40s: Block Information
+    BLOCKHASH,
+    COINBASE,
+    TIMESTAMP,
+    NUMBER,
+    DIFFICULTY,
+    GASLIMIT,
+    CHAINID,
+    SELFBALANCE,
     // 50s: Stack, Memory, Storage and Flow Operations
     POP,
     MLOAD,
@@ -103,16 +124,44 @@ pub enum Instruction {
     // a0s: Logging Operations
     LOG(u8),
     // f0s: System Operations
+    CREATE,
+    CALL,
+    CALLCODE,
     RETURN,
-    // ..
+    DELEGATECALL,
+    CREATE2,
+    STATICCALL,
     REVERT,
     INVALID,
+    SELFDESTRUCT,
     // Signals arbitrary data in the contract, rather than bytecode
     // instructions.
     DATA(Vec<u8>)
 }
 
 impl Instruction {
+    /// Determine whether or not control can continue to the next
+    /// instruction.
+    pub fn fallthru(&self) -> bool {
+        match self {
+            Instruction::INVALID => false,
+            Instruction::JUMP => false,
+            Instruction::STOP => false,
+            Instruction::RETURN => false,
+            Instruction::REVERT => false,
+            _ => true
+        }
+    }
+
+    /// Determine whether or not this instruction can branch.  That
+    /// is, whether or not it is a `JUMP` or `JUMPI` instruction.
+    pub fn can_branch(&self) -> bool {
+        match self {
+            Instruction::JUMP => true,
+            Instruction::JUMPI => true,
+            _ => false,
+        }
+    }
 
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
@@ -184,10 +233,34 @@ impl Instruction {
             Instruction::SHL => 0x1b,
             Instruction::SHR => 0x1c,
             Instruction::SAR => 0x1d,
+            // 20s: Keccak256
+            Instruction::KECCAK256 => 0x20,
             // 30s: Environmental Information
+            Instruction::ADDRESS => 0x30,
+            Instruction::BALANCE => 0x31,
+            Instruction::ORIGIN => 0x32,
+            Instruction::CALLER => 0x33,
+            Instruction::CALLVALUE => 0x34,
             Instruction::CALLDATALOAD => 0x35,
             Instruction::CALLDATASIZE => 0x36,
             Instruction::CALLDATACOPY => 0x37,
+            Instruction::CODESIZE => 0x38,
+            Instruction::CODECOPY => 0x39,
+            Instruction::GASPRICE => 0x3a,
+            Instruction::EXTCODESIZE => 0x3b,
+            Instruction::EXTCODECOPY => 0x3c,
+            Instruction::RETURNDATASIZE => 0x3d,
+            Instruction::RETURNDATACOPY => 0x3e,
+            Instruction::EXTCODEHASH => 0x3f,
+            // 40s: Block Information
+            Instruction::BLOCKHASH => 0x40,
+            Instruction::COINBASE => 0x41,
+            Instruction::TIMESTAMP => 0x42,
+            Instruction::NUMBER => 0x43,
+            Instruction::DIFFICULTY => 0x44,
+            Instruction::GASLIMIT => 0x45,
+            Instruction::CHAINID => 0x46,
+            Instruction::SELFBALANCE => 0x47,
             // 50s: Stack, Memory, Storage and Flow Operations
             Instruction::POP => 0x50,
             Instruction::MLOAD => 0x51,
@@ -223,13 +296,34 @@ impl Instruction {
                 }
                 0x7f + n
             }
+            // 90s: Swap Operations
+            Instruction::SWAP(n) => {
+                if *n == 0 || *n > 32 {
+                    return Err(Error::InvalidDup);
+                }
+                0x8f + n
+            }
+            // a0s: Log Operations
+            Instruction::LOG(n) => {
+                if *n > 4 {
+                    return Err(Error::InvalidDup);
+                }
+                0xa0 + n
+            }
             // f0s: System Operations
+            Instruction::CREATE => 0xf0,
+            Instruction::CALL => 0xf1,
+            Instruction::CALLCODE => 0xf2,
             Instruction::RETURN => 0xf3,
+            Instruction::DELEGATECALL => 0xf4,
+            Instruction::CREATE2 => 0xf5,
+            Instruction::STATICCALL => 0xfa,
             Instruction::REVERT => 0xfd,
             Instruction::INVALID => 0xfe,
+            Instruction::SELFDESTRUCT => 0xff,
             //
-            _ => {
-                panic!("Invalid instruction ({:?})",self);
+            Instruction::DATA(bytes) => {
+                 panic!("Invalid instruction ({:?})",self);
             }
         };
         //
@@ -276,9 +370,31 @@ impl Instruction {
             // 20s: SHA3
             0x20 => Instruction::KECCAK256,
             // 30s: Environmental Information
+            0x30 => Instruction::ADDRESS,
+            0x31 => Instruction::BALANCE,
+            0x32 => Instruction::ORIGIN,
+            0x33 => Instruction::CALLER,
+            0x34 => Instruction::CALLVALUE,
             0x35 => Instruction::CALLDATALOAD,
             0x36 => Instruction::CALLDATASIZE,
             0x37 => Instruction::CALLDATACOPY,
+            0x38 => Instruction::CODESIZE,
+            0x39 => Instruction::CODECOPY,
+            0x3a => Instruction::GASPRICE,
+            0x3b => Instruction::EXTCODESIZE,
+            0x3c => Instruction::EXTCODECOPY,
+            0x3d => Instruction::RETURNDATASIZE,
+            0x3e => Instruction::RETURNDATACOPY,
+            0x3f => Instruction::EXTCODEHASH,
+            // 40s: Block Information
+            0x40 => Instruction::BLOCKHASH,
+            0x41 => Instruction::COINBASE,
+            0x42 => Instruction::TIMESTAMP,
+            0x43 => Instruction::NUMBER,
+            0x44 => Instruction::DIFFICULTY,
+            0x45 => Instruction::GASLIMIT,
+            0x46 => Instruction::CHAINID,
+            0x47 => Instruction::SELFBALANCE,
             // 50s: Stack, Memory, Storage and Flow Operations
             0x50 => Instruction::POP,
             0x51 => Instruction::MLOAD,
@@ -296,10 +412,45 @@ impl Instruction {
             0x60..=0x7f => {
                 let m = pc + 1;
                 let n = pc + ((opcode - 0x5e) as usize);
-                Instruction::PUSH(bytes[m..n].to_vec())
+                if n <= bytes.len() {
+                    // Simple case: does not overflow
+                    Instruction::PUSH(bytes[m..n].to_vec())
+                } else {
+                    // Harder case: does overflow code.
+                    let mut bs = bytes[m..].to_vec();
+                    // Pad out with zeros
+                    for i in 0..(n-bytes.len()) { bs.push(0); }
+                    // Done
+                    Instruction::PUSH(bs)
+                }
             }
+            // 80s: Duplicate Operations
+            0x80..=0x8f => {
+                Instruction::DUP(opcode-0x7f)
+            }
+            // 90s: Swap Operations
+            0x90..=0x9f => {
+                Instruction::SWAP(opcode-0x8f)
+            }
+            // a0s: Log Operations
+            0xa0..=0xa4 => {
+                Instruction::LOG(opcode-0xa0)
+            }
+            // f0s: System Operations
+            0xf0 => Instruction::CREATE,
+            0xf1 => Instruction::CALL,
+            0xf2 => Instruction::CALLCODE,
+            0xf3 => Instruction::RETURN,
+            0xf4 => Instruction::DELEGATECALL,
+            0xf5 => Instruction::CREATE2,
+            0xfa => Instruction::STATICCALL,
+            0xfd => Instruction::REVERT,
+            0xfe => Instruction::INVALID,
+            0xff => Instruction::SELFDESTRUCT,
             // Unknown
-            _ => Instruction::INVALID
+            _ => {
+                panic!("Unknown instruction encountered ({:#2x})",opcode);
+            }
         };
         //
         insn

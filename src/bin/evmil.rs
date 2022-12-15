@@ -9,7 +9,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::{PatternEncoder};
 //
 use evmil::{Bytecode,Parser,ToHexString};
-use evmil::{Disassembler,Instruction,FromHexString};
+use evmil::{FromHexString,Disassemble};
 
 fn main() -> Result<(),Box<dyn Error>> {
     // Parse command-line arguments
@@ -72,7 +72,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
-    let instructions = Disassembler::new(&bytes).disassemble().to_vec();
+    let instructions = bytes.disassemble().to_vec();
     // Print them all out.
     let mut pc = 0;
     for insn in instructions {

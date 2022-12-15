@@ -1,6 +1,6 @@
 use std::convert::{AsRef};
-use evmil::{Disassembler,Instruction,FromHexString};
-use evmil::{Disassemble};
+use evmil::{Instruction,FromHexString,CfaState};
+use evmil::{Disassemble,Disassembly};
 use evmil::Instruction::*;
 
 // ============================================================================
@@ -77,12 +77,19 @@ pub fn test_disassemble_split_01() {
 
 #[test]
 pub fn test_disassemble_split_02() {
-    // A minimal split multiblock program
-    check("0x6003565b006a", &[PUSH(vec![3]),JUMP,JUMPDEST(3),STOP,DATA(vec![0x6a])]);
+    // A minimal split multiblock program.  This program contains an
+    // invalid JUMPDEST.
+    check("0x600456605b", &[PUSH(vec![4]),JUMP,PUSH(vec![0x5b])]);
 }
 
 #[test]
 pub fn test_disassemble_split_03() {
+    // A minimal split multiblock program
+    check("0x6003565b0061", &[PUSH(vec![3]),JUMP,JUMPDEST(3),STOP,DATA(vec![0x61])]);
+}
+
+#[test]
+pub fn test_disassemble_split_04() {
     // A minimal split multiblock program
     check("0x60055601025b", &[PUSH(vec![5]),JUMP,DATA(vec![1,2]),JUMPDEST(5)]);
 }
@@ -97,7 +104,9 @@ fn check(hex: &str, insns: &[Instruction]) {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
-    let is = bytes.disassemble().to_vec();
+    let mut disasm : Disassembly<CfaState> = Disassembly::new(&bytes);
+    //
+    disasm.analyse();
     // Check against expected instruction sequence
-    assert_eq!(insns, is);
+    assert_eq!(insns, disasm.to_vec());
 }
