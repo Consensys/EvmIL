@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt;
 use crate::{Instruction,Instruction::*};
 use crate::hex::FromHexString;
 use crate::util;
@@ -60,7 +61,7 @@ pub trait AbstractState : Default+Clone {
     fn transfer(self, insn: &Instruction) -> Self;
     /// Apply a given branch to this stage, yielding an updated state
     /// at the point of the branch.
-    fn branch(&self, target: usize) -> Self;
+    fn branch(&self, target: usize, insn: &Instruction) -> Self;
     /// Merge this state with another, whilst returning a flag
     /// indicating whether anything changed.
     fn merge(&mut self, other: Self) -> bool;
@@ -74,7 +75,7 @@ impl AbstractState for () {
     /// Default implementation does nothing
     fn transfer(self, insn: &Instruction) -> Self { self.clone() }
     /// Default implementation does nothing
-    fn branch(&self, target: usize) -> Self { self.clone() }
+    fn branch(&self, target: usize, insn: &Instruction) -> Self { self.clone() }
     /// Default implementation does nothing
     fn merge(&mut self, other: Self) -> bool { false }
     /// Does nothing
@@ -101,7 +102,7 @@ pub struct Disassembly<'a,T = ()> {
 }
 
 impl<'a,T> Disassembly<'a,T>
-where T:AbstractState+std::fmt::Debug {
+where T:AbstractState {
     pub fn new(bytes: &'a [u8]) -> Self {
         // Perform linear scan of blocks
         let blocks = Self::scan_blocks(bytes);
@@ -109,6 +110,26 @@ where T:AbstractState+std::fmt::Debug {
         let contexts = vec![T::default(); blocks.len()];
         // Done
         Disassembly{bytes, blocks, contexts}
+    }
+
+    /// Get the state at a given program location.
+    pub fn get_state(&self, loc: usize) -> T {
+        // Determine enclosing block
+        let bid = self.get_block(loc);
+        let blk = &self.blocks[bid];
+        let mut ctx = self.contexts[bid].clone();
+        let mut pc = blk.start;
+        // Reconstruct state
+        while pc < loc {
+            // Decode instruction at the current position
+            let insn = Instruction::decode(pc,&self.bytes);
+            // Apply the transfer function!
+            ctx = ctx.transfer(&insn);
+            // Next instruction
+            pc = pc + insn.length(&[]);
+        }
+        // Done
+        ctx
     }
 
     /// Determine the enclosing block number for a given bytecode
@@ -188,53 +209,6 @@ where T:AbstractState+std::fmt::Debug {
         insns
     }
 
-    /// Apply flow analysis to refine the results of this disassembly.
-    pub fn analyse(&mut self) {
-        let mut changed = true;
-        //
-        while changed {
-            // Reset indicator
-            changed = false;
-            // Iterate blocks in order
-            for i in 0..self.blocks.len() {
-                // Sanity check whether block unreachable.
-                if !self.is_block_reachable(i) { continue; }
-                // Yes, is reachable so continue.
-                let blk = &self.blocks[i];
-                let mut ctx = self.contexts[i].clone();
-                let mut pc = blk.start;
-                // println!("BLOCK (start={}, end={}): {:?}", pc, blk.end, i);
-                // println!("CONTEXT (pc={}): {:?}", pc, ctx);
-                // Parse the block
-                while pc < blk.end {
-                    // Decode instruction at the current position
-                    let insn = Instruction::decode(pc,&self.bytes);
-                    // Check whether a branch is possible
-                    if insn.can_branch() {
-                        // Determine branch target
-                        let target = ctx.top();
-                        // Determine branch context
-                        let branch_ctx = ctx.branch(target);
-                        // Convert target into block ID.
-                        let block_id = self.get_block(target);
-                        // println!("Branch: target={} (block {})",target,block_id);
-                        // println!("Before merge (pc={:?}): {:?}", pc, self.contexts[block_id]);
-                        // Merge in updated state
-                        changed |= self.contexts[block_id].merge(branch_ctx);
-                        // println!("After merge (pc={:?}): {:?}", pc, self.contexts[block_id]);
-                    }
-                    // Apply the transfer function!
-                    ctx = ctx.transfer(&insn);
-                    // Next instruction
-                    pc = pc + insn.length(&[]);
-                }
-                // Merge state into following block.
-                if (i+1) < self.blocks.len() {
-                    changed |= self.contexts[i+1].merge(ctx);
-                }
-            }
-        }
-    }
 
     // ================================================================
     // Helpers
@@ -293,6 +267,61 @@ where T:AbstractState+std::fmt::Debug {
         }
         // Done
         blocks
+    }
+}
+
+impl<'a,T> Disassembly<'a,T>
+where T:AbstractState+fmt::Display {
+
+    /// Apply flow analysis to refine the results of this disassembly.
+    pub fn build(mut self) -> Self {
+        let mut changed = true;
+        //
+        while changed {
+            // Reset indicator
+            changed = false;
+            // Iterate blocks in order
+            for i in 0..self.blocks.len() {
+                // Sanity check whether block unreachable.
+                if !self.is_block_reachable(i) { continue; }
+                // Yes, is reachable so continue.
+                let blk = &self.blocks[i];
+                let mut ctx = self.contexts[i].clone();
+                let mut pc = blk.start;
+                // println!("BLOCK (start={}, end={}): {:?}", pc, blk.end, i);
+                // println!("CONTEXT (pc={}): {}", pc, ctx);
+                // Parse the block
+                while pc < blk.end {
+                    // Decode instruction at the current position
+                    let insn = Instruction::decode(pc,&self.bytes);
+                    // Check whether a branch is possible
+                    if insn.can_branch() {
+                        // Determine branch target
+                        let target = ctx.top();
+                        // Determine branch context
+                        let branch_ctx = ctx.branch(target,&insn);
+                        // Convert target into block ID.
+                        let block_id = self.get_block(target);
+                        // println!("Branch: target={} (block {})",target,block_id);
+                        // println!("Before merge (pc={}): {}", pc, self.contexts[block_id]);
+                        // Merge in updated state
+                        changed |= self.contexts[block_id].merge(branch_ctx);
+                        // println!("After merge (pc={}): {}", pc, self.contexts[block_id]);
+                    }
+                    // Apply the transfer function!
+                    // print!("{:#08x}: {}",pc,ctx);
+                    ctx = ctx.transfer(&insn);
+                    // println!(" ==>\t{:?}\t==> {}",insn,ctx);
+                    // Next instruction
+                    pc = pc + insn.length(&[]);
+                }
+                // Merge state into following block.
+                if (i+1) < self.blocks.len() {
+                    changed |= self.contexts[i+1].merge(ctx);
+                }
+            }
+        }
+        self
     }
 }
 

@@ -9,7 +9,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::{PatternEncoder};
 //
 use evmil::{Bytecode,Parser,ToHexString};
-use evmil::{FromHexString,Disassemble};
+use evmil::{FromHexString,Disassembly,CfaState,Instruction};
 
 fn main() -> Result<(),Box<dyn Error>> {
     // Parse command-line arguments
@@ -71,12 +71,28 @@ fn disassemble(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     let hex = args.get_one::<String>("code").unwrap();
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
+    // Construct disassembly
+    let mut disasm : Disassembly<CfaState> = Disassembly::new(&bytes).build();
     // Disassemble bytes into instructions
-    let instructions = bytes.disassemble().to_vec();
+    let instructions = disasm.to_vec();
     // Print them all out.
     let mut pc = 0;
     for insn in instructions {
-	println!("{:#08x}: {}",pc,insn);
+        match insn {
+            Instruction::JUMPDEST(n) => {
+                let st = disasm.get_state(pc);
+                println!("");
+                println!("// Stack +{}",st.len());
+	        println!("{:#08x}: {}",pc,insn);
+            }
+            Instruction::JUMP|Instruction::JUMPI => {
+                let st = disasm.get_state(pc);
+                println!("{:#08x}: {} // {}",pc,insn,st.peek(0));
+            }
+            _ => {
+	        println!("{:#08x}: {}",pc,insn);
+            }
+        }
         pc = pc + insn.length(&[]); // broken
     }
     // TODO

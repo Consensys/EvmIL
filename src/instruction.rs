@@ -188,6 +188,7 @@ impl Instruction {
     /// given set of label offsets.
     pub fn length(&self, offsets: &[Offset]) -> usize {
         let operands = match self {
+            Instruction::DATA(bytes) => bytes.len()-1,
             // Push instructions
             Instruction::PUSH(bs) => bs.len(),
             Instruction::PUSHL(lab) => {
@@ -467,9 +468,6 @@ impl fmt::Display for Instruction {
 	// Use the default (debug) formatter.  Its only for certain
 	// instructions that we need to do anything different.
 	match self {
-            Instruction::JUMPDEST(n) => {
-                write!(f,"")
-            }
 	    Instruction::PUSH(bytes) => {
 		// Convert bytes into hex string
 		let hex = bytes.to_hex_string();
