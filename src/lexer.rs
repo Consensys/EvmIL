@@ -40,6 +40,7 @@ pub enum Token {
     ShreakEquals,
     Succeed,
     Star,
+    Stop
 }
 
 // ======================================================
@@ -52,6 +53,7 @@ const GOTO : &'static [char] = &['g','o','t','o'];
 const IF : &'static [char] = &['i','f'];
 const REVERT : &'static [char] = &['r','e','v','e','r','t'];
 const SUCCEED : &'static [char] = &['s','u','c','c','e','e','d'];
+const STOP : &'static [char] = &['s','t','o','p'];
 
 /// Handy type alias for the result type used for all of the lexical
 /// rules.
@@ -86,6 +88,7 @@ fn scan_keyword(input: &[char]) -> ScannerResult {
         IF => Token::If,
         REVERT => Token::Revert,
         SUCCEED => Token::Succeed,
+        STOP => Token::Stop,
         _ => { return Err(()); }
     };
     // Success!
