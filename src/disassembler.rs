@@ -115,7 +115,7 @@ where T:AbstractState {
     /// Get the state at a given program location.
     pub fn get_state(&self, loc: usize) -> T {
         // Determine enclosing block
-        let bid = self.get_block(loc);
+        let bid = self.get_enclosing_block_id(loc);
         let blk = &self.blocks[bid];
         let mut ctx = self.contexts[bid].clone();
         let mut pc = blk.start;
@@ -132,12 +132,11 @@ where T:AbstractState {
         ctx
     }
 
-    /// Determine the enclosing block number for a given bytecode
-    /// address.
-    pub fn get_block(&self, pc: usize) -> usize {
+    /// Get the enclosing block for a given bytecode location.
+    pub fn get_enclosing_block(&self, pc: usize) -> &Block {
         for i in 0..self.blocks.len() {
             if self.blocks[i].encloses(pc) {
-                return i;
+                return &self.blocks[i];
             }
         }
         panic!("invalid bytecode address");
@@ -268,6 +267,18 @@ where T:AbstractState {
         // Done
         blocks
     }
+
+
+    /// Determine the enclosing block number for a given bytecode
+    /// address.
+    fn get_enclosing_block_id(&self, pc: usize) -> usize {
+        for i in 0..self.blocks.len() {
+            if self.blocks[i].encloses(pc) {
+                return i;
+            }
+        }
+        panic!("invalid bytecode address");
+    }
 }
 
 impl<'a,T> Disassembly<'a,T>
@@ -301,7 +312,7 @@ where T:AbstractState+fmt::Display {
                         // Determine branch context
                         let branch_ctx = ctx.branch(target,&insn);
                         // Convert target into block ID.
-                        let block_id = self.get_block(target);
+                        let block_id = self.get_enclosing_block_id(target);
                         // println!("Branch: target={} (block {})",target,block_id);
                         // println!("Before merge (pc={}): {}", pc, self.contexts[block_id]);
                         // Merge in updated state
