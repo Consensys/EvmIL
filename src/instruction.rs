@@ -450,7 +450,7 @@ impl Instruction {
             0xff => Instruction::SELFDESTRUCT,
             // Unknown
             _ => {
-                panic!("Unknown instruction encountered ({:#2x})",opcode);
+                Instruction::DATA(vec![opcode])
             }
         };
         //
