@@ -11,8 +11,7 @@
 // limitations under the License.
 use std::fmt;
 use crate::{Instruction,Instruction::*};
-use crate::hex::FromHexString;
-use crate::util;
+use crate::dfa::AbstractValue;
 
 // ============================================================================
 // Disassembly
@@ -52,7 +51,7 @@ impl Block {
 
 /// An abstract state provides information about the possible states
 /// of the EVM at a given point.
-pub trait AbstractState : Default+Clone {
+pub trait AbstractState : Clone {
     /// Determines whether a given block is considered reachable or
     /// not.
     fn is_reachable(&self) -> bool;
@@ -65,8 +64,12 @@ pub trait AbstractState : Default+Clone {
     /// Merge this state with another, whilst returning a flag
     /// indicating whether anything changed.
     fn merge(&mut self, other: Self) -> bool;
-    /// Determine concrete value on top of stack
-    fn top(&self) -> usize;
+    /// Determine value on top of stack
+    fn peek(&self, n: usize) -> AbstractValue;
+    /// Identify bottom value
+    fn bottom() -> Self;
+    /// Identify origin value
+    fn origin() -> Self;
 }
 
 impl AbstractState for () {
@@ -79,7 +82,11 @@ impl AbstractState for () {
     /// Default implementation does nothing
     fn merge(&mut self, other: Self) -> bool { false }
     /// Does nothing
-    fn top(&self) -> usize { 0 }
+    fn peek(&self,n: usize) -> AbstractValue { AbstractValue::Unknown }
+    /// Identify bottom value
+    fn bottom() -> Self { () }
+    /// Identify origin value
+    fn origin() -> Self { () }
 }
 
 // ============================================================================
@@ -107,7 +114,9 @@ where T:AbstractState {
         // Perform linear scan of blocks
         let blocks = Self::scan_blocks(bytes);
         // Construct default contexts
-        let contexts = vec![T::default(); blocks.len()];
+        let mut contexts = vec![T::bottom(); blocks.len()];
+        // Update origin context
+        contexts[0] = T::origin();
         // Done
         Disassembly{bytes, blocks, contexts}
     }
@@ -308,7 +317,7 @@ where T:AbstractState+fmt::Display {
                     // Check whether a branch is possible
                     if insn.can_branch() {
                         // Determine branch target
-                        let target = ctx.top();
+                        let target = ctx.peek(0).unwrap();
                         // Determine branch context
                         let branch_ctx = ctx.branch(target,&insn);
                         // Convert target into block ID.

@@ -9,7 +9,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::{PatternEncoder};
 //
 use evmil::{Bytecode,Parser,ToHexString};
-use evmil::{FromHexString,Disassembly,CfaState,Instruction};
+use evmil::{FromHexString,Disassembly,CfaState,Instruction,AbstractState};
 
 fn main() -> Result<(),Box<dyn Error>> {
     // Parse command-line arguments
@@ -82,7 +82,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
             Instruction::JUMPDEST(n) => {
                 let st = disasm.get_state(pc);
                 println!("");
-                println!("// Stack +{}",st.len());
+                println!("// Stack {}",st.len());
 	        println!("{:#08x}: {}",pc,insn);
             }
             Instruction::JUMP|Instruction::JUMPI => {

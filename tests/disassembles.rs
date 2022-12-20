@@ -403,6 +403,12 @@ pub fn test_disassemble_double_04() {
     check("0x6001600657005b", &[PUSH(vec![1]),PUSH(vec![6]),JUMPI,STOP,JUMPDEST(6)]);
 }
 
+#[test]
+pub fn test_disassemble_double_05() {
+    // A minimal example requiring different stack heights
+    check("0x60ff600054600957505b6000", &[PUSH(vec![0xff]),PUSH(vec![0x00]),SLOAD,PUSH(vec![0x9]),JUMPI,POP,JUMPDEST(9),PUSH(vec![0x0])]);
+}
+
 // ============================================================================
 // Triple block Tests
 // ============================================================================

@@ -1,9 +1,11 @@
 mod bytecode;
 mod cfa;
 mod compiler;
+mod dfa;
 mod disassembler;
 mod hex;
 mod instruction;
+mod interval;
 mod lexer;
 mod parser;
 mod term;
