@@ -161,14 +161,14 @@ impl AbstractStack {
     }
 
     /// Merge two abstract stacks together.
-    pub fn merge(mut self, other: &AbstractStack) -> Self {
+    pub fn merge(self, other: &AbstractStack) -> Self {
         let slen = self.upper.len();
         let olen = other.upper.len();
         // Determine common upper length
-        let n = cmp::min(self.upper.len(),other.upper.len());
+        let n = cmp::min(slen,olen);
         // Normalise lower segments
-        let lself = self.lower.add(self.upper.len() - n);
-        let lother = other.lower.add(other.upper.len() - n);
+        let lself = self.lower.add(slen - n);
+        let lother = other.lower.add(olen - n);
         let mut merger = AbstractStack::new(lself.union(&lother),Vec::new());
         // Push merged items from upper segment
         for i in (0..n).rev() {
@@ -183,8 +183,8 @@ impl AbstractStack {
     /// Merge an abstract stack into this stack, whilst reporting
     /// whether this stack changed or not.
     pub fn merge_into(&mut self, other: &AbstractStack) -> bool {
-        /// NOTE: this could be done more efficiently.
-        let mut old = self.clone();
+        // NOTE: this could be done more efficiently.
+        let old = self.clone();
         let mut tmp = EMPTY_STACK;
         // Install dummy value to keep self alive
         mem::swap(self, &mut tmp);

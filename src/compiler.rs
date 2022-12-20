@@ -426,7 +426,7 @@ impl<'a> Compiler<'a> {
     // ============================================================================
 
     fn translate_literal(&mut self, digits: &[u8], radix: u32) -> Result {
-        let mut val = from_be_digits(digits,radix);
+        let val = from_be_digits(digits,radix);
         self.bytecode.push(make_push(val)?);
         Ok(())
     }
@@ -434,7 +434,7 @@ impl<'a> Compiler<'a> {
 
 /// Construct a push instruction from a value.
 fn make_push(val: u128) -> std::result::Result<Instruction,Error> {
-    let mut bytes = to_be_bytes(val);
+    let bytes = to_be_bytes(val);
     // Sanity check size of literal
     if bytes.len() > 32 {
         // Too big!!

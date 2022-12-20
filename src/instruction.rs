@@ -144,6 +144,7 @@ impl Instruction {
     /// instruction.
     pub fn fallthru(&self) -> bool {
         match self {
+            Instruction::DATA(_) => false,
             Instruction::INVALID => false,
             Instruction::JUMP => false,
             Instruction::STOP => false,
@@ -186,12 +187,12 @@ impl Instruction {
 
     /// Determine the length of this instruction (in bytes) assuming a
     /// given set of label offsets.
-    pub fn length(&self, offsets: &[Offset]) -> usize {
+    pub fn length(&self, _offsets: &[Offset]) -> usize {
         let operands = match self {
             Instruction::DATA(bytes) => bytes.len()-1,
             // Push instructions
             Instruction::PUSH(bs) => bs.len(),
-            Instruction::PUSHL(lab) => {
+            Instruction::PUSHL(_) => {
                 todo!("implement me");
             }
             // Default case
@@ -323,7 +324,7 @@ impl Instruction {
             Instruction::INVALID => 0xfe,
             Instruction::SELFDESTRUCT => 0xff,
             //
-            Instruction::DATA(bytes) => {
+            Instruction::DATA(_) => {
                  panic!("Invalid instruction ({:?})",self);
             }
         };
@@ -420,7 +421,7 @@ impl Instruction {
                     // Harder case: does overflow code.
                     let mut bs = bytes[m..].to_vec();
                     // Pad out with zeros
-                    for i in 0..(n-bytes.len()) { bs.push(0); }
+                    for _i in 0..(n-bytes.len()) { bs.push(0); }
                     // Done
                     Instruction::PUSH(bs)
                 }
