@@ -1,6 +1,5 @@
-use std::convert::{AsRef};
 use evmil::{Instruction,FromHexString,CfaState};
-use evmil::{Disassemble,Disassembly};
+use evmil::{Disassembly};
 use evmil::Instruction::*;
 
 // ============================================================================
@@ -464,7 +463,7 @@ fn check(hex: &str, insns: &[Instruction]) {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
-    let mut disasm : Disassembly<CfaState> = Disassembly::new(&bytes).build();
+    let disasm : Disassembly<CfaState> = Disassembly::new(&bytes).build();
     // Check against expected instruction sequence
     assert_eq!(insns, disasm.to_vec());
 }

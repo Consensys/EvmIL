@@ -65,7 +65,7 @@ impl fmt::Display for CfaState {
 impl AbstractState for CfaState {
     fn is_reachable(&self) -> bool { !self.stack.is_bottom() }
 
-    fn branch(&self, pc: usize, insn: &Instruction) -> Self {
+    fn branch(&self, _pc: usize, insn: &Instruction) -> Self {
         match insn {
             JUMPI => self.clone().pop().pop(),
             JUMP => self.clone().pop(),
@@ -165,7 +165,7 @@ impl AbstractState for CfaState {
             // 90s: Exchange Operations
             // a0s: Logging Operations
             // f0s: System Operations
-            INVALID|JUMP|RETURN|REVERT|STOP => {
+            INVALID|JUMP|RETURN|REVERT => {
                 CfaState::bottom()
             }
             _ => {

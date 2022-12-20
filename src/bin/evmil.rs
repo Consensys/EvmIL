@@ -72,14 +72,14 @@ fn disassemble(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct disassembly
-    let mut disasm : Disassembly<CfaState> = Disassembly::new(&bytes).build();
+    let disasm : Disassembly<CfaState> = Disassembly::new(&bytes).build();
     // Disassemble bytes into instructions
     let instructions = disasm.to_vec();
     // Print them all out.
     let mut pc = 0;
     for insn in instructions {
         match insn {
-            Instruction::JUMPDEST(n) => {
+            Instruction::JUMPDEST(_) => {
                 let st = disasm.get_state(pc);
                 let len = st.len();
                 println!("");

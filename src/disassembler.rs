@@ -76,13 +76,13 @@ impl AbstractState for () {
     /// Default implementation indicates everything is reachable.
     fn is_reachable(&self) -> bool { true }
     /// Default implementation does nothing
-    fn transfer(self, insn: &Instruction) -> Self { self.clone() }
+    fn transfer(self, _insn: &Instruction) -> Self { self.clone() }
     /// Default implementation does nothing
-    fn branch(&self, target: usize, insn: &Instruction) -> Self { self.clone() }
+    fn branch(&self, _target: usize, _insn: &Instruction) -> Self { self.clone() }
     /// Default implementation does nothing
-    fn merge(&mut self, other: Self) -> bool { false }
+    fn merge(&mut self, _other: Self) -> bool { false }
     /// Does nothing
-    fn peek(&self,n: usize) -> AbstractValue { AbstractValue::Unknown }
+    fn peek(&self,_n: usize) -> AbstractValue { AbstractValue::Unknown }
     /// Identify bottom value
     fn bottom() -> Self { () }
     /// Identify origin value
@@ -169,7 +169,7 @@ where T:AbstractState {
             // Determine lower potion
             let mut slice = self.bytes[start..n].to_vec();
             // Probably a more idiomatic way to do this?
-            for i in end .. n { slice.push(0); }
+            for _i in end .. n { slice.push(0); }
             //
             slice
         } else {
@@ -195,7 +195,6 @@ where T:AbstractState {
     /// Flattern the disassembly into a sequence of instructions.
     pub fn to_vec(&self) -> Vec<Instruction> {
         let mut insns = Vec::new();
-        let mut last = 0;
         // Iterate blocks in order
         for i in 0..self.blocks.len() {
             let blk = &self.blocks[i];
@@ -210,8 +209,6 @@ where T:AbstractState {
                 //
                 insns.push(DATA(data));
             }
-            // Update gap information
-            last = blk.end;
         }
         //
         insns
@@ -253,7 +250,7 @@ where T:AbstractState {
             pc = pc + insn.length(&[]);
             // Check whether terminating instruction
             match insn {
-                JUMPDEST(n) => {
+                JUMPDEST(_) => {
                     // Determine whether start of this block, or next
                     // block.
                     if (pc - 1) != start {
