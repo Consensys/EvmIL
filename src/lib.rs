@@ -1,15 +1,15 @@
 mod bytecode;
 mod cfa;
 mod compiler;
-mod dfa;
 mod disassembler;
 mod hex;
 mod instruction;
-mod interval;
 mod lexer;
 mod parser;
 mod term;
-mod util;
+// public
+pub mod dfa;
+pub mod util;
 
 pub use crate::bytecode::*;
 pub use crate::instruction::*;

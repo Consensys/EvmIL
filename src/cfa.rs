@@ -12,9 +12,9 @@
 use std::{fmt};
 use crate::{Instruction,Instruction::*};
 use crate::{AbstractState};
-use crate::interval::{Interval};
 use crate::dfa::{AbstractValue,AbstractStack,BOTTOM_STACK,EMPTY_STACK};
 use crate::util;
+use crate::util::Interval;
 
 const MAX_CODE_SIZE : u128 = 24576;
 const UNKNOWN : AbstractValue = AbstractValue::Unknown;
