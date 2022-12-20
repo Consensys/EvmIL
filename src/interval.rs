@@ -34,6 +34,18 @@ impl Interval {
         Self{start,end}
     }
 
+    /// Check whether this interval represents a constant value.  For
+    /// example, the interval `1..1` represents the constant `1`.
+    pub fn is_constant(&self) -> bool {
+        self.start == self.end
+    }
+
+    /// Exctract the constant value associated with this interval.
+    pub fn unwrap(&self) -> usize {
+        if self.start != self.end { panic!("unwrapping non-constant interval"); }
+        self.start
+    }
+
     /// Add a constant to this range.
     pub fn add(&self, val: usize) -> Self {
         let start = self.start + val;
