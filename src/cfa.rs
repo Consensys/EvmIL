@@ -126,11 +126,23 @@ impl AbstractState for CfaState {
             AND|OR|XOR|BYTE|SHL|SHR|SAR => {
                 self.pop().pop().push(UNKNOWN)
             }
-            // 20s: Keccak256
             // 30s: Environmental Information
+            ADDRESS => self.push(UNKNOWN),
+            BALANCE => self.pop().push(UNKNOWN),
+            ORIGIN => self.push(UNKNOWN),
+            CALLER => self.push(UNKNOWN),
             CALLVALUE => self.push(UNKNOWN),
             CALLDATALOAD => self.pop().push(UNKNOWN),
             CALLDATASIZE => self.push(UNKNOWN),
+            CALLDATACOPY => self.pop().pop().pop(),
+            CODESIZE => self.push(UNKNOWN),
+            CODECOPY => self.pop().pop().pop(),
+            GASPRICE => self.push(UNKNOWN),
+            EXTCODESIZE => self.pop().push(UNKNOWN),
+            EXTCODECOPY => self.pop().pop().pop().pop(),
+            RETURNDATASIZE => self.push(UNKNOWN),
+            RETURNDATACOPY => self.pop().pop().pop(),
+            EXTCODEHASH => self.pop().push(UNKNOWN),
             // 40s: Block Information
             // 50s: Stack, Memory, Storage and Flow Operations
             POP => self.pop(),
@@ -167,6 +179,13 @@ impl AbstractState for CfaState {
             // f0s: System Operations
             INVALID|JUMP|RETURN|REVERT => {
                 CfaState::bottom()
+            }
+            // 20s: Keccak256
+            KECCACK256 => {
+                // NOTE: there is some kind of compiler bug which is
+                // preventing me from putting this case in the
+                // expected position.
+                self.pop().pop().push(UNKNOWN)
             }
             _ => {
                 // This is a catch all to ensure no instructions are

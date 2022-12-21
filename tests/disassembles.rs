@@ -10,11 +10,195 @@ use evmil::Instruction::*;
 // least once.
 
 #[test]
-pub fn test_disassemble_insn_01() {
+pub fn test_disassemble_insn_00() {
     check("0x00", &[STOP]);
 }
 
+#[test]
+pub fn test_disassemble_insn_01() {
+    let bytecode = format!("0x6008600180{}50565b","01");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),ADD,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_02() {
+    let bytecode = format!("0x6008600180{}50565b","02");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),MUL,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_03() {
+    let bytecode = format!("0x6008600180{}50565b","03");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SUB,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_04() {
+    let bytecode = format!("0x6008600180{}50565b","04");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DIV,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_05() {
+    let bytecode = format!("0x6008600180{}50565b","05");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SDIV,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_06() {
+    let bytecode = format!("0x6008600180{}50565b","06");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),MOD,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_07() {
+    let bytecode = format!("0x6008600180{}50565b","07");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SMOD,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_08() {
+    let bytecode = format!("0x600960018080{}50565b","08");
+    check(&bytecode, &[PUSH(vec![0x09]),PUSH(vec![0x01]),DUP(1),DUP(1),ADDMOD,POP,JUMP,JUMPDEST(9)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_09() {
+    let bytecode = format!("0x600960018080{}50565b","09");
+    check(&bytecode, &[PUSH(vec![0x09]),PUSH(vec![0x01]),DUP(1),DUP(1),MULMOD,POP,JUMP,JUMPDEST(9)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_0a() {
+    let bytecode = format!("0x6008600180{}50565b","0a");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),EXP,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_0b() {
+    let bytecode = format!("0x6008600180{}50565b","0b");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SIGNEXTEND,POP,JUMP,JUMPDEST(8)]);
+}
+
+// 10s
+
+#[test]
+pub fn test_disassemble_insn_10() {
+    let bytecode = format!("0x6008600180{}50565b","10");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),LT,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_11() {
+    let bytecode = format!("0x6008600180{}50565b","11");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),GT,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_12() {
+    let bytecode = format!("0x6008600180{}50565b","12");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SLT,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_13() {
+    let bytecode = format!("0x6008600180{}50565b","13");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SGT,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_14() {
+    let bytecode = format!("0x6008600180{}50565b","14");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),EQ,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_15() {
+    let bytecode = format!("0x60076001{}50565b","15");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),ISZERO,POP,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_16() {
+    let bytecode = format!("0x6008600180{}50565b","16");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),AND,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_17() {
+    let bytecode = format!("0x6008600180{}50565b","17");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),OR,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_18() {
+    let bytecode = format!("0x6008600180{}50565b","18");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),XOR,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_19() {
+    let bytecode = format!("0x60076001{}50565b","19");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),NOT,POP,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_1a() {
+    let bytecode = format!("0x6008600180{}50565b","1a");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),BYTE,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_1b() {
+    let bytecode = format!("0x6008600180{}50565b","1b");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SHL,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_1c() {
+    let bytecode = format!("0x6008600180{}50565b","1c");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SHR,POP,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_1d() {
+    let bytecode = format!("0x6008600180{}50565b","1d");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),SAR,POP,JUMP,JUMPDEST(8)]);
+}
+
+// 20s
+
+#[test]
+pub fn test_disassemble_insn_20() {
+    let bytecode = format!("0x6008600180{}50565b","20");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),KECCAK256,POP,JUMP,JUMPDEST(8)]);
+}
+
 // 30s
+
+#[test]
+pub fn test_disassemble_insn_30() {
+    let bytecode = format!("0x6005{}50565b","30");
+    check(&bytecode, &[PUSH(vec![0x05]),ADDRESS,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_31() {
+    let bytecode = format!("0x60076001{}50565b","31");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),BALANCE,POP,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_32() {
+    let bytecode = format!("0x6005{}50565b","32");
+    check(&bytecode, &[PUSH(vec![0x05]),ORIGIN,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_33() {
+    let bytecode = format!("0x6005{}50565b","33");
+    check(&bytecode, &[PUSH(vec![0x05]),CALLER,POP,JUMP,JUMPDEST(5)]);
+}
 
 #[test]
 pub fn test_disassemble_insn_34() {
@@ -29,6 +213,60 @@ pub fn test_disassemble_insn_35() {
 #[test]
 pub fn test_disassemble_insn_36() {
     check("0x60053650565b", &[PUSH(vec![0x05]),CALLDATASIZE,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_37() {
+    let bytecode = format!("0x600860018080{}565b","37");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),CALLDATACOPY,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_38() {
+    let bytecode = format!("0x6005{}50565b","38");
+    check(&bytecode, &[PUSH(vec![0x05]),CODESIZE,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_39() {
+    let bytecode = format!("0x600860018080{}565b","39");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),CODECOPY,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_3a() {
+    let bytecode = format!("0x6005{}50565b","3a");
+    check(&bytecode, &[PUSH(vec![0x05]),GASPRICE,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_3b() {
+    let bytecode = format!("0x60076001{}50565b","3b");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),EXTCODESIZE,POP,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_3c() {
+    let bytecode = format!("0x60096001808080{}565b","3c");
+    check(&bytecode, &[PUSH(vec![0x09]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),EXTCODECOPY,JUMP,JUMPDEST(9)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_3d() {
+    let bytecode = format!("0x6005{}50565b","3d");
+    check(&bytecode, &[PUSH(vec![0x05]),RETURNDATASIZE,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_3e() {
+    let bytecode = format!("0x600860018080{}565b","3e");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),RETURNDATACOPY,JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_3f() {
+    let bytecode = format!("0x60076001{}50565b","3f");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),EXTCODEHASH,POP,JUMP,JUMPDEST(7)]);
 }
 
 // 50s
