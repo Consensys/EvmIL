@@ -217,7 +217,7 @@ pub fn test_disassemble_insn_36() {
 
 #[test]
 pub fn test_disassemble_insn_37() {
-    let bytecode = format!("0x600760018080{}565b","37");
+    let bytecode = format!("0x600860018080{}565b","37");
     check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),CALLDATACOPY,JUMP,JUMPDEST(8)]);
 }
 
@@ -229,7 +229,7 @@ pub fn test_disassemble_insn_38() {
 
 #[test]
 pub fn test_disassemble_insn_39() {
-    let bytecode = format!("0x600760018080{}565b","39");
+    let bytecode = format!("0x600860018080{}565b","39");
     check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),CODECOPY,JUMP,JUMPDEST(8)]);
 }
 
@@ -248,7 +248,7 @@ pub fn test_disassemble_insn_3b() {
 #[test]
 pub fn test_disassemble_insn_3c() {
     let bytecode = format!("0x60096001808080{}565b","3c");
-    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),EXTCODECOPY,JUMP,JUMPDEST(9)]);
+    check(&bytecode, &[PUSH(vec![0x09]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),EXTCODECOPY,JUMP,JUMPDEST(9)]);
 }
 
 #[test]
@@ -259,7 +259,7 @@ pub fn test_disassemble_insn_3d() {
 
 #[test]
 pub fn test_disassemble_insn_3e() {
-    let bytecode = format!("0x600760018080{}565b","3e");
+    let bytecode = format!("0x600860018080{}565b","3e");
     check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),RETURNDATACOPY,JUMP,JUMPDEST(8)]);
 }
 
