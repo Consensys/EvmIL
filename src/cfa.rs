@@ -188,15 +188,17 @@ impl AbstractState for CfaState {
                 let nth = self.peek(m);
                 self.push(nth)
             }
-            // 90s: Swap Operations
+            // 90s: Exchange Operations
             SWAP(n) => {
                 let m = (*n - 1) as usize;
                 let x = self.peek(m);
                 let y = self.peek(0);
                 self.set(0,x).set(m,y)
             }
-            // 90s: Exchange Operations
             // a0s: Logging Operations
+            LOG(n) => {
+                self.pop((n+2) as usize)
+            }
             // f0s: System Operations
             INVALID|JUMP|RETURN|REVERT => {
                 CfaState::bottom()

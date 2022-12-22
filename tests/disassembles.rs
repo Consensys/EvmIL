@@ -717,6 +717,39 @@ pub fn test_disassemble_insn_9f() {
     check("0x60226000600060006000600060006000600060006000600060006000600060009f565b", &[PUSH(vec![0x22]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(16),JUMP,JUMPDEST(0x22)]);
 }
 
+// a0s: Logging Operations
+
+#[test]
+pub fn test_disassemble_insn_a0() {
+    let bytecode = format!("0x6007600180{}565b","a0");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),LOG(0),JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_a1() {
+    let bytecode = format!("0x600860018080{}565b","a1");
+    check(&bytecode, &[PUSH(vec![0x08]),PUSH(vec![0x01]),DUP(1),DUP(1),LOG(1),JUMP,JUMPDEST(8)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_a2() {
+    let bytecode = format!("0x60096001808080{}565b","a2");
+    check(&bytecode, &[PUSH(vec![0x09]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),LOG(2),JUMP,JUMPDEST(9)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_a3() {
+    let bytecode = format!("0x600a600180808080{}565b","a3");
+    check(&bytecode, &[PUSH(vec![0x0a]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),LOG(3),JUMP,JUMPDEST(0xa)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_a4() {
+    let bytecode = format!("0x600b60018080808080{}565b","a4");
+    check(&bytecode, &[PUSH(vec![0x0b]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),LOG(4),JUMP,JUMPDEST(0xb)]);
+}
+
+
 // ============================================================================
 // Single block Tests
 // ============================================================================
