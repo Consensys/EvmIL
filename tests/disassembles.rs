@@ -749,6 +749,67 @@ pub fn test_disassemble_insn_a4() {
     check(&bytecode, &[PUSH(vec![0x0b]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),LOG(4),JUMP,JUMPDEST(0xb)]);
 }
 
+// f0s: System Operations
+
+#[test]
+pub fn test_disassemble_insn_f0() {
+    let bytecode = format!("0x600960018080{}50565b","f0");
+    check(&bytecode, &[PUSH(vec![0x09]),PUSH(vec![0x01]),DUP(1),DUP(1),CREATE,POP,JUMP,JUMPDEST(9)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_f1() {
+    let bytecode = format!("0x600d6001808080808080{}50565b","f1");
+    check(&bytecode, &[PUSH(vec![0x0d]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),CALL,POP,JUMP,JUMPDEST(0xd)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_f2() {
+    let bytecode = format!("0x600d6001808080808080{}50565b","f2");
+    check(&bytecode, &[PUSH(vec![0x0d]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),CALLCODE,POP,JUMP,JUMPDEST(0xd)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_f3() {
+    let bytecode = format!("0x6007600180{}56","f3");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),RETURN,DATA(vec![0x56])]);
+}
+
+#[test]
+pub fn test_disassemble_insn_f4() {
+    let bytecode = format!("0x600c60018080808080{}50565b","f4");
+    check(&bytecode, &[PUSH(vec![0x0c]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),DELEGATECALL,POP,JUMP,JUMPDEST(0xc)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_f5() {
+    let bytecode = format!("0x600a6001808080{}50565b","f5");
+    check(&bytecode, &[PUSH(vec![0x0a]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),CREATE2,POP,JUMP,JUMPDEST(0xa)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_fa() {
+    let bytecode = format!("0x600c60018080808080{}50565b","fa");
+    check(&bytecode, &[PUSH(vec![0x0c]),PUSH(vec![0x01]),DUP(1),DUP(1),DUP(1),DUP(1),DUP(1),STATICCALL,POP,JUMP,JUMPDEST(0xc)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_fd() {
+    let bytecode = format!("0x6007600180{}56","fd");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),REVERT,DATA(vec![0x56])]);
+}
+
+#[test]
+pub fn test_disassemble_insn_fe() {
+    let bytecode = format!("0x6007600180{}56","fe");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),INVALID,DATA(vec![0x56])]);
+}
+
+#[test]
+pub fn test_disassemble_insn_ff() {
+    let bytecode = format!("0x60066001{}565b","ff");
+    check(&bytecode, &[PUSH(vec![0x06]),PUSH(vec![0x01]),SELFDESTRUCT,JUMP,JUMPDEST(6)]);
+}
 
 // ============================================================================
 // Single block Tests

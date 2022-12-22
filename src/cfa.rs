@@ -200,9 +200,14 @@ impl AbstractState for CfaState {
                 self.pop((n+2) as usize)
             }
             // f0s: System Operations
+            CREATE => self.pop(3).push(UNKNOWN),
+            CALL|CALLCODE => self.pop(7).push(UNKNOWN),
+            DELEGATECALL|STATICCALL => self.pop(6).push(UNKNOWN),
+            CREATE2 => self.pop(4).push(UNKNOWN),
             INVALID|JUMP|RETURN|REVERT => {
                 CfaState::bottom()
             }
+            SELFDESTRUCT => self.pop(1),
             _ => {
                 // This is a catch all to ensure no instructions are
                 // missed above.
