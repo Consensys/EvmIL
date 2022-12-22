@@ -332,8 +332,63 @@ pub fn test_disassemble_insn_51() {
 }
 
 #[test]
+pub fn test_disassemble_insn_52() {
+    let bytecode = format!("0x6007600180{}565b","52");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),MSTORE,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_53() {
+    let bytecode = format!("0x6007600180{}565b","53");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),MSTORE8,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
 pub fn test_disassemble_insn_54() {
-    check("0x600760015450565b", &[PUSH(vec![0x07]),PUSH(vec![0x01]),SLOAD,POP,JUMP,JUMPDEST(7)]);
+    let bytecode = format!("0x60076001{}50565b","54");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),SLOAD,POP,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_55() {
+    let bytecode = format!("0x6007600180{}565b","55");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),DUP(1),SSTORE,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_56() {
+    // A minimal two-block program
+    check("0x60076005565b565b", &[PUSH(vec![7]),PUSH(vec![5]),JUMP,JUMPDEST(5),JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_57() {
+    // A minimal two-block program
+    check("0x600a6000516008575b565b", &[PUSH(vec![0xa]),PUSH(vec![0]),MLOAD,PUSH(vec![0x8]),JUMPI,JUMPDEST(8),JUMP,JUMPDEST(0xa)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_58() {
+    let bytecode = format!("0x6005{}50565b","58");
+    check(&bytecode, &[PUSH(vec![0x05]),PC,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_59() {
+    let bytecode = format!("0x6005{}50565b","59");
+    check(&bytecode, &[PUSH(vec![0x05]),MSIZE,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_5a() {
+    let bytecode = format!("0x6005{}50565b","5a");
+    check(&bytecode, &[PUSH(vec![0x05]),GAS,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_5b() {
+    let bytecode = format!("0x6004{}565b","5b");
+    check(&bytecode, &[PUSH(vec![0x04]),JUMPDEST(2),JUMP,JUMPDEST(4)]);
 }
 
 // 60s

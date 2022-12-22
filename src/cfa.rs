@@ -167,10 +167,11 @@ impl AbstractState for CfaState {
             // 50s: Stack, Memory, Storage and Flow Operations
             POP => self.pop(1),
             MLOAD => self.pop(1).push(UNKNOWN),
-            MSTORE => self.pop(2),
+            MSTORE|MSTORE8 => self.pop(2),
             SLOAD => self.pop(1).push(UNKNOWN),
             SSTORE => self.pop(2),
             JUMPI => self.pop(2),
+            PC|MSIZE|GAS => self.push(UNKNOWN),
             JUMPDEST(_) => self, // nop
             // 60 & 70s: Push Operations
             PUSH(bytes) => {
