@@ -42,8 +42,13 @@ impl CfaState {
     pub fn push(self, val: AbstractValue) -> Self {
         CfaState::new(self.stack.push(val))
     }
-    pub fn pop(self) -> Self {
-        CfaState::new(self.stack.pop())
+    pub fn pop(mut self, n: usize) -> Self {
+        assert!(n > 0);
+        let mut stack = self.stack;
+        for i in 0..n {
+            stack = stack.pop();
+        }
+        CfaState::new(stack)
     }
     pub fn set(self, n:usize, val: AbstractValue) -> Self {
         CfaState::new(self.stack.set(n,val))
@@ -67,8 +72,8 @@ impl AbstractState for CfaState {
 
     fn branch(&self, _pc: usize, insn: &Instruction) -> Self {
         match insn {
-            JUMPI => self.clone().pop().pop(),
-            JUMP => self.clone().pop(),
+            JUMPI => self.clone().pop(2),
+            JUMP => self.clone().pop(1),
             _ => {
                 unreachable!()
             }
@@ -109,55 +114,63 @@ impl AbstractState for CfaState {
             STOP => CfaState::bottom(),
             // 0s: Stop and Arithmetic Operations
             ADD|MUL|SUB|DIV|SDIV|MOD|SMOD|EXP|SIGNEXTEND => {
-                self.pop().pop().push(UNKNOWN)
+                self.pop(2).push(UNKNOWN)
             }
             ADDMOD|MULMOD => {
-                self.pop().pop().pop().push(UNKNOWN)
+                self.pop(3).push(UNKNOWN)
             }
             // 0s: Stop and Arithmetic Operations
             ISZERO|NOT => {
-                self.pop().push(UNKNOWN)
+                self.pop(1).push(UNKNOWN)
             }
             // Binary Comparators
             LT|GT|SLT|SGT|EQ => {
-                self.pop().pop().push(UNKNOWN)
+                self.pop(2).push(UNKNOWN)
             }
             // Binary bitwise operators
             AND|OR|XOR|BYTE|SHL|SHR|SAR => {
-                self.pop().pop().push(UNKNOWN)
+                self.pop(2).push(UNKNOWN)
             }
             // 20s: Keccak256
             KECCAK256 => {
                 // NOTE: there is some kind of compiler bug which is
                 // preventing me from putting this case in the
                 // expected position.
-                self.pop().pop().push(UNKNOWN)
+                self.pop(2).push(UNKNOWN)
             }
             // 30s: Environmental Information
             ADDRESS => self.push(UNKNOWN),
-            BALANCE => self.pop().push(UNKNOWN),
+            BALANCE => self.pop(1).push(UNKNOWN),
             ORIGIN => self.push(UNKNOWN),
             CALLER => self.push(UNKNOWN),
             CALLVALUE => self.push(UNKNOWN),
-            CALLDATALOAD => self.pop().push(UNKNOWN),
+            CALLDATALOAD => self.pop(1).push(UNKNOWN),
             CALLDATASIZE => self.push(UNKNOWN),
-            CALLDATACOPY => self.pop().pop().pop(),
+            CALLDATACOPY => self.pop(3),
             CODESIZE => self.push(UNKNOWN),
-            CODECOPY => self.pop().pop().pop(),
+            CODECOPY => self.pop(3),
             GASPRICE => self.push(UNKNOWN),
-            EXTCODESIZE => self.pop().push(UNKNOWN),
-            EXTCODECOPY => self.pop().pop().pop().pop(),
+            EXTCODESIZE => self.pop(1).push(UNKNOWN),
+            EXTCODECOPY => self.pop(4),
             RETURNDATASIZE => self.push(UNKNOWN),
-            RETURNDATACOPY => self.pop().pop().pop(),
-            EXTCODEHASH => self.pop().push(UNKNOWN),
+            RETURNDATACOPY => self.pop(3),
+            EXTCODEHASH => self.pop(1).push(UNKNOWN),
             // 40s: Block Information
+            BLOCKHASH => self.pop(1).push(UNKNOWN),
+            COINBASE => self.push(UNKNOWN),
+            TIMESTAMP => self.push(UNKNOWN),
+            NUMBER   => self.push(UNKNOWN),
+            DIFFICULTY => self.push(UNKNOWN),
+            GASLIMIT => self.push(UNKNOWN),
+            CHAINID => self.push(UNKNOWN),
+            SELFBALANCE => self.push(UNKNOWN),
             // 50s: Stack, Memory, Storage and Flow Operations
-            POP => self.pop(),
-            MLOAD => self.pop().push(UNKNOWN),
-            MSTORE => self.pop().pop(),
-            SLOAD => self.pop().push(UNKNOWN),
-            SSTORE => self.pop().pop(),
-            JUMPI => self.pop().pop(),
+            POP => self.pop(1),
+            MLOAD => self.pop(1).push(UNKNOWN),
+            MSTORE => self.pop(2),
+            SLOAD => self.pop(1).push(UNKNOWN),
+            SSTORE => self.pop(2),
+            JUMPI => self.pop(2),
             JUMPDEST(_) => self, // nop
             // 60 & 70s: Push Operations
             PUSH(bytes) => {

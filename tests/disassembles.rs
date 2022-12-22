@@ -269,6 +269,56 @@ pub fn test_disassemble_insn_3f() {
     check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),EXTCODEHASH,POP,JUMP,JUMPDEST(7)]);
 }
 
+// 40s
+
+#[test]
+pub fn test_disassemble_insn_40() {
+    let bytecode = format!("0x60076001{}50565b","40");
+    check(&bytecode, &[PUSH(vec![0x07]),PUSH(vec![0x01]),BLOCKHASH,POP,JUMP,JUMPDEST(7)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_41() {
+    let bytecode = format!("0x6005{}50565b","41");
+    check(&bytecode, &[PUSH(vec![0x05]),COINBASE,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_42() {
+    let bytecode = format!("0x6005{}50565b","42");
+    check(&bytecode, &[PUSH(vec![0x05]),TIMESTAMP,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_43() {
+    let bytecode = format!("0x6005{}50565b","43");
+    check(&bytecode, &[PUSH(vec![0x05]),NUMBER,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_44() {
+    let bytecode = format!("0x6005{}50565b","44");
+    check(&bytecode, &[PUSH(vec![0x05]),DIFFICULTY,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_45() {
+    let bytecode = format!("0x6005{}50565b","45");
+    check(&bytecode, &[PUSH(vec![0x05]),GASLIMIT,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_46() {
+    let bytecode = format!("0x6005{}50565b","46");
+    check(&bytecode, &[PUSH(vec![0x05]),CHAINID,POP,JUMP,JUMPDEST(5)]);
+}
+
+#[test]
+pub fn test_disassemble_insn_47() {
+    let bytecode = format!("0x6005{}50565b","47");
+    check(&bytecode, &[PUSH(vec![0x05]),SELFBALANCE,POP,JUMP,JUMPDEST(5)]);
+}
+
 // 50s
 
 #[test]
