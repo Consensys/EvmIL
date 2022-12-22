@@ -39,6 +39,13 @@ impl AbstractValue {
         }
     }
 
+    pub fn is_known(&self) -> bool {
+        match self {
+            AbstractValue::Known(n) => true,
+            AbstractValue::Unknown => false
+        }
+    }
+
     pub fn unwrap(&self) -> usize {
         match self {
             AbstractValue::Known(n) => *n,

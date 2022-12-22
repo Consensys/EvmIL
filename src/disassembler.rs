@@ -312,7 +312,7 @@ where T:AbstractState+fmt::Display {
                     // Decode instruction at the current position
                     let insn = Instruction::decode(pc,&self.bytes);
                     // Check whether a branch is possible
-                    if insn.can_branch() {
+                    if insn.can_branch() && ctx.peek(0).is_known() {
                         // Determine branch target
                         let target = ctx.peek(0).unwrap();
                         // Determine branch context
