@@ -36,8 +36,9 @@ impl CfaState {
     pub fn is_bottom(&self) -> bool {
         self.stack.is_bottom()
     }
-    pub fn len(&self) -> Interval {
-        self.stack.len()
+    /// Access the stack component of this abstract EVM.
+    pub fn stack(&self) -> &AbstractStack{
+        &self.stack
     }
     pub fn push(self, val: AbstractValue) -> Self {
         CfaState::new(self.stack.push(val))

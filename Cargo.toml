@@ -1,6 +1,6 @@
 [package]
 name = "evmil"
-version = "0.2.8"
+version = "0.2.9"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "An low-level immediate language for compiling to EVM bytecode"

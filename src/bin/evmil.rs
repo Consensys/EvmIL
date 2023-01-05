@@ -81,7 +81,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool,Box<dyn Error>> {
         match insn {
             Instruction::JUMPDEST(_) => {
                 let st = disasm.get_state(pc);
-                let len = st.len();
+                let len = st.stack().len();
                 println!("");
                 if len.is_constant() {
                     println!("// Stack +{}",len.unwrap());
