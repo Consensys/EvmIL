@@ -152,7 +152,6 @@ impl AbstractStack {
     /// Set `ith` item from the top on this stack.  Thus, `0` is the
     /// top of the stack, etc.
     pub fn set(mut self, n: usize, val: AbstractValue) -> Self {
-        println!("Set {} := {} in {}",n,val,self);
         // Should never be called on bottom
         assert!(!self.is_bottom());
         // NOTE: inefficient when putting unknown value into lower
