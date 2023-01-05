@@ -9,6 +9,7 @@ const UNKNOWN : AbstractValue = AbstractValue::Unknown;
 #[test]
 fn test_abstract_stack_01() {
     let st = AbstractStack::new(0..0,vec![]);
+    assert_eq!(st.values(),vec![]);
     assert_eq!(st.push(UNKNOWN), AbstractStack::new(1..1,vec![]));
 }
 
@@ -57,6 +58,7 @@ fn test_abstract_stack_08() {
 #[test]
 fn test_abstract_stack_09() {
     let st = AbstractStack::new(0..0,vec![ONE,TWO,THREE]);
+    assert_eq!(st.values(),vec![ONE,TWO,THREE]);
     assert_eq!(st.set(0,ZERO),AbstractStack::new(0..0,vec![ONE,TWO,ZERO]));
 }
 
@@ -75,6 +77,7 @@ fn test_abstract_stack_0b() {
 #[test]
 fn test_abstract_stack_0c() {
     let st = AbstractStack::new(0..0,vec![ONE,UNKNOWN,THREE]);
+    assert_eq!(st.values(),vec![ONE,UNKNOWN,THREE]);
     assert_eq!(st.set(2,UNKNOWN),AbstractStack::new(2..2,vec![THREE]));
 }
 

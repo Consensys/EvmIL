@@ -107,6 +107,11 @@ impl AbstractStack {
     pub fn max_len(&self) -> usize {
         self.lower.end + self.upper.len()
     }
+    /// Access the array of concrete values represented by this stack
+    /// (i.e. the _upper_ portion of the stack).
+    pub fn values<'a>(&'a self) -> &'a [AbstractValue] {
+        &self.upper
+    }
     /// Push an iterm onto this stack.
     pub fn push(mut self, val: AbstractValue) -> Self {
         // Should never be called on bottom
