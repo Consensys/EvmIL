@@ -67,6 +67,42 @@ fn test_abstract_stack_0a() {
 }
 
 #[test]
+fn test_abstract_stack_0b() {
+    let st = AbstractStack::new(0..0,vec![ONE,TWO,THREE]);
+    assert_eq!(st.set(2,UNKNOWN),AbstractStack::new(1..1,vec![TWO,THREE]));
+}
+
+#[test]
+fn test_abstract_stack_0c() {
+    let st = AbstractStack::new(0..0,vec![ONE,UNKNOWN,THREE]);
+    assert_eq!(st.set(2,UNKNOWN),AbstractStack::new(2..2,vec![THREE]));
+}
+
+#[test]
+fn test_abstract_stack_0d() {
+    let st = AbstractStack::new(1..1,vec![]);
+    assert_eq!(st.set(0,ONE),AbstractStack::new(0..0,vec![ONE]));
+}
+
+#[test]
+fn test_abstract_stack_0e() {
+    let st = AbstractStack::new(1..1,vec![TWO]);
+    assert_eq!(st.set(1,ONE),AbstractStack::new(0..0,vec![ONE,TWO]));
+}
+
+#[test]
+fn test_abstract_stack_0f() {
+    let st = AbstractStack::new(2..2,vec![TWO]);
+    assert_eq!(st.set(2,ONE),AbstractStack::new(0..0,vec![ONE,UNKNOWN,TWO]));
+}
+
+#[test]
+fn test_abstract_stack_0g() {
+    let st = AbstractStack::new(2..3,vec![TWO]);
+    assert_eq!(st.set(2,ONE),AbstractStack::new(0..1,vec![ONE,UNKNOWN,TWO]));
+}
+
+#[test]
 fn test_abstract_stack_10() {
     let st1 = AbstractStack::new(1..1,vec![ONE]);
     let st2 = AbstractStack::new(0..0,vec![ONE]);
@@ -114,3 +150,7 @@ fn test_abstract_stack_17() {
     let st2 = AbstractStack::new(0..1,vec![TWO,ONE]);
     assert_eq!(st1.merge(&st2),AbstractStack::new(1..2,vec![ONE]));
 }
+
+// Tests for set()
+// Force upper expansion
+// Force rebalance

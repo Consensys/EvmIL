@@ -639,82 +639,82 @@ pub fn test_disassemble_insn_8f() {
 
 #[test]
 pub fn test_disassemble_insn_90() {
-    check("0x600490565b", &[PUSH(vec![0x04]),SWAP(1),JUMP,JUMPDEST(0x04)]);
+    check("0x60053490565b", &[PUSH(vec![0x05]),CALLVALUE,SWAP(1),JUMP,JUMPDEST(0x05)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_91() {
-    check("0x6006600091565b", &[PUSH(vec![0x06]),PUSH(vec![0x00]),SWAP(2),JUMP,JUMPDEST(0x06)]);
+    check("0x600760003491565b", &[PUSH(vec![0x07]),PUSH(vec![0x00]),CALLVALUE,SWAP(2),JUMP,JUMPDEST(0x07)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_92() {
-    check("0x60086000600092565b", &[PUSH(vec![0x08]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(3),JUMP,JUMPDEST(0x08)]);
+    check("0x6009600060003492565b", &[PUSH(vec![0x09]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(3),JUMP,JUMPDEST(0x09)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_93() {
-    check("0x600a60006000600093565b", &[PUSH(vec![0x0a]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(4),JUMP,JUMPDEST(0x0a)]);
+    check("0x600b6000600060003493565b", &[PUSH(vec![0x0b]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(4),JUMP,JUMPDEST(0x0b)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_94() {
-    check("0x600c600060006000600094565b", &[PUSH(vec![0x0c]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(5),JUMP,JUMPDEST(0x0c)]);
+    check("0x600d60006000600060003494565b", &[PUSH(vec![0x0d]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(5),JUMP,JUMPDEST(0x0d)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_95() {
-    check("0x600e6000600060006000600095565b", &[PUSH(vec![0x0e]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(6),JUMP,JUMPDEST(0x0e)]);
+    check("0x600f600060006000600060003495565b", &[PUSH(vec![0x0f]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(6),JUMP,JUMPDEST(0x0f)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_96() {
-    check("0x601060006000600060006000600096565b", &[PUSH(vec![0x10]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(7),JUMP,JUMPDEST(0x10)]);
+    check("0x60116000600060006000600060003496565b", &[PUSH(vec![0x11]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(7),JUMP,JUMPDEST(0x11)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_97() {
-    check("0x6012600060006000600060006000600097565b", &[PUSH(vec![0x12]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(8),JUMP,JUMPDEST(0x12)]);
+    check("0x601360006000600060006000600060003497565b", &[PUSH(vec![0x13]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(8),JUMP,JUMPDEST(0x13)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_98() {
-    check("0x60146000600060006000600060006000600098565b", &[PUSH(vec![0x14]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(9),JUMP,JUMPDEST(0x14)]);
+    check("0x6015600060006000600060006000600060003498565b", &[PUSH(vec![0x15]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(9),JUMP,JUMPDEST(0x15)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_99() {
-    check("0x601660006000600060006000600060006000600099565b", &[PUSH(vec![0x16]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(10),JUMP,JUMPDEST(0x16)]);
+    check("0x60176000600060006000600060006000600060003499565b", &[PUSH(vec![0x17]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(10),JUMP,JUMPDEST(0x17)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_9a() {
-    check("0x601860006000600060006000600060006000600060009a565b", &[PUSH(vec![0x18]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(11),JUMP,JUMPDEST(0x18)]);
+    check("0x60196000600060006000600060006000600060006000349a565b", &[PUSH(vec![0x19]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(11),JUMP,JUMPDEST(0x19)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_9b() {
-    check("0x601a600060006000600060006000600060006000600060009b565b", &[PUSH(vec![0x1a]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(12),JUMP,JUMPDEST(0x1a)]);
+    check("0x601b60006000600060006000600060006000600060006000349b565b", &[PUSH(vec![0x1b]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(12),JUMP,JUMPDEST(0x1b)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_9c() {
-    check("0x601c6000600060006000600060006000600060006000600060009c565b", &[PUSH(vec![0x1c]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(13),JUMP,JUMPDEST(0x1c)]);
+    check("0x601d600060006000600060006000600060006000600060006000349c565b", &[PUSH(vec![0x1d]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(13),JUMP,JUMPDEST(0x1d)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_9d() {
-    check("0x601e60006000600060006000600060006000600060006000600060009d565b", &[PUSH(vec![0x1e]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(14),JUMP,JUMPDEST(0x1e)]);
+    check("0x601f6000600060006000600060006000600060006000600060006000349d565b", &[PUSH(vec![0x1f]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(14),JUMP,JUMPDEST(0x1f)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_9e() {
-    check("0x6020600060006000600060006000600060006000600060006000600060009e565b", &[PUSH(vec![0x20]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(15),JUMP,JUMPDEST(0x20)]);
+    check("0x602160006000600060006000600060006000600060006000600060006000349e565b", &[PUSH(vec![0x21]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(15),JUMP,JUMPDEST(0x21)]);
 }
 
 #[test]
 pub fn test_disassemble_insn_9f() {
-    check("0x60226000600060006000600060006000600060006000600060006000600060009f565b", &[PUSH(vec![0x22]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),SWAP(16),JUMP,JUMPDEST(0x22)]);
+    check("0x6023600060006000600060006000600060006000600060006000600060006000349f565b", &[PUSH(vec![0x23]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),PUSH(vec![0x00]),CALLVALUE,SWAP(16),JUMP,JUMPDEST(0x23)]);
 }
 
 // a0s: Logging Operations

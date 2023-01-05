@@ -148,23 +148,22 @@ impl AbstractStack {
             AbstractValue::Unknown
         }
     }
-    /// Set specific item on this stack.
+
+    /// Set `ith` item from the top on this stack.  Thus, `0` is the
+    /// top of the stack, etc.
     pub fn set(mut self, n: usize, val: AbstractValue) -> Self {
+        println!("Set {} := {} in {}",n,val,self);
         // Should never be called on bottom
         assert!(!self.is_bottom());
-        if n < self.upper.len() {
-            // Determine stack index
-            let i = self.upper.len() - (1+n);
-            // Set value
-            self.upper[i] = val;
-            // Done
-            self
-        } else {
-            // This case is complicated because we need to expand the
-            // upper portion to include the new value (where
-            // possible).
-            todo!("Implement me!");
-        }
+        // NOTE: inefficient when putting unknown value into lower
+        // portion.
+        self.ensure_upper(n+1);
+        // Determine stack index
+        let i = self.upper.len() - (1+n);
+        // Set value
+        self.upper[i] = val;
+        // Rebalance (which can be necessary is val unknown)
+        self.rebalance()
     }
 
     /// Merge two abstract stacks together.
@@ -199,6 +198,38 @@ impl AbstractStack {
         *self = tmp.merge(other);
         // Check for change
         *self != old
+    }
+
+    /// Rebalance the stack if necessary.  This is necessary when the
+    /// upper portion contains unknown values which can be shifted
+    /// into the lower portion.
+    fn rebalance(mut self) -> Self {
+        let mut i = 0;
+        // Determine whether any rebalancing necessary.
+        while i < self.upper.len() {
+            if let AbstractValue::Known(_) = self.upper[i] {
+                break;
+            }
+            i = i + 1;
+        }
+        // Rebalance only if necessary
+        if i > 0 {
+            // Increase lower portion
+            self.lower = self.lower.add(i);
+            // Decrease upper portion
+            self.upper.drain(0..i);
+        }
+        //
+        self
+    }
+
+    /// Ensure the upper portion has space for at least `n` elements.
+    fn ensure_upper(&mut self, n: usize) {
+        // FIXME: inefficient!!
+        while n > self.upper.len() {
+            self.upper.insert(0,AbstractValue::Unknown);
+            self.lower = self.lower.sub(1);
+        }
     }
 }
 

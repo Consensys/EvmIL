@@ -190,7 +190,7 @@ impl AbstractState for CfaState {
             }
             // 90s: Exchange Operations
             SWAP(n) => {
-                let m = (*n - 1) as usize;
+                let m = *n as usize;
                 let x = self.peek(m);
                 let y = self.peek(0);
                 self.set(0,x).set(m,y)
