@@ -10,13 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::{fmt};
-use crate::{Instruction,Instruction::*};
-use crate::{AbstractState};
-use crate::dfa::{AbstractValue,AbstractStack,BOTTOM_STACK,EMPTY_STACK};
+use crate::ll::{Instruction,Instruction::*};
+use crate::analysis::{AbstractState};
+use crate::analysis::{AbstractValue,AbstractStack,BOTTOM_STACK,EMPTY_STACK};
 use crate::util;
-use crate::util::Interval;
+use crate::util::u256;
 
-const MAX_CODE_SIZE : u128 = 24576;
+const MAX_CODE_SIZE : u256 = u256::from_u64(24576);
 const UNKNOWN : AbstractValue = AbstractValue::Unknown;
 
 // ============================================================================
@@ -43,10 +43,10 @@ impl CfaState {
     pub fn push(self, val: AbstractValue) -> Self {
         CfaState::new(self.stack.push(val))
     }
-    pub fn pop(mut self, n: usize) -> Self {
+    pub fn pop(self, n: usize) -> Self {
         assert!(n > 0);
         let mut stack = self.stack;
-        for i in 0..n {
+        for _i in 0..n {
             stack = stack.pop();
         }
         CfaState::new(stack)
@@ -176,9 +176,9 @@ impl AbstractState for CfaState {
             JUMPDEST(_) => self, // nop
             // 60 & 70s: Push Operations
             PUSH(bytes) => {
-                let n = util::from_be_bytes(&bytes);
+                let n = u256::from_be_bytes(&bytes);
                 if n <= MAX_CODE_SIZE {
-                    self.push(AbstractValue::Known(n as usize))
+                    self.push(AbstractValue::Known(n))
                 } else {
                     self.push(UNKNOWN)
                 }
