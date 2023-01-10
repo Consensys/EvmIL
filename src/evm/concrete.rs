@@ -1,6 +1,6 @@
 use crate::evm::{Evm,Stack,Stepable,Word};
 use crate::evm::opcode::*;
-use crate::util::u256;
+use crate::util::w256;
 
 // ===================================================================
 // Concrete Stack
@@ -33,7 +33,7 @@ impl<T:Word> Stack<T> for ConcreteStack<T> {
 
     fn len(&self) -> T {
         // FIXME: broken for non-64bit architectures!
-        let w : u256 = (self.items.len() as u64).into();
+        let w : w256 = (self.items.len() as u64).into();
         // Convert into word
         w.into()
     }
@@ -58,7 +58,7 @@ pub enum ConcreteResult<'a> {
     Revert{data:Vec<u8>}
 }
 
-pub type ConcreteEvm<'a> = Evm<'a,u256,ConcreteStack<u256>>;
+pub type ConcreteEvm<'a> = Evm<'a,w256,ConcreteStack<w256>>;
 
 impl<'a> ConcreteEvm<'a> {
     /// Execute the contract to completion.
@@ -100,8 +100,8 @@ impl<'a> Stepable for ConcreteEvm<'a> {
                 let pc = self.pc+1;
                 // Extract bytes
                 let bytes = &self.code[pc .. pc+n];
-                // Convert bytes into u256 word
-                let w : u256 = bytes.into();
+                // Convert bytes into w256 word
+                let w = w256::from_be_bytes(bytes);
                 // Done
                 Self::Result::Continue(self.push(w.into()).next(n+1))
             }

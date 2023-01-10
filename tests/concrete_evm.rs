@@ -1,5 +1,3 @@
-use evmil::util::u256;
-use evmil::evm;
 use evmil::evm::opcode::*;
 use evmil::evm::ConcreteEvm;
 use evmil::evm::ConcreteResult::*;

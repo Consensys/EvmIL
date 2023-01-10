@@ -12,9 +12,9 @@
 mod byte_utils;
 mod hex;
 mod interval;
-mod int;
+mod word256;
 
 pub use byte_utils::*;
 pub use hex::*;
 pub use interval::*;
-pub use int::*;
+pub use word256::*;

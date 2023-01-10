@@ -4,7 +4,7 @@ pub mod opcode;
 pub use crate::evm::concrete::*;
 
 use std::marker::PhantomData;
-use crate::util::u256;
+use crate::util::w256;
 
 
 /// Represents the fundamental unit of computation within the EVM,
@@ -12,14 +12,14 @@ use crate::util::u256;
 /// could be reused across both _concrete_ and _abstract_ semantics.
 pub trait Word : Sized +
     Copy +
-    From<u256> +
+    From<w256> +
     PartialEq +
     std::ops::Add<Output=Self> {
 
 }
 
-/// Default implementation for `u256`
-impl Word for u256 { }
+/// Default implementation for `w256`
+impl Word for w256 { }
 
 // ===================================================================
 // Stack

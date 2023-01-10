@@ -1,6 +1,6 @@
 use std::{fmt};
 use crate::evm;
-use crate::util::u256;
+use crate::util::w256;
 
 // ============================================================================
 // Abstract Word
@@ -10,7 +10,7 @@ use crate::util::u256;
 /// (i.e. arbitrary value).
 #[derive(Clone,Copy,Debug,PartialEq)]
 pub enum AbstractValue {
-    Known(u256),
+    Known(w256),
     Unknown
 }
 
@@ -33,7 +33,7 @@ impl AbstractValue {
         }
     }
 
-    pub fn unwrap(&self) -> u256 {
+    pub fn unwrap(&self) -> w256 {
         match self {
             Known(n) => *n,
             Unknown => {
@@ -52,8 +52,8 @@ impl fmt::Display for AbstractValue {
     }
 }
 
-impl From<u256> for AbstractValue {
-    fn from(v:u256) -> AbstractValue {
+impl From<w256> for AbstractValue {
+    fn from(v:w256) -> AbstractValue {
         Known(v)
     }
 }
