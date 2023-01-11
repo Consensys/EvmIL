@@ -1,9 +1,10 @@
-use evmil::dfa::{AbstractStack,AbstractValue,EMPTY_STACK};
+use evmil::analysis::{AbstractStack,AbstractValue,EMPTY_STACK};
+use evmil::util::w256;
 
-const ZERO : AbstractValue = AbstractValue::Known(0);
-const ONE : AbstractValue = AbstractValue::Known(1);
-const TWO : AbstractValue = AbstractValue::Known(2);
-const THREE : AbstractValue = AbstractValue::Known(3);
+const ZERO : AbstractValue = AbstractValue::Known(w256::new(0,0));
+const ONE : AbstractValue = AbstractValue::Known(w256::new(1,0));
+const TWO : AbstractValue = AbstractValue::Known(w256::new(2,0));
+const THREE : AbstractValue = AbstractValue::Known(w256::new(3,0));
 const UNKNOWN : AbstractValue = AbstractValue::Unknown;
 
 #[test]

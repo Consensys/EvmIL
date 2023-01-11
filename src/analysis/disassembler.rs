@@ -10,8 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::{Instruction,Instruction::*};
-use crate::dfa::AbstractValue;
+use crate::ll::{Instruction,Instruction::*};
+use crate::analysis::AbstractValue;
 
 // ============================================================================
 // Disassembly
@@ -279,7 +279,7 @@ where T:AbstractState {
     /// address.
     fn get_enclosing_block_id(&self, pc: usize) -> usize {
         for i in 0..self.blocks.len() {
-            if self.blocks[i].encloses(pc) {
+            if self.blocks[i as usize].encloses(pc) {
                 return i;
             }
         }
@@ -310,15 +310,15 @@ where T:AbstractState+fmt::Display {
                 // Parse the block
                 while pc < blk.end {
                     // Decode instruction at the current position
-                    let insn = Instruction::decode(pc,&self.bytes);
+                    let insn = Instruction::decode(pc as usize,&self.bytes);
                     // Check whether a branch is possible
                     if insn.can_branch() && ctx.peek(0).is_known() {
                         // Determine branch target
-                        let target = ctx.peek(0).unwrap();
+                        let target : u16 = ctx.peek(0).unwrap().into();
                         // Determine branch context
-                        let branch_ctx = ctx.branch(target,&insn);
+                        let branch_ctx = ctx.branch(target as usize,&insn);
                         // Convert target into block ID.
-                        let block_id = self.get_enclosing_block_id(target);
+                        let block_id = self.get_enclosing_block_id(target as usize);
                         // println!("Branch: target={} (block {})",target,block_id);
                         // println!("Before merge (pc={}): {}", pc, self.contexts[block_id]);
                         // Merge in updated state
