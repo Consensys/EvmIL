@@ -12,12 +12,13 @@
 use std::{fmt};
 use crate::ll::{Instruction,Instruction::*};
 use crate::analysis::{AbstractState};
-use crate::analysis::{AbstractValue,AbstractStack,BOTTOM_STACK,EMPTY_STACK};
-use crate::util;
-use crate::util::w256;
+use crate::analysis::{AbstractStack, AbstractWord};
+use crate::util::{w256,Interval};
+
+type Word = AbstractWord<Interval<w256>>;
 
 const MAX_CODE_SIZE : w256 = w256::new(24576u128,0);
-const UNKNOWN : AbstractValue = AbstractValue::Unknown;
+const UNKNOWN : Word = Word::Unknown;
 
 // ============================================================================
 // Disassembly Context
@@ -25,11 +26,11 @@ const UNKNOWN : AbstractValue = AbstractValue::Unknown;
 
 #[derive(Debug,PartialEq)]
 pub struct CfaState {
-    stack: AbstractStack
+    stack: AbstractStack<Interval<w256>>
 }
 
 impl CfaState {
-    pub fn new(stack: AbstractStack) -> Self {
+    pub fn new(stack: AbstractStack<Interval<w256>>) -> Self {
         // Done
         Self{stack}
     }
@@ -37,21 +38,19 @@ impl CfaState {
         self.stack.is_bottom()
     }
     /// Access the stack component of this abstract EVM.
-    pub fn stack(&self) -> &AbstractStack{
+    pub fn stack(&self) -> &AbstractStack<Interval<w256>>{
         &self.stack
     }
-    pub fn push(self, val: AbstractValue) -> Self {
-        CfaState::new(self.stack.push(val))
+    pub fn push(mut self, val: Word) -> Self {
+        self.stack.push(val);
+        self
     }
-    pub fn pop(self, n: usize) -> Self {
+    pub fn pop(mut self, n: usize) -> Self {
         assert!(n > 0);
-        let mut stack = self.stack;
-        for _i in 0..n {
-            stack = stack.pop();
-        }
-        CfaState::new(stack)
+        (0..n).for_each(|_| { self.stack.pop(); });
+        self
     }
-    pub fn set(self, n:usize, val: AbstractValue) -> Self {
+    pub fn set(self, n:usize, val: Word) -> Self {
         CfaState::new(self.stack.set(n,val))
     }
 }
@@ -81,7 +80,7 @@ impl AbstractState for CfaState {
         }
     }
 
-    fn peek(&self, n: usize) -> AbstractValue {
+    fn peek(&self, n: usize) -> Word {
         self.stack.peek(n)
     }
 
@@ -99,10 +98,10 @@ impl AbstractState for CfaState {
         false
     }
 
-    fn bottom() -> Self { CfaState::new(BOTTOM_STACK) }
+    fn bottom() -> Self { CfaState::new(AbstractStack::bottom()) }
 
     fn origin() -> Self {
-        CfaState::new(EMPTY_STACK)
+        CfaState::new(AbstractStack::empty())
     }
 
     // ============================================================================
@@ -178,7 +177,7 @@ impl AbstractState for CfaState {
             PUSH(bytes) => {
                 let n = w256::from_be_bytes(&bytes);
                 if n <= MAX_CODE_SIZE {
-                    self.push(AbstractValue::Known(n))
+                    self.push(Word::Known(n.into()))
                 } else {
                     self.push(UNKNOWN)
                 }
