@@ -17,9 +17,9 @@ fn test_interval_01() {
 
 #[test]
 fn test_interval_02() {
-    let i1 = Interval::from(0..2);
-    let i2 = Interval::from(1..3);
-    let i3 = Interval::from(3..5);
+    let i1 = Interval::from(0..=2);
+    let i2 = Interval::from(1..=3);
+    let i3 = Interval::from(3..=5);
     //
     assert_eq!(i1.add(1),i2);
     assert_eq!(i2.sub(1),i1);

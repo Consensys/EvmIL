@@ -40,11 +40,6 @@ where
         Self { start, end }
     }
 
-    pub const fn new_const(start: T, end: T) -> Self {
-        //assert!(start <= end);
-        Self { start, end }
-    }
-
     /// Check whether this interval represents a constant value.  For
     /// example, the interval `1..1` represents the constant `1`.
     pub fn is_constant(&self) -> bool {
@@ -128,27 +123,19 @@ impl<T:Copy+Ord> JoinInto for Interval<T>
 // Coercions
 // ======================================================================
 
-impl<T> From<Range<T>> for Interval<T>
+impl<T> From<RangeInclusive<T>> for Interval<T>
 where T: PartialOrd + Copy
 {
-    fn from(r: Range<T>) -> Self {
-        Interval::new(r.start, r.end)
-    }
-}
-
-impl<T> From<RangeInclusive<T>> for Interval<T>
-where T: PartialOrd + Copy + std::ops::Add<usize,Output=T>
-{
     fn from(r: RangeInclusive<T>) -> Self {
-        Interval::new(*r.start(), *r.end() + 1)
+        Interval::new(*r.start(), *r.end())
     }
 }
 
 impl<T> From<T> for Interval<T>
-where T: PartialOrd + Copy + std::ops::Add<usize,Output=T>
+where T: PartialOrd + Copy
 {
     fn from(n: T) -> Self {
-	Interval::new(n,n + 1)
+	Interval::new(n,n)
     }
 }
        

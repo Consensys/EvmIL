@@ -34,8 +34,6 @@ impl<T> AbstractStack<T>
 where T:PartialEq+Copy {
     pub fn new(lower: impl Into<Interval<usize>>, upper: Vec<AbstractWord<T>>) -> Self {
 	let lower_iv = lower.into();
-        // Sanity check (maximum) stack height
-        assert!((lower_iv.end + upper.len()) <= 1024);
         // Done
         Self {
             lower: lower_iv,

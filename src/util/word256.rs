@@ -3,7 +3,7 @@ use crate::util;
 
 /// Represents a `256` bit word.  This is very similar what a `u256`
 /// would be, but where all operations employ modulo arithmetic.
-#[derive(Clone,Copy,Debug,Eq,PartialEq,PartialOrd)]
+#[derive(Clone,Copy,Debug,Eq,PartialEq)]
 #[allow(non_camel_case_types)]
 pub struct w256 {
     // Least significant 16 bytes
@@ -15,7 +15,7 @@ pub struct w256 {
 impl w256 {
 
     /// The smallest value that can be represented by this word.
-    pub const MIN : w256 = w256::new(0u128,0u128);    
+    pub const MIN : w256 = w256::new(0u128,0u128);
     /// The largest value that can be represented by this word.
     pub const MAX : w256 = w256::new(u128::MAX,u128::MAX);
     /// Constant for zero
@@ -24,11 +24,11 @@ impl w256 {
     pub const ONE : w256 = w256::from(1);
     /// Constant for two
     pub const TWO : w256 = w256::from(2);
-    /// Constant for three    
+    /// Constant for three
     pub const THREE : w256 = w256::from(3);
-    /// Constant for four    
+    /// Constant for four
     pub const FOUR : w256 = w256::from(4);
-    
+
     /// Construct a `w256` from two `u128` words.
     pub const fn new(low: u128, high: u128) -> Self {
         w256{low, high}
@@ -100,10 +100,16 @@ impl Ord for w256 {
     fn cmp(&self, other: &Self) -> cmp::Ordering {
 	let h = u128::cmp(&self.high,&other.high);
 	if h == cmp::Ordering::Equal {
-	    u128::cmp(&self.low,&other.low)	    
+	    u128::cmp(&self.low,&other.low)
 	} else {
 	    h
 	}
+    }
+}
+
+impl PartialOrd for w256 {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
