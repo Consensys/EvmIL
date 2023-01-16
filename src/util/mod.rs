@@ -12,9 +12,13 @@
 mod byte_utils;
 mod hex;
 mod interval;
+mod lattice;
 mod word256;
+mod numeric;
 
 pub use byte_utils::*;
 pub use hex::*;
 pub use interval::*;
+pub use lattice::*;
+pub use numeric::*;
 pub use word256::*;

@@ -11,10 +11,10 @@
 // limitations under the License.
 mod cfa;
 mod disassembler;
-mod stack;
-mod word;
+mod abstract_stack;
+mod abstract_word;
 
 pub use cfa::*;
 pub use disassembler::*;
-pub use stack::*;
-pub use word::*;
+pub use abstract_stack::*;
+pub use abstract_word::*;

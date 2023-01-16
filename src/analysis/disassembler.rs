@@ -10,8 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
+use crate::analysis::AbstractWord;
 use crate::ll::{Instruction,Instruction::*};
-use crate::analysis::AbstractValue;
+use crate::util::{w256,Interval};
+
+type Word = AbstractWord<Interval<w256>>;
 
 // ============================================================================
 // Disassembly
@@ -65,7 +68,7 @@ pub trait AbstractState : Clone {
     /// indicating whether anything changed.
     fn merge(&mut self, other: Self) -> bool;
     /// Determine value on top of stack
-    fn peek(&self, n: usize) -> AbstractValue;
+    fn peek(&self, n: usize) -> Word;
     /// Identify bottom value
     fn bottom() -> Self;
     /// Identify origin value
@@ -82,7 +85,7 @@ impl AbstractState for () {
     /// Default implementation does nothing
     fn merge(&mut self, _other: Self) -> bool { false }
     /// Does nothing
-    fn peek(&self,_n: usize) -> AbstractValue { AbstractValue::Unknown }
+    fn peek(&self,_n: usize) -> Word { Word::Unknown }
     /// Identify bottom value
     fn bottom() -> Self { () }
     /// Identify origin value
@@ -314,7 +317,7 @@ where T:AbstractState+fmt::Display {
                     // Check whether a branch is possible
                     if insn.can_branch() && ctx.peek(0).is_known() {
                         // Determine branch target
-                        let target : u16 = ctx.peek(0).unwrap().into();
+                        let target : u16 = ctx.peek(0).known().unwrap().into();
                         // Determine branch context
                         let branch_ctx = ctx.branch(target as usize,&insn);
                         // Convert target into block ID.

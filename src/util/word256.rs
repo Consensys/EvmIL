@@ -1,15 +1,9 @@
-use std::fmt;
+use std::{cmp,fmt};
 use crate::util;
-
-/// The smallest value that can be represented by this word.
-pub const MIN : w256 = w256::new(0u128,0u128);
-
-/// The largest value that can be represented by this word.
-pub const MAX : w256 = w256::new(u128::MAX,u128::MAX);
 
 /// Represents a `256` bit word.  This is very similar what a `u256`
 /// would be, but where all operations employ modulo arithmetic.
-#[derive(Clone,Copy,Debug,PartialEq,PartialOrd)]
+#[derive(Clone,Copy,Debug,Eq,PartialEq)]
 #[allow(non_camel_case_types)]
 pub struct w256 {
     // Least significant 16 bytes
@@ -19,9 +13,28 @@ pub struct w256 {
 }
 
 impl w256 {
+
+    /// The smallest value that can be represented by this word.
+    pub const MIN : w256 = w256::new(0u128,0u128);
+    /// The largest value that can be represented by this word.
+    pub const MAX : w256 = w256::new(u128::MAX,u128::MAX);
+    /// Constant for zero
+    pub const ZERO : w256 = w256::from(0);
+    /// Constant for one
+    pub const ONE : w256 = w256::from(1);
+    /// Constant for two
+    pub const TWO : w256 = w256::from(2);
+    /// Constant for three
+    pub const THREE : w256 = w256::from(3);
+    /// Constant for four
+    pub const FOUR : w256 = w256::from(4);
+
     /// Construct a `w256` from two `u128` words.
     pub const fn new(low: u128, high: u128) -> Self {
         w256{low, high}
+    }
+    pub const fn from(item: u128) -> Self {
+	w256{low: item, high: 0}
     }
     /// Convert a given byte array into a w256.  The array is expected
     /// to be at most 32bytes long.
@@ -43,6 +56,22 @@ impl w256 {
     }
 }
 
+// =====================================================================
+// Min / Max
+// =====================================================================
+
+impl util::Max for w256 {
+    const MAX : Self = w256::MAX;
+}
+
+impl util::Min for w256 {
+    const MIN : Self = w256::MIN;
+}
+
+// =====================================================================
+// Coercions
+// =====================================================================
+
 /// Anything which can be converted into a `u128` can be converted
 /// into a `w256`.
 impl<T:Into<u128>> From<T> for w256 {
@@ -54,6 +83,33 @@ impl<T:Into<u128>> From<T> for w256 {
 impl Into<u16> for w256 {
     fn into(self) -> u16 {
         self.low as u16
+    }
+}
+
+impl Into<u16> for &w256 {
+    fn into(self) -> u16 {
+        self.low as u16
+    }
+}
+
+// =====================================================================
+// Arithmetic Comparisons
+// =====================================================================
+
+impl Ord for w256 {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+	let h = u128::cmp(&self.high,&other.high);
+	if h == cmp::Ordering::Equal {
+	    u128::cmp(&self.low,&other.low)
+	} else {
+	    h
+	}
+    }
+}
+
+impl PartialOrd for w256 {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -70,6 +126,17 @@ impl std::ops::Add for w256 {
         let (hw,_) = carrying_add(self.high,rhs.high,c0);
         // Done
         w256{low: lw, high: hw}
+    }
+}
+
+impl std::ops::Add<usize> for w256 {
+    type Output=Self;
+
+    fn add(self,rhs: usize) -> Self {
+	// Coerce usize into u128 (unsafe)
+        let r : w256 = (rhs as u128).into();
+	// Add two w256
+	self + r
     }
 }
 
@@ -143,7 +210,7 @@ mod tests {
     const MAX128 : w256 = w256::new(u128::MAX,0);
     const MAX128M1 : w256 = w256::new(u128::MAX-1,0);
     const MAX128P1 : w256 = w256::new(0,1);
-    const MAX256 : w256 = word256::MAX;
+    const MAX256 : w256 = w256::MAX;
     const MAX256M1 : w256 = w256::new(u128::MAX-1,u128::MAX);
 
     // === Addition ===
