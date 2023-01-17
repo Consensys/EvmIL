@@ -12,13 +12,13 @@
 use std::{fmt};
 use crate::ll::{Instruction,Instruction::*};
 use crate::analysis::{AbstractState};
-use crate::analysis::{AbstractStack, AbstractWord};
-use crate::util::{w256,Interval};
+use crate::analysis::{AbstractStack};
+use crate::util::{w256,Interval,IsBottom,Bottom,Top};
 
-type Word = AbstractWord<Interval<w256>>;
+type Word = Interval<w256>;
 
 const MAX_CODE_SIZE : w256 = w256::new(24576u128,0);
-const UNKNOWN : Word = Word::Unknown;
+const UNKNOWN : Word = <Word as Top>::TOP;
 
 // ============================================================================
 // Disassembly Context
@@ -98,7 +98,7 @@ impl AbstractState for CfaState {
         false
     }
 
-    fn bottom() -> Self { CfaState::new(AbstractStack::bottom()) }
+    fn bottom() -> Self { CfaState::new(AbstractStack::BOTTOM) }
 
     fn origin() -> Self {
         CfaState::new(AbstractStack::empty())
@@ -177,7 +177,7 @@ impl AbstractState for CfaState {
             PUSH(bytes) => {
                 let n = w256::from_be_bytes(&bytes);
                 if n <= MAX_CODE_SIZE {
-                    self.push(Word::Known(n.into()))
+                    self.push(Word::from(n))
                 } else {
                     self.push(UNKNOWN)
                 }

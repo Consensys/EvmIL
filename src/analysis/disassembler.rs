@@ -10,11 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::analysis::AbstractWord;
 use crate::ll::{Instruction,Instruction::*};
-use crate::util::{w256,Interval};
+use crate::util::{w256,Interval,Constant};
 
-type Word = AbstractWord<Interval<w256>>;
+type Word = Interval<w256>;
 
 // ============================================================================
 // Disassembly
@@ -85,7 +84,10 @@ impl AbstractState for () {
     /// Default implementation does nothing
     fn merge(&mut self, _other: Self) -> bool { false }
     /// Does nothing
-    fn peek(&self,_n: usize) -> Word { Word::Unknown }
+    fn peek(&self,_n: usize) -> Word {
+        //Word::TOP
+        todo!("fix me");
+    }
     /// Identify bottom value
     fn bottom() -> Self { () }
     /// Identify origin value
@@ -315,9 +317,9 @@ where T:AbstractState+fmt::Display {
                     // Decode instruction at the current position
                     let insn = Instruction::decode(pc as usize,&self.bytes);
                     // Check whether a branch is possible
-                    if insn.can_branch() && ctx.peek(0).is_known() {
+                    if insn.can_branch() && ctx.peek(0).is_constant() {
                         // Determine branch target
-                        let target : u16 = ctx.peek(0).known().unwrap().into();
+                        let target : u16 = ctx.peek(0).constant().into();
                         // Determine branch context
                         let branch_ctx = ctx.branch(target as usize,&insn);
                         // Convert target into block ID.
