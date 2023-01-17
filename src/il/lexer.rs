@@ -1,11 +1,22 @@
-pub use delta_inc::lex::{Error,Result,Span};
-use delta_inc::lex::{Scanner,TableTokenizer};
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use delta_inc::lex;
+pub use delta_inc::lex::{Error, Result, Span};
+use delta_inc::lex::{Scanner, TableTokenizer};
 
 // =================================================================
 // Token
 // =================================================================
-#[derive(Clone,Copy,Debug,PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Token {
     AmpersandAmpersand,
     Assert,
@@ -40,24 +51,24 @@ pub enum Token {
     ShreakEquals,
     Succeed,
     Star,
-    Stop
+    Stop,
 }
 
 // ======================================================
 // Rules
 // ======================================================
 
-const ASSERT : &'static [char] = &['a','s','s','e','r','t'];
-const FAIL : &'static [char] = &['f','a','i','l'];
-const GOTO : &'static [char] = &['g','o','t','o'];
-const IF : &'static [char] = &['i','f'];
-const REVERT : &'static [char] = &['r','e','v','e','r','t'];
-const SUCCEED : &'static [char] = &['s','u','c','c','e','e','d'];
-const STOP : &'static [char] = &['s','t','o','p'];
+const ASSERT: &'static [char] = &['a', 's', 's', 'e', 'r', 't'];
+const FAIL: &'static [char] = &['f', 'a', 'i', 'l'];
+const GOTO: &'static [char] = &['g', 'o', 't', 'o'];
+const IF: &'static [char] = &['i', 'f'];
+const REVERT: &'static [char] = &['r', 'e', 'v', 'e', 'r', 't'];
+const SUCCEED: &'static [char] = &['s', 'u', 'c', 'c', 'e', 'e', 'd'];
+const STOP: &'static [char] = &['s', 't', 'o', 'p'];
 
 /// Handy type alias for the result type used for all of the lexical
 /// rules.
-type ScannerResult = std::result::Result<Span<Token>,()>;
+type ScannerResult = std::result::Result<Span<Token>, ()>;
 
 /// Scan an (unsigned) integer literal.
 fn scan_uint_literal(input: &[char]) -> ScannerResult {
@@ -71,7 +82,7 @@ fn scan_hex_literal(input: &[char]) -> ScannerResult {
     } else {
         let r = scan_whilst(&input[2..], Token::Hex, |c| c.is_digit(16))?;
         // Update span information
-        Ok(Span::new(Token::Hex,0..r.region.end+2))
+        Ok(Span::new(Token::Hex, 0..r.region.end + 2))
     }
 }
 
@@ -89,10 +100,12 @@ fn scan_keyword(input: &[char]) -> ScannerResult {
         REVERT => Token::Revert,
         SUCCEED => Token::Succeed,
         STOP => Token::Stop,
-        _ => { return Err(()); }
+        _ => {
+            return Err(());
+        }
     };
     // Success!
-    Ok(Span::new(t,r.region.into()))
+    Ok(Span::new(t, r.region.into()))
 }
 
 /// Scan an identifier which starts with an alpabetic character, or an
@@ -127,10 +140,12 @@ fn scan_single_operators(input: &[char]) -> ScannerResult {
             ']' => Token::RightSquare,
             ';' => Token::SemiColon,
             '*' => Token::Star,
-            _ => { return Err(()); }
+            _ => {
+                return Err(());
+            }
         };
         //
-        Ok(Span::new(t,0..1))
+        Ok(Span::new(t, 0..1))
     }
 }
 
@@ -140,16 +155,18 @@ fn scan_double_operators(input: &[char]) -> ScannerResult {
         Err(())
     } else {
         let t = match (input[0], input[1]) {
-            ('&','&') => Token::AmpersandAmpersand,
-            ('|','|') => Token::BarBar,
-            ('=','=') => Token::EqualsEquals,
-            ('<','=') => Token::LeftAngleEquals,
-            ('>','=') => Token::RightAngleEquals,
-            ('!','=') => Token::ShreakEquals,
-            _ => { return Err(()); }
+            ('&', '&') => Token::AmpersandAmpersand,
+            ('|', '|') => Token::BarBar,
+            ('=', '=') => Token::EqualsEquals,
+            ('<', '=') => Token::LeftAngleEquals,
+            ('>', '=') => Token::RightAngleEquals,
+            ('!', '=') => Token::ShreakEquals,
+            _ => {
+                return Err(());
+            }
         };
         //
-        Ok(Span::new(t,0..2))
+        Ok(Span::new(t, 0..2))
     }
 }
 
@@ -170,14 +187,14 @@ fn scan_gap(input: &[char]) -> ScannerResult {
 }
 
 fn scan_newline(input: &[char]) -> ScannerResult {
-    scan_one(input,Token::NewLine,'\n')
+    scan_one(input, Token::NewLine, '\n')
 }
 
 /// If there is nothing left to scan, then we've reached the
 /// End-Of-File.
 fn scan_eof(input: &[char]) -> ScannerResult {
     if input.len() == 0 {
-        Ok(Span::new(Token::EOF,0..0))
+        Ok(Span::new(Token::EOF, 0..0))
     } else {
         Err(())
     }
@@ -186,10 +203,14 @@ fn scan_eof(input: &[char]) -> ScannerResult {
 /// Helper which scans an item matching a given predicate.  If no
 /// characters match, then it fails.
 fn scan_whilst<P>(input: &[char], t: Token, pred: P) -> ScannerResult
-where P: Fn(char) -> bool {
+where
+    P: Fn(char) -> bool,
+{
     let mut i = 0;
     // Continue whilst predicate matches
-    while i < input.len() && pred(input[i]) { i = i + 1; }
+    while i < input.len() && pred(input[i]) {
+        i = i + 1;
+    }
     // Check what happened
     if i == 0 {
         // Nothing matched
@@ -209,7 +230,7 @@ fn scan_one(input: &[char], t: Token, c: char) -> ScannerResult {
 }
 
 /// The set of rules used for lexing.
-static RULES : &'static [Scanner<char,Token>] = &[
+static RULES: &'static [Scanner<char, Token>] = &[
     scan_double_operators,
     scan_single_operators,
     scan_keyword,
@@ -218,7 +239,7 @@ static RULES : &'static [Scanner<char,Token>] = &[
     scan_uint_literal,
     scan_gap,
     scan_newline,
-    scan_eof
+    scan_eof,
 ];
 
 // ======================================================
@@ -227,7 +248,7 @@ static RULES : &'static [Scanner<char,Token>] = &[
 
 pub struct Lexer {
     /// Internal lexer used for the heavy lifting.
-    lexer: lex::Lexer<TableTokenizer<char,Token>>
+    lexer: lex::Lexer<TableTokenizer<char, Token>>,
 }
 
 impl Lexer {
@@ -235,7 +256,9 @@ impl Lexer {
     pub fn new(input: &str) -> Lexer {
         let tokenizer = TableTokenizer::new(RULES.to_vec());
         let chars = input.chars().collect();
-        Lexer{lexer:lex::Lexer::new(chars, tokenizer)}
+        Lexer {
+            lexer: lex::Lexer::new(chars, tokenizer),
+        }
     }
 
     /// Turn an integer token into a `i32`.  Observe that this will
@@ -263,15 +286,19 @@ impl Lexer {
     }
 
     /// Pass through request to underlying lexer
-    pub fn is_eof(&self) -> bool { self.lexer.is_eof() }
+    pub fn is_eof(&self) -> bool {
+        self.lexer.is_eof()
+    }
     /// Pass through request to underlying lexer
-    pub fn peek(&self) -> Span<Token> { self.lexer.peek() }
+    pub fn peek(&self) -> Span<Token> {
+        self.lexer.peek()
+    }
     /// Pass through request to underlying lexer
-    pub fn snap(&mut self, kind : Token) -> Result<Token> {
+    pub fn snap(&mut self, kind: Token) -> Result<Token> {
         self.lexer.snap(kind)
     }
     /// Pass through request to underlying lexer
-    pub fn snap_any(&mut self, kinds : &[Token]) -> Result<Token> {
+    pub fn snap_any(&mut self, kinds: &[Token]) -> Result<Token> {
         self.lexer.snap_any(kinds)
     }
 }
@@ -280,14 +307,15 @@ impl Lexer {
 // Tests
 // ======================================================
 
-
 #[cfg(test)]
 mod tests {
-    use crate::il::{Lexer,Token};
+    use crate::il::{Lexer, Token};
 
     /// Handy definition
     macro_rules! assert_ok {
-        ($result:expr) => { assert!($result.is_ok()); };
+        ($result:expr) => {
+            assert!($result.is_ok());
+        };
     }
 
     #[test]

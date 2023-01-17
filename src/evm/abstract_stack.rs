@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::evm;
-use crate::util::{Interval,Join,Top,Bottom};
+use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice, Top};
 use std::{cmp, fmt, mem};
 
 // ============================================================================
@@ -18,7 +18,7 @@ use std::{cmp, fmt, mem};
 // ============================================================================
 
 #[derive(Debug, PartialEq)]
-pub struct AbstractStack<T:PartialEq> {
+pub struct AbstractStack<T: PartialEq> {
     // The lower segment of an abstract stack represents a variable
     // number of unknown values.  An interval is used for a compact
     // representation.  So, for example, `0..1` represents two
@@ -30,9 +30,11 @@ pub struct AbstractStack<T:PartialEq> {
 }
 
 impl<T> AbstractStack<T>
-where T:PartialEq+Copy+Bottom+Top {
+where
+    T: PartialEq + Copy + JoinLattice,
+{
     pub fn new(lower: impl Into<Interval<usize>>, upper: Vec<T>) -> Self {
-	let lower_iv = lower.into();
+        let lower_iv = lower.into();
         // Done
         Self {
             lower: lower_iv,
@@ -41,7 +43,7 @@ where T:PartialEq+Copy+Bottom+Top {
     }
     /// Construct an empty stack.
     pub fn empty() -> Self {
-        Self::new(0,Vec::new())
+        Self::new(0, Vec::new())
     }
     /// Determine possible lengths of the stack as an interval
     pub fn len(&self) -> Interval<usize> {
@@ -119,6 +121,25 @@ where T:PartialEq+Copy+Bottom+Top {
         self.rebalance()
     }
 
+    /// Join two abstract stacks together.
+    pub fn join(self, other: &AbstractStack<T>) -> Self {
+        let slen = self.upper.len();
+        let olen = other.upper.len();
+        // Determine common upper length
+        let n = cmp::min(slen, olen);
+        // Normalise lower segments
+        let lself = self.lower.add(Interval::from(slen - n));
+        let lother = other.lower.add(Interval::from(olen - n));
+        let mut merger = AbstractStack::new(lself.union(&lother), Vec::new());
+        // Push merged items from upper segment
+        for i in (0..n).rev() {
+            let ithself = self.peek(i);
+            let ithother = other.peek(i);
+            merger.push(ithself.join(&ithother));
+        }
+        // Done
+        merger
+    }
 
     /// Rebalance the stack if necessary.  This is necessary when the
     /// upper portion contains unknown values which can be shifted
@@ -153,54 +174,20 @@ where T:PartialEq+Copy+Bottom+Top {
     }
 }
 
-impl<T> Bottom for AbstractStack<T>
-where T:PartialEq+Copy+Bottom {
-    const BOTTOM : Self = Self {lower: Interval::BOTTOM, upper: Vec::new()};
-}
+// ==================================================================
+// Standard Traits
+// ==================================================================
 
-impl<T> AbstractStack<T>
-where T:PartialEq+Copy+Join+Top+Bottom {
-    /// Merge two abstract stacks together.
-    pub fn merge(self, other: &AbstractStack<T>) -> Self {
-        let slen = self.upper.len();
-        let olen = other.upper.len();
-        // Determine common upper length
-        let n = cmp::min(slen, olen);
-        // Normalise lower segments
-        let lself = self.lower.add(Interval::from(slen - n));
-        let lother = other.lower.add(Interval::from(olen - n));
-        let mut merger = AbstractStack::new(lself.union(&lother), Vec::new());
-        // Push merged items from upper segment
-        for i in (0..n).rev() {
-            let ithself = self.peek(i);
-            let ithother = other.peek(i);
-            merger.push(ithself.join(&ithother));
-        }
-        // Done
-        merger
+impl<T: PartialEq + Copy + JoinLattice> Default for AbstractStack<T> {
+    fn default() -> Self {
+        Self::empty()
     }
-
-    /// Merge an abstract stack into this stack, whilst reporting
-    /// whether this stack changed or not.
-    pub fn merge_into(&mut self, other: &AbstractStack<T>) -> bool {
-        // NOTE: this could be done more efficiently.
-        let old = self.clone();
-        let mut tmp = Self::empty();
-        // Install dummy value to keep self alive
-        mem::swap(self, &mut tmp);
-        // Perform merge
-        *self = tmp.merge(other);
-        // Check for change
-        *self != old
-    }
-}
-
-impl<T:PartialEq+Copy+Top+Bottom> Default for AbstractStack<T> {
-    fn default() -> Self { Self::empty() }
 }
 
 impl<T> Clone for AbstractStack<T>
-where T:PartialEq+Clone {
+where
+    T: PartialEq + Clone,
+{
     fn clone(&self) -> Self {
         AbstractStack {
             lower: self.lower.clone(),
@@ -210,7 +197,9 @@ where T:PartialEq+Clone {
 }
 
 impl<T> fmt::Display for AbstractStack<T>
-where T:Copy+PartialEq+Bottom+fmt::Display {
+where
+    T: Copy + PartialEq + Bottom + fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self == &Self::BOTTOM {
             write!(f, "_|_")
@@ -224,21 +213,76 @@ where T:Copy+PartialEq+Bottom+fmt::Display {
     }
 }
 
+// ==================================================================
+// Lattice Traits
+// ==================================================================
+
+impl<T> Bottom for AbstractStack<T>
+where
+    T: PartialEq + Copy + Bottom,
+{
+    const BOTTOM: Self = Self {
+        lower: Interval::BOTTOM,
+        upper: Vec::new(),
+    };
+}
+
+impl<T> JoinInto for AbstractStack<T>
+where
+    T: PartialEq + Copy + JoinLattice,
+{
+    /// Merge an abstract stack into this stack, whilst reporting
+    /// whether this stack changed or not.
+    fn join_into(&mut self, other: &AbstractStack<T>) -> bool {
+        // NOTE: this could be done more efficiently.
+        let old = self.clone();
+        let mut tmp = Self::empty();
+        // Install dummy value to keep self alive
+        mem::swap(self, &mut tmp);
+        // Perform merge
+        *self = tmp.join(other);
+        // Check for change
+        *self != old
+    }
+}
+
 // ===================================================================
 // evm::Word
 // ===================================================================
 
-impl<T:evm::Word> evm::Stack<T> for AbstractStack<T>
-where T:PartialEq+Bottom+Top {
+impl<T: evm::Word> evm::Stack for AbstractStack<T>
+where
+    T: PartialEq + JoinLattice,
+{
+    type Word = T;
+
     /// Determine number of items on stack.
     fn len(&self) -> T {
         todo!("FIX ME");
     }
 
     /// Peek nth item on the stack (where `0` is top).
-    fn peek(&self, n: usize) -> T { self.peek(n) }
+    fn peek(&self, n: usize) -> T {
+        self.peek(n)
+    }
     /// Push an iterm onto this stack.
-    fn push(&mut self, val: T) { self.push(val); }
+    fn push(&mut self, val: T) {
+        self.push(val);
+    }
     /// Pop `n` items of the stack.
-    fn pop(&mut self, n:usize) { (0..n).for_each(|_| { self.pop(); });}
+    fn pop(&mut self, n: usize) {
+        (0..n).for_each(|_| {
+            self.pop();
+        });
+    }
+    /// Set nth item on stack
+    fn set(&mut self, n: usize, item: T) {
+        if n < self.upper.len() {
+            let i = self.upper.len() - n;
+            //
+            self.upper[i - 1] = item;
+        } else {
+            todo!("")
+        }
+    }
 }

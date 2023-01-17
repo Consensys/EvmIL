@@ -13,8 +13,8 @@ mod byte_utils;
 mod hex;
 mod interval;
 mod lattice;
-mod word256;
 mod numeric;
+mod word256;
 
 pub use byte_utils::*;
 pub use hex::*;

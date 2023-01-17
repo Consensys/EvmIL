@@ -1,23 +1,38 @@
-use std::fmt;
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use crate::util::ToHexString;
+use std::fmt;
 
 // ============================================================================
 // Label Offsets
 // ============================================================================
 
 /// Used to simplify calculation of label offsets.
-#[derive(PartialEq,Copy,Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct Offset(pub u16);
 
 impl Offset {
     /// Determine the width of this offset (in bytes).
     pub fn width(&self) -> u16 {
-        if self.0 > 255 { 2 } else { 1 }
+        if self.0 > 255 {
+            2
+        } else {
+            1
+        }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         if self.0 > 255 {
-            vec![(self.0/256) as u8,(self.0%256) as u8]
+            vec![(self.0 / 256) as u8, (self.0 % 256) as u8]
         } else {
             vec![self.0 as u8]
         }
@@ -36,14 +51,14 @@ pub enum Error {
     /// A dup `n` instruction requires `n > 0` and `n <= 32`.
     InvalidDup,
     /// A label cannot exceed the 24Kb limit imposed by the EVM.
-    InvalidLabelOffset
+    InvalidLabelOffset,
 }
 
 // ============================================================================
 // Bytecode Instructions
 // ============================================================================
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Instruction {
     // 0s: Stop and Arithmetic Operations
     STOP,
@@ -136,7 +151,7 @@ pub enum Instruction {
     SELFDESTRUCT,
     // Signals arbitrary data in the contract, rather than bytecode
     // instructions.
-    DATA(Vec<u8>)
+    DATA(Vec<u8>),
 }
 
 impl Instruction {
@@ -150,7 +165,7 @@ impl Instruction {
             Instruction::STOP => false,
             Instruction::RETURN => false,
             Instruction::REVERT => false,
-            _ => true
+            _ => true,
         }
     }
 
@@ -166,7 +181,7 @@ impl Instruction {
 
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
-    pub fn encode(&self, offsets: &[Offset], bytes: &mut Vec<u8>) -> Result<(),Error> {
+    pub fn encode(&self, offsets: &[Offset], bytes: &mut Vec<u8>) -> Result<(), Error> {
         // Push opcode
         bytes.push(self.opcode(&offsets)?);
         // Push operands (if applicable)
@@ -189,14 +204,14 @@ impl Instruction {
     /// given set of label offsets.
     pub fn length(&self, _offsets: &[Offset]) -> usize {
         let operands = match self {
-            Instruction::DATA(bytes) => bytes.len()-1,
+            Instruction::DATA(bytes) => bytes.len() - 1,
             // Push instructions
             Instruction::PUSH(bs) => bs.len(),
             Instruction::PUSHL(_) => {
                 todo!("implement me");
             }
             // Default case
-            _ => 0
+            _ => 0,
         };
         operands + 1
     }
@@ -205,7 +220,7 @@ impl Instruction {
     /// this is a straightforward mapping.  However, in other cases,
     /// its slightly more involved as a calculation involving the
     /// operands is required.
-    pub fn opcode(&self, offsets: &[Offset]) -> Result<u8,Error> {
+    pub fn opcode(&self, offsets: &[Offset]) -> Result<u8, Error> {
         let op = match self {
             // 0s: Stop and Arithmetic Operations
             Instruction::STOP => 0x00,
@@ -288,8 +303,11 @@ impl Instruction {
             //
             Instruction::PUSHL(lab) => {
                 let offset = &offsets[*lab];
-                if offset.width() == 2 { 0x61 }
-                else { 0x60 }
+                if offset.width() == 2 {
+                    0x61
+                } else {
+                    0x60
+                }
             }
             // 80s: Duplication Operations
             Instruction::DUP(n) => {
@@ -325,7 +343,7 @@ impl Instruction {
             Instruction::SELFDESTRUCT => 0xff,
             //
             Instruction::DATA(_) => {
-                 panic!("Invalid instruction ({:?})",self);
+                panic!("Invalid instruction ({:?})", self);
             }
         };
         //
@@ -338,7 +356,7 @@ impl Instruction {
     /// used as a jump destination.  A separate analysis is required
     /// to "lift" `PUSH` instructions to `PUSHL` instructions.
     pub fn decode(pc: usize, bytes: &[u8]) -> Instruction {
-        let opcode = bytes[pc];
+        let opcode = if pc < bytes.len() { bytes[pc] } else { 0x00 };
         //
         let insn = match opcode {
             // 0s: Stop and Arithmetic Operations
@@ -421,23 +439,19 @@ impl Instruction {
                     // Harder case: does overflow code.
                     let mut bs = bytes[m..].to_vec();
                     // Pad out with zeros
-                    for _i in 0..(n-bytes.len()) { bs.push(0); }
+                    for _i in 0..(n - bytes.len()) {
+                        bs.push(0);
+                    }
                     // Done
                     Instruction::PUSH(bs)
                 }
             }
             // 80s: Duplicate Operations
-            0x80..=0x8f => {
-                Instruction::DUP(opcode-0x7f)
-            }
+            0x80..=0x8f => Instruction::DUP(opcode - 0x7f),
             // 90s: Swap Operations
-            0x90..=0x9f => {
-                Instruction::SWAP(opcode-0x8f)
-            }
+            0x90..=0x9f => Instruction::SWAP(opcode - 0x8f),
             // a0s: Log Operations
-            0xa0..=0xa4 => {
-                Instruction::LOG(opcode-0xa0)
-            }
+            0xa0..=0xa4 => Instruction::LOG(opcode - 0xa0),
             // f0s: System Operations
             0xf0 => Instruction::CREATE,
             0xf1 => Instruction::CALL,
@@ -450,15 +464,12 @@ impl Instruction {
             0xfe => Instruction::INVALID,
             0xff => Instruction::SELFDESTRUCT,
             // Unknown
-            _ => {
-                Instruction::DATA(vec![opcode])
-            }
+            _ => Instruction::DATA(vec![opcode]),
         };
         //
         insn
     }
 }
-
 
 // ============================================================================
 // Display
@@ -466,20 +477,20 @@ impl Instruction {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-	// Use the default (debug) formatter.  Its only for certain
-	// instructions that we need to do anything different.
-	match self {
-	    Instruction::PUSH(bytes) => {
-		// Convert bytes into hex string
-		let hex = bytes.to_hex_string();
-		// Print!
-		write!(f,"PUSH{} {}",bytes.len(),hex)
-	    }
+        // Use the default (debug) formatter.  Its only for certain
+        // instructions that we need to do anything different.
+        match self {
+            Instruction::PUSH(bytes) => {
+                // Convert bytes into hex string
+                let hex = bytes.to_hex_string();
+                // Print!
+                write!(f, "PUSH{} {}", bytes.len(), hex)
+            }
             Instruction::DATA(bytes) => {
                 // Print bytes as hex string
-		write!(f,"{}",bytes.to_hex_string())
+                write!(f, "{}", bytes.to_hex_string())
             }
-	    _ => write!(f,"{:?}",self)
-	}
+            _ => write!(f, "{:?}", self),
+        }
     }
 }

@@ -1,3 +1,14 @@
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use std::fmt::Write;
 use std::num::ParseIntError;
 
@@ -12,7 +23,7 @@ pub trait ToHexString {
 pub trait FromHexString {
     type Error;
 
-    fn from_hex_string(&self) -> Result<Vec<u8>,Self::Error>;
+    fn from_hex_string(&self) -> Result<Vec<u8>, Self::Error>;
 }
 
 /// A default implementation for byte slices.
@@ -21,9 +32,11 @@ impl ToHexString for [u8] {
         let size = 2 + (2 * self.len());
         let mut hexstr = String::with_capacity(size);
         // Prepend "0x"
-        write!(hexstr,"0x").unwrap();
+        write!(hexstr, "0x").unwrap();
         // Write each byte
-        for b in self { write!(hexstr, "{:02x}", b).unwrap(); }
+        for b in self {
+            write!(hexstr, "{:02x}", b).unwrap();
+        }
         // Done
         hexstr
     }
@@ -33,8 +46,8 @@ impl ToHexString for [u8] {
 impl FromHexString for str {
     type Error = ParseIntError;
     //
-    fn from_hex_string(&self) -> Result<Vec<u8>,Self::Error> {
-	let mut bytes : Vec<u8> = Vec::new();
+    fn from_hex_string(&self) -> Result<Vec<u8>, Self::Error> {
+        let mut bytes: Vec<u8> = Vec::new();
         // Remove prepended "0x" (only if present)
         let slice = if self.len() > 2 && &self[0..2] == "0x" {
             &self[2..]
@@ -42,13 +55,13 @@ impl FromHexString for str {
             &self
         };
         // Parse contents of string
-	for i in (0..slice.len()).step_by(2) {
-	    // Pull out the byte
-	    let byte = u8::from_str_radix(&slice[i..i+2], 16)?;
-	    // Push it!
-	    bytes.push(byte);
-	}
-	//
-	Ok(bytes)
+        for i in (0..slice.len()).step_by(2) {
+            // Pull out the byte
+            let byte = u8::from_str_radix(&slice[i..i + 2], 16)?;
+            // Push it!
+            bytes.push(byte);
+        }
+        //
+        Ok(bytes)
     }
 }

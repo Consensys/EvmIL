@@ -1,64 +1,31 @@
-use crate::evm::{Evm,Stack,Stepable,Word};
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 use crate::evm::opcode::*;
+use crate::evm::ConcreteStack;
+use crate::evm::{Evm, Stack, Stepable, Word};
 use crate::util::w256;
-
-// ===================================================================
-// Concrete Stack
-// ===================================================================
-
-/// A concrete stack implementation backed by a `Vec`.
-#[derive(Debug,PartialEq)]
-pub struct ConcreteStack<T> {
-    items: Vec<T>
-}
-
-impl<T:Word> ConcreteStack<T> {
-    pub fn new(items: &[T]) -> Self {
-        ConcreteStack{items: items.to_vec()}
-    }
-}
-
-impl<T:Word> Default for ConcreteStack<T> {
-    fn default() -> Self {
-        ConcreteStack{items:Vec::new()}
-    }
-}
-
-impl<T:Word> Stack<T> for ConcreteStack<T> {
-
-    fn peek(&self, n:usize) -> T {
-        let i = self.items.len() - n;
-        self.items[i-1]
-    }
-
-    fn len(&self) -> T {
-        // FIXME: broken for non-64bit architectures!
-        let w : w256 = (self.items.len() as u64).into();
-        // Convert into word
-        w.into()
-    }
-
-    fn push(&mut self, item: T) {
-        self.items.push(item);
-    }
-
-    fn pop(&mut self, n: usize) {
-        for _i in 0..n { self.items.pop();}
-    }
-}
 
 // ===================================================================
 // Concrete EVM
 // ===================================================================
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum ConcreteResult<'a> {
     Continue(ConcreteEvm<'a>),
-    Return{data:Vec<u8>},
-    Revert{data:Vec<u8>}
+    Return { data: Vec<u8> },
+    Revert { data: Vec<u8> },
 }
 
-pub type ConcreteEvm<'a> = Evm<'a,w256,ConcreteStack<w256>>;
+pub type ConcreteEvm<'a> = Evm<'a, ConcreteStack<w256>>;
 
 impl<'a> ConcreteEvm<'a> {
     /// Execute the contract to completion.
@@ -87,7 +54,7 @@ impl<'a> Stepable for ConcreteEvm<'a> {
         let opcode = self.code[self.pc];
         //
         match opcode {
-            STOP => Self::Result::Return{data:Vec::new()},
+            STOP => Self::Result::Return { data: Vec::new() },
             //
             ADD => {
                 let lhs = self.stack.peek(1);
@@ -97,13 +64,13 @@ impl<'a> Stepable for ConcreteEvm<'a> {
             PUSH1..=PUSH32 => {
                 // Determine push size
                 let n = ((opcode - PUSH1) + 1) as usize;
-                let pc = self.pc+1;
+                let pc = self.pc + 1;
                 // Extract bytes
-                let bytes = &self.code[pc .. pc+n];
+                let bytes = &self.code[pc..pc + n];
                 // Convert bytes into w256 word
                 let w = w256::from_be_bytes(bytes);
                 // Done
-                Self::Result::Continue(self.push(w.into()).next(n+1))
+                Self::Result::Continue(self.push(w.into()).next(n + 1))
             }
             //
             _ => {
