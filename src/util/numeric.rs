@@ -8,6 +8,14 @@ pub trait Min {
     const MIN : Self;
 }
 
+pub trait OverflowingAdd : Sized {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool);
+}
+
+pub trait OverflowingSub : Sized {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool);
+}
+
 // ==================================================================
 // U8
 // ==================================================================
@@ -18,6 +26,18 @@ impl Max for u8 {
 
 impl Min for u8 {
     const MIN : u8 = u8::MIN;
+}
+
+impl OverflowingAdd for u8 {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_add(rhs)
+    }
+}
+
+impl OverflowingSub for u8 {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_sub(rhs)
+    }
 }
 
 // ==================================================================
@@ -32,6 +52,18 @@ impl Min for u16 {
     const MIN : u16 = u16::MIN;
 }
 
+impl OverflowingAdd for u16 {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_add(rhs)
+    }
+}
+
+impl OverflowingSub for u16 {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_sub(rhs)
+    }
+}
+
 // ==================================================================
 // U32
 // ==================================================================
@@ -42,6 +74,18 @@ impl Max for u32 {
 
 impl Min for u32 {
     const MIN : u32 = u32::MIN;
+}
+
+impl OverflowingAdd for u32 {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_add(rhs)
+    }
+}
+
+impl OverflowingSub for u32 {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_sub(rhs)
+    }
 }
 
 // ==================================================================
@@ -56,6 +100,18 @@ impl Min for u64 {
     const MIN : u64 = u64::MIN;
 }
 
+impl OverflowingAdd for u64 {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_add(rhs)
+    }
+}
+
+impl OverflowingSub for u64 {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_sub(rhs)
+    }
+}
+
 // ==================================================================
 // U128
 // ==================================================================
@@ -68,6 +124,18 @@ impl Min for u128 {
     const MIN : u128 = u128::MIN;
 }
 
+impl OverflowingAdd for u128 {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_add(rhs)
+    }
+}
+
+impl OverflowingSub for u128 {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_sub(rhs)
+    }
+}
+
 // ==================================================================
 // USIZE
 // ==================================================================
@@ -78,4 +146,16 @@ impl Max for usize {
 
 impl Min for usize {
     const MIN : usize = usize::MIN;
+}
+
+impl OverflowingAdd for usize {
+    fn overflowing_add(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_add(rhs)
+    }
+}
+
+impl OverflowingSub for usize {
+    fn overflowing_sub(self,rhs:Self) -> (Self,bool) {
+        self.overflowing_sub(rhs)
+    }
 }

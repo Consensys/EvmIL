@@ -1,4 +1,6 @@
-use evmil::util::Interval;
+use evmil::util::{Interval,Top};
+
+const TOP : Interval<usize> = Interval::TOP;
 
 #[test]
 fn test_interval_01() {
@@ -21,7 +23,15 @@ fn test_interval_02() {
     let i2 = Interval::from(1..=3);
     let i3 = Interval::from(3..=5);
     //
-    assert_eq!(i1.add(1),i2);
-    assert_eq!(i2.sub(1),i1);
-    assert_eq!(i2.add(2),i3);
+    assert_eq!(i1 + 1,i2);
+    assert_eq!(i2 - 1usize,i1);
+    assert_eq!(i2 + 2,i3);
+}
+
+#[test]
+fn test_interval_03() {
+    let i1 = Interval::<usize>::from(0..=2);
+    //
+    assert_eq!(i1 + TOP, TOP);
+    assert_eq!(TOP + i1, TOP);
 }

@@ -199,7 +199,6 @@ fn borrowing_sub(lhs: u128, rhs: u128, borrow: bool) -> (u128,bool) {
 
 #[cfg(test)]
 mod tests {
-    use crate::util::word256;
     use crate::util::w256;
 
     const ZERO : w256 = w256::new(0,0);

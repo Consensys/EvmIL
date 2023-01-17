@@ -10,8 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::evm;
-use crate::analysis::{AbstractWord};
-use crate::util::{Interval,JoinInto};
+use crate::util::{Interval,Join,Top,Bottom};
 use std::{cmp, fmt, mem};
 
 // ============================================================================
@@ -27,12 +26,12 @@ pub struct AbstractStack<T:PartialEq> {
     lower: Interval<usize>,
     // The upper segment represents zero or more concrete values on
     // the stack.
-    upper: Vec<AbstractWord<T>>,
+    upper: Vec<T>,
 }
 
 impl<T> AbstractStack<T>
-where T:PartialEq+Copy {
-    pub fn new(lower: impl Into<Interval<usize>>, upper: Vec<AbstractWord<T>>) -> Self {
+where T:PartialEq+Copy+Bottom+Top {
+    pub fn new(lower: impl Into<Interval<usize>>, upper: Vec<T>) -> Self {
 	let lower_iv = lower.into();
         // Done
         Self {
@@ -46,12 +45,12 @@ where T:PartialEq+Copy {
     }
     /// Determine possible lengths of the stack as an interval
     pub fn len(&self) -> Interval<usize> {
-        self.lower.add(self.upper.len())
+        self.lower.add(self.upper.len().into())
     }
     /// Peek nth item on the stack (where `0` is top).
-    pub fn peek(&self, n: usize) -> AbstractWord<T> {
+    pub fn peek(&self, n: usize) -> T {
         // Should never be called on bottom
-        assert!(!self.is_bottom());
+        assert!(self != &Self::BOTTOM);
         // Get the nth value!
         if n < self.upper.len() {
             // Determine stack index
@@ -59,29 +58,29 @@ where T:PartialEq+Copy {
             // Extract value
             self.upper[i]
         } else {
-            AbstractWord::Unknown
+            T::TOP
         }
     }
     /// Push an iterm onto this stack.
-    pub fn push(&mut self, val: AbstractWord<T>) -> &mut Self {
+    pub fn push(&mut self, val: T) -> &mut Self {
         // Should never be called on bottom
-        assert!(!self.is_bottom());
+        assert!(self != &Self::BOTTOM);
         //
-        if val == AbstractWord::Unknown && self.upper.len() == 0 {
-            self.lower = self.lower.add(1);
+        if val == T::TOP && self.upper.len() == 0 {
+            self.lower = self.lower.add(1.into());
         } else {
             // Pop target address off the stack.
             self.upper.push(val);
         }
         self
-    }    
+    }
     // Pop a single item off the stack
     pub fn pop(&mut self) -> &mut Self {
         // Should never be called on bottom
-        assert!(!self.is_bottom());
+        assert!(self != &Self::BOTTOM);
         // Pop target address off the stack.
         if self.upper.is_empty() {
-            self.lower = self.lower.sub(1);
+            self.lower = self.lower.sub(1.into());
         } else {
             self.upper.pop();
         }
@@ -100,15 +99,15 @@ where T:PartialEq+Copy {
     }
     /// Access the array of concrete values represented by this stack
     /// (i.e. the _upper_ portion of the stack).
-    pub fn values<'a>(&'a self) -> &'a [AbstractWord<T>] {
+    pub fn values<'a>(&'a self) -> &'a [T] {
         &self.upper
     }
 
     /// Set `ith` item from the top on this stack.  Thus, `0` is the
     /// top of the stack, etc.
-    pub fn set(mut self, n: usize, val: AbstractWord<T>) -> Self {
+    pub fn set(mut self, n: usize, val: T) -> Self {
         // Should never be called on bottom
-        assert!(!self.is_bottom());
+        assert!(self != Self::BOTTOM);
         // NOTE: inefficient when putting unknown value into lower
         // portion.
         self.ensure_upper(n + 1);
@@ -128,7 +127,7 @@ where T:PartialEq+Copy {
         let mut i = 0;
         // Determine whether any rebalancing necessary.
         while i < self.upper.len() {
-            if let AbstractWord::Known(_) = self.upper[i] {
+            if self.upper[i] != T::TOP {
                 break;
             }
             i = i + 1;
@@ -136,7 +135,7 @@ where T:PartialEq+Copy {
         // Rebalance only if necessary
         if i > 0 {
             // Increase lower portion
-            self.lower = self.lower.add(i);
+            self.lower = self.lower.add(i.into());
             // Decrease upper portion
             self.upper.drain(0..i);
         }
@@ -148,25 +147,19 @@ where T:PartialEq+Copy {
     fn ensure_upper(&mut self, n: usize) {
         // FIXME: inefficient!!
         while n > self.upper.len() {
-            self.upper.insert(0, AbstractWord::Unknown);
-            self.lower = self.lower.sub(1);
+            self.upper.insert(0, T::TOP);
+            self.lower = self.lower.sub(1.into());
         }
-    }    
-}
-
-impl<T> AbstractStack<T>
-where T:PartialEq+Copy {    
-    /// Construct a bottom (i.e. uninhabited) stack.
-    pub fn bottom() -> Self {
-        Self::new(Interval::MAX,Vec::new())
-    }
-    pub fn is_bottom(&self) -> bool {
-        self.lower == Interval::MAX
     }
 }
 
+impl<T> Bottom for AbstractStack<T>
+where T:PartialEq+Copy+Bottom {
+    const BOTTOM : Self = Self {lower: Interval::BOTTOM, upper: Vec::new()};
+}
+
 impl<T> AbstractStack<T>
-where T:PartialEq+Copy+JoinInto {    
+where T:PartialEq+Copy+Join+Top+Bottom {
     /// Merge two abstract stacks together.
     pub fn merge(self, other: &AbstractStack<T>) -> Self {
         let slen = self.upper.len();
@@ -174,14 +167,14 @@ where T:PartialEq+Copy+JoinInto {
         // Determine common upper length
         let n = cmp::min(slen, olen);
         // Normalise lower segments
-        let lself = self.lower.add(slen - n);
-        let lother = other.lower.add(olen - n);
+        let lself = self.lower.add(Interval::from(slen - n));
+        let lother = other.lower.add(Interval::from(olen - n));
         let mut merger = AbstractStack::new(lself.union(&lother), Vec::new());
         // Push merged items from upper segment
         for i in (0..n).rev() {
             let ithself = self.peek(i);
             let ithother = other.peek(i);
-            merger.push(ithself.merge(ithother));
+            merger.push(ithself.join(&ithother));
         }
         // Done
         merger
@@ -202,22 +195,7 @@ where T:PartialEq+Copy+JoinInto {
     }
 }
 
-impl<T:evm::Word> evm::Stack<AbstractWord<T>> for AbstractStack<T>
-where T:PartialEq+std::ops::Add+ {
-    /// Determine number of items on stack.
-    fn len(&self) -> AbstractWord<T> {
-        todo!("FIX ME");
-    }
-
-    /// Peek nth item on the stack (where `0` is top).
-    fn peek(&self, n: usize) -> AbstractWord<T> { self.peek(n) }
-    /// Push an iterm onto this stack.
-    fn push(&mut self, val: AbstractWord<T>) { self.push(val); }
-    /// Pop `n` items of the stack.
-    fn pop(&mut self, n:usize) { (0..n).for_each(|_| { self.pop(); });}
-}
-
-impl<T:PartialEq+Copy> Default for AbstractStack<T> {
+impl<T:PartialEq+Copy+Top+Bottom> Default for AbstractStack<T> {
     fn default() -> Self { Self::empty() }
 }
 
@@ -232,9 +210,9 @@ where T:PartialEq+Clone {
 }
 
 impl<T> fmt::Display for AbstractStack<T>
-where T:Copy+PartialEq+fmt::Display {
+where T:Copy+PartialEq+Bottom+fmt::Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_bottom() {
+        if self == &Self::BOTTOM {
             write!(f, "_|_")
         } else {
             write!(f, "({})[", self.lower)?;
@@ -244,4 +222,23 @@ where T:Copy+PartialEq+fmt::Display {
             write!(f, "]")
         }
     }
+}
+
+// ===================================================================
+// evm::Word
+// ===================================================================
+
+impl<T:evm::Word> evm::Stack<T> for AbstractStack<T>
+where T:PartialEq+Bottom+Top {
+    /// Determine number of items on stack.
+    fn len(&self) -> T {
+        todo!("FIX ME");
+    }
+
+    /// Peek nth item on the stack (where `0` is top).
+    fn peek(&self, n: usize) -> T { self.peek(n) }
+    /// Push an iterm onto this stack.
+    fn push(&mut self, val: T) { self.push(val); }
+    /// Pop `n` items of the stack.
+    fn pop(&mut self, n:usize) { (0..n).for_each(|_| { self.pop(); });}
 }

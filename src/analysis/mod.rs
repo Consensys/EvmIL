@@ -12,9 +12,7 @@
 mod cfa;
 mod disassembler;
 mod abstract_stack;
-mod abstract_word;
 
 pub use cfa::*;
 pub use disassembler::*;
 pub use abstract_stack::*;
-pub use abstract_word::*;

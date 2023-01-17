@@ -9,9 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::word256;
-use crate::util::{w256, Max, Min, JoinInto};
-use std::ops::{Range,RangeInclusive};
+use crate::util::{w256, Top, Bottom, Max, Min, Constant, OverflowingAdd, OverflowingSub, JoinInto};
+use std::ops::{RangeInclusive};
 use std::{cmp, fmt};
 
 /// Represents the maximum possible interval
@@ -25,7 +24,7 @@ pub const MAX_INTERVAL: Interval<w256> = Interval {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Interval<T>
 where
-    T: PartialOrd + PartialEq + Copy,
+    T: Copy + Ord
 {
     pub start: T,
     pub end: T,
@@ -33,7 +32,7 @@ where
 
 impl<T> Interval<T>
 where
-    T: Copy + PartialOrd
+    T: Copy + Ord
 {
     pub const fn new(start: T, end: T) -> Self {
         //assert!(start <= end);
@@ -56,35 +55,31 @@ where
 }
 
 impl<T> Interval<T>
-where T: Copy + PartialOrd + Max + Min
+where
+    T: Copy + Ord + Max + Min + OverflowingAdd
 {
-    /// The maximum possible interval expressible with the given type.
-    pub const MAX: Interval<T> = Interval::new(T::MIN, T::MAX);
-
-    /// An empty interval expressed with the given type.
-    pub const EMPTY: Interval<T> = Interval::new(T::MIN, T::MIN);
+    /// Add a constant to this range.
+    pub fn add(&self, rhs: Self) -> Self {
+        let (start,_) = self.start.overflowing_add(rhs.start);
+        let (end,overflow) = self.end.overflowing_add(rhs.end);
+        //
+        if overflow { Self::TOP } else { Self{start,end} }
+    }
 }
 
 impl<T> Interval<T>
 where
-    T: Copy + PartialOrd
-        + std::ops::Add<usize, Output = T>
-        + std::ops::Sub<usize, Output = T>,
-{    
+    T: Copy + Ord + Max + Min + OverflowingSub
+{
     /// Add a constant to this range.
-    pub fn add(&self, val: usize) -> Self {
-        let start = self.start + val;
-        let end = self.end + val;
-        Self { start, end }
-    }
-
-    /// Subtract a constant from this range.
-    pub fn sub(&self, val: usize) -> Self {
-        let start = self.start - val;
-        let end = self.end - val;
-        Self { start, end }
+    pub fn sub(&self, rhs: Self) -> Self {
+        let (start,overflow) = self.start.overflowing_sub(rhs.start);
+        let (end,_) = self.end.overflowing_sub(rhs.end);
+        //
+        if overflow { Self::TOP } else { Self{start,end} }
     }
 }
+
 
 impl<T> Interval<T>
 where
@@ -95,7 +90,7 @@ where
         let start = cmp::min(self.start, other.start);
         let end = cmp::max(self.end, other.end);
 	Interval{start,end}
-    }    
+    }
 }
 
 // ======================================================================
@@ -104,7 +99,7 @@ where
 
 impl<T> fmt::Display for Interval<T>
 where
-    T: PartialOrd + PartialEq + Copy + fmt::Display,
+    T: Copy + Ord + fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}..{}", self.start, self.end)
@@ -119,12 +114,41 @@ impl<T:Copy+Ord> JoinInto for Interval<T>
     }
 }
 
+impl<T:Copy+Ord+Min+Max> Bottom for Interval<T>
+{
+    const BOTTOM: Interval<T> = Interval {
+        start: T::MAX,
+        end: T::MIN
+    };
+}
+
+impl<T:Copy+Ord+Min+Max> Top for Interval<T>
+{
+    const TOP: Interval<T> = Interval {
+        start: T::MIN,
+        end: T::MAX
+    };
+}
+
+impl<T:Copy+Ord> Constant for Interval<T>
+{
+    type Item=T;
+
+    fn is_constant(&self) -> bool {
+        self.start == self.end
+    }
+
+    fn constant(&self) -> T {
+        assert!(self.is_constant());
+        self.start
+    }
+}
 // ======================================================================
 // Coercions
 // ======================================================================
 
 impl<T> From<RangeInclusive<T>> for Interval<T>
-where T: PartialOrd + Copy
+where T: Copy + Ord
 {
     fn from(r: RangeInclusive<T>) -> Self {
         Interval::new(*r.start(), *r.end())
@@ -132,39 +156,61 @@ where T: PartialOrd + Copy
 }
 
 impl<T> From<T> for Interval<T>
-where T: PartialOrd + Copy
+where T: Copy + Ord
 {
     fn from(n: T) -> Self {
 	Interval::new(n,n)
     }
 }
-       
+
 // ======================================================================
-// Operators
+// Add
 // ======================================================================
 
 impl<T> std::ops::Add for Interval<T>
 where
-    T: PartialOrd + PartialEq + Copy + std::ops::Add<T, Output = T>,
+    T: Ord + Copy + Min + Max + OverflowingAdd,
 {
     type Output = Self;
 
-    fn add(mut self, rhs: Self) -> Self::Output {
-        self.start = self.start + rhs.start;
-        self.end = self.end + rhs.end;
-        self
+    fn add(self, rhs: Self) -> Self::Output {
+        Interval::add(&self,rhs)
     }
 }
 
-impl<T> std::ops::Add<usize> for Interval<T>
+impl<T> std::ops::Add<T> for Interval<T>
 where
-    T: PartialOrd + PartialEq + Copy
-    + std::ops::Add<usize, Output = T>
-    + std::ops::Sub<usize, Output = T>,
+    T: Ord + Copy + Min + Max + OverflowingAdd
 {
     type Output = Self;
 
-    fn add(self, rhs: usize) -> Self::Output {
-        Interval::add(&self,rhs)
+    fn add(self, rhs: T) -> Self::Output {
+        Interval::add(&self,Interval::<T>::from(rhs))
+    }
+}
+
+// ======================================================================
+// Sub
+// ======================================================================
+
+impl<T> std::ops::Sub for Interval<T>
+where
+    T: Ord + Copy + Min + Max + OverflowingSub,
+{
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Interval::sub(&self,rhs)
+    }
+}
+
+impl<T> std::ops::Sub<T> for Interval<T>
+where
+    T: Ord + Copy + Min + Max + OverflowingSub
+{
+    type Output = Self;
+
+    fn sub(self, rhs: T) -> Self::Output {
+        Interval::sub(&self,Interval::<T>::from(rhs))
     }
 }

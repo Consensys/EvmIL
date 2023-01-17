@@ -1,15 +1,15 @@
 use evmil::evm;
-use evmil::analysis::{AbstractStack,AbstractWord};
-use evmil::util::{w256,Interval};
+use evmil::analysis::{AbstractStack};
+use evmil::util::{w256,Interval,Top};
 
-type Word = AbstractWord<Interval<w256>>;
+type Word = Interval<w256>;
 
-const ZERO : Word = Word::Known(Interval::new(w256::ZERO,w256::ONE));
-const ONE : Word = Word::Known(Interval::new(w256::ONE,w256::TWO));
-const TWO : Word = Word::Known(Interval::new(w256::TWO,w256::THREE));
-const ONETWO : Word = Word::Known(Interval::new(w256::ONE,w256::THREE));
-const THREE : Word = Word::Known(Interval::new(w256::THREE,w256::FOUR));
-const UNKNOWN : Word = Word::Unknown;
+const ZERO : Word = Interval::new(w256::ZERO,w256::ZERO);
+const ONE : Word = Interval::new(w256::ONE,w256::ONE);
+const TWO : Word = Interval::new(w256::TWO,w256::TWO);
+const ONETWO : Word = Interval::new(w256::ONE,w256::TWO);
+const THREE : Word = Interval::new(w256::THREE,w256::THREE);
+const UNKNOWN : Word = Interval::TOP;
 
 #[test]
 fn test_abstract_stack_01() {
