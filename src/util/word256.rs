@@ -204,17 +204,21 @@ impl fmt::Display for w256 {
 
 impl fmt::LowerHex for w256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = if self.high == 0 {
+        let mut s = if self.high == 0 {
             format!("{:x}",self.low)
         } else {
             format!("{:x}{:x}",self.high,self.low)
         };
         //
-        if f.alternate() { write!(f,"0x")?; }
+        let mut len = s.len();
+        //
+        if f.alternate() { write!(f,"0x"); len += 2; }
         //
         match f.width() {
             Some(w) => {
-                for _i in s.len() .. w { write!(f,"0")?; }
+                if f.sign_aware_zero_pad() {
+                    for _i in len .. w { write!(f,"0")?; }
+                }
             }
             None => {}
         };
@@ -286,17 +290,27 @@ mod tests {
 
     #[test]
     fn test_hex_03() {
-        assert_eq!(format!("{:#04x}",ONE),"0x0001");
+        assert_eq!(format!("{:#04x}",ONE),"0x01");
     }
 
     #[test]
     fn test_hex_04() {
-        assert_eq!(format!("{:2x}",w256::new(255, 0)),"ff");
+        assert_eq!(format!("{:04x}",ONE),"0001");
     }
 
     #[test]
     fn test_hex_05() {
+        assert_eq!(format!("{:2x}",w256::new(255, 0)),"ff");
+    }
+
+    #[test]
+    fn test_hex_06() {
         assert_eq!(format!("{:2x}",w256::new(256, 0)),"100");
+    }
+
+    #[test]
+    fn test_hex_07() {
+        assert_eq!(format!("{:#4x}",ONE),"0x1");
     }
 
     // === Addition ===
