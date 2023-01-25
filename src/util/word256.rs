@@ -204,7 +204,7 @@ impl fmt::Display for w256 {
 
 impl fmt::LowerHex for w256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = if self.high == 0 {
+        let s = if self.high == 0 {
             format!("{:x}",self.low)
         } else {
             format!("{:x}{:x}",self.high,self.low)
@@ -214,7 +214,7 @@ impl fmt::LowerHex for w256 {
         //
         match f.width() {
             Some(w) => {
-                for i in s.len() .. w { write!(f,"0")?; }
+                for _i in s.len() .. w { write!(f,"0")?; }
             }
             None => {}
         };
