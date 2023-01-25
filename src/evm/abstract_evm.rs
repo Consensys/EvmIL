@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::evm::{Evm, Stack, Stepable};
+use crate::evm::{Evm, Stack, Stepper};
 use crate::ll::{Instruction, Instruction::*};
 use crate::util::{
     w256, Bottom, Concretizable, IsBottom, JoinInto, JoinLattice, JoinSemiLattice, Top,
@@ -33,7 +33,7 @@ impl<'a, S: Stack + JoinSemiLattice> Bottom for Evm<'a, S> {
     const BOTTOM: Evm<'a, S> = Evm::new_const(&[], S::BOTTOM);
 }
 
-impl<'a, S: Stack + Clone + JoinSemiLattice> Stepable for Evm<'a, S>
+impl<'a, S: Stack + Clone + JoinSemiLattice> Stepper for Evm<'a, S>
 where
     S::Word: JoinLattice + Concretizable<Item = w256>,
 {
@@ -45,7 +45,7 @@ where
         // Increment Program Counter
         self = self.next(1);
         //
-        let mut st = match insn {
+        let st = match insn {
             STOP => Self::BOTTOM,
             // 0s: Stop and Arithmetic Operations
             ADD | MUL | SUB | DIV | SDIV | MOD | SMOD | EXP | SIGNEXTEND => {
