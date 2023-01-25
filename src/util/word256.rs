@@ -204,8 +204,21 @@ impl fmt::Display for w256 {
 
 impl fmt::LowerHex for w256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::LowerHex::fmt(&self.high, f)?;
-        fmt::LowerHex::fmt(&self.low, f)
+        let mut s = if self.high == 0 {
+            format!("{:x}",self.low)
+        } else {
+            format!("{:x}{:x}",self.high,self.low)
+        };
+        //
+        if f.alternate() { write!(f,"0x")?; }
+        //
+        match f.width() {
+            Some(w) => {
+                for i in s.len() .. w { write!(f,"0")?; }
+            }
+            None => {}
+        };
+        write!(f,"{}",s)
     }
 }
 
@@ -258,6 +271,33 @@ mod tests {
     const MAX128P1: w256 = w256::new(0, 1);
     const MAX256: w256 = w256::MAX;
     const MAX256M1: w256 = w256::new(u128::MAX - 1, u128::MAX);
+
+    // === Hex ===
+
+    #[test]
+    fn test_hex_01() {
+        assert_eq!(format!("{:x}",w256::new(15, 0)),"f");
+    }
+
+    #[test]
+    fn test_hex_02() {
+        assert_eq!(format!("{:#01x}",ONE),"0x1");
+    }
+
+    #[test]
+    fn test_hex_03() {
+        assert_eq!(format!("{:#04x}",ONE),"0x0001");
+    }
+
+    #[test]
+    fn test_hex_04() {
+        assert_eq!(format!("{:2x}",w256::new(255, 0)),"ff");
+    }
+
+    #[test]
+    fn test_hex_05() {
+        assert_eq!(format!("{:2x}",w256::new(256, 0)),"100");
+    }
 
     // === Addition ===
 
