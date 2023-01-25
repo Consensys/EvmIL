@@ -9,14 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::evm::{Evm, Stack, Stepable};
+use crate::evm::{Evm, Stack, Stepper};
 use crate::ll::{Instruction, Instruction::*};
 use crate::util::{
-    w256, Bottom, Concretizable, Interval, IsBottom, JoinInto, JoinLattice, JoinSemiLattice,
+    w256, Bottom, Concretizable, IsBottom, JoinInto, JoinLattice, JoinSemiLattice,
 };
 use std::fmt;
-
-type Word = Interval<w256>;
 
 // ============================================================================
 // Disassembly
@@ -93,7 +91,6 @@ where
     pub fn get_state(&self, loc: usize) -> Evm<'a, S> {
         // Determine enclosing block
         let bid = self.get_enclosing_block_id(loc);
-        let blk = &self.blocks[bid];
         let mut st = self.contexts[bid].clone();
         // Reconstruct state
         while st.pc < loc {

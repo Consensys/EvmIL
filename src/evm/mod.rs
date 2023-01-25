@@ -129,7 +129,7 @@ impl<'a, S: Stack> Evm<'a, S> {
 
 /// A stepper is a trait for describing a single execution step of the
 /// EVM.  This is subtle because it can be abstract or concrete.
-pub trait Stepable {
+pub trait Stepper {
     type Result;
 
     /// Take a single step of the EVM producing a result of some kind

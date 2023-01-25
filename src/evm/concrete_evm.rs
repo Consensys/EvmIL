@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::evm::opcode::*;
 use crate::evm::ConcreteStack;
-use crate::evm::{Evm, Stack, Stepable, Word};
+use crate::evm::{Evm, Stack, Stepper};
 use crate::util::w256;
 
 // ===================================================================
@@ -46,7 +46,7 @@ impl<'a> ConcreteEvm<'a> {
     }
 }
 
-impl<'a> Stepable for ConcreteEvm<'a> {
+impl<'a> Stepper for ConcreteEvm<'a> {
     type Result = ConcreteResult<'a>;
 
     /// Execute instruction at the current `pc`.

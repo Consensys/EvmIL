@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::evm;
-use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice, Top};
+use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice};
 use std::{cmp, fmt, mem};
 
 // ============================================================================
