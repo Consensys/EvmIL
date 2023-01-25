@@ -9,10 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::il::{Term};
-use crate::il::{Compiler,CompilerError};
+use crate::il::Term;
+use crate::il::{Compiler, CompilerError};
 use crate::ll::instruction;
-use crate::ll::{Instruction,Offset};
+use crate::ll::{Instruction, Offset};
 
 // ============================================================================
 // Bytecode Programs
@@ -25,12 +25,15 @@ pub struct Bytecode {
     /// The underlying bytecode sequence.
     bytecodes: Vec<Instruction>,
     /// Counts the number of labels
-    labels: usize
+    labels: usize,
 }
 
 impl Bytecode {
     pub fn new() -> Self {
-        Bytecode{bytecodes:Vec::new(), labels:0}
+        Bytecode {
+            bytecodes: Vec::new(),
+            labels: 0,
+        }
     }
 
     pub fn push(&mut self, insn: Instruction) {
@@ -39,7 +42,7 @@ impl Bytecode {
 
     /// Get access to the raw sequence of instructions.
     pub fn instructions(&self) -> &[Instruction] {
-	&self.bytecodes
+        &self.bytecodes
     }
 
     /// Return the number of labels in the instruction sequence thus
@@ -55,13 +58,13 @@ impl Bytecode {
     /// ways.  For example, the target for a `PUSHL` does not match
     /// any known `JUMPEST` label; Or, the stack size is exceeded,
     /// etc.
-    pub fn to_bytes(&self) -> Result<Vec<u8>,instruction::Error> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, instruction::Error> {
         let offsets = self.determine_offsets();
         let mut bytes = Vec::new();
         //
         for b in &self.bytecodes {
             // Encode instruction
-            b.encode(&offsets,&mut bytes)?;
+            b.encode(&offsets, &mut bytes)?;
         }
         // Done
         Ok(bytes)
@@ -125,7 +128,7 @@ impl Bytecode {
 // Helpers
 // ============================================================================
 
-fn try_from(terms: &[Term]) -> Result<Bytecode,CompilerError> {
+fn try_from(terms: &[Term]) -> Result<Bytecode, CompilerError> {
     let mut bytecode = Bytecode::new();
     let mut compiler = Compiler::new(&mut bytecode);
     // Translate statements one-by-one
@@ -145,17 +148,17 @@ fn try_from(terms: &[Term]) -> Result<Bytecode,CompilerError> {
 impl TryFrom<&[Term]> for Bytecode {
     type Error = CompilerError;
 
-    fn try_from(terms: &[Term]) -> Result<Bytecode,Self::Error> {
+    fn try_from(terms: &[Term]) -> Result<Bytecode, Self::Error> {
         try_from(terms)
     }
 }
 
 /// Translate a sequence of IL statements into EVM bytecode, or fail
 /// with an error.
-impl<const N: usize> TryFrom<&[Term;N]> for Bytecode {
+impl<const N: usize> TryFrom<&[Term; N]> for Bytecode {
     type Error = crate::il::CompilerError;
 
-    fn try_from(terms: &[Term;N]) -> Result<Bytecode,Self::Error> {
+    fn try_from(terms: &[Term; N]) -> Result<Bytecode, Self::Error> {
         try_from(terms)
     }
 }
@@ -166,7 +169,7 @@ impl<const N: usize> TryFrom<&[Term;N]> for Bytecode {
 impl TryInto<Vec<u8>> for Bytecode {
     type Error = instruction::Error;
 
-    fn try_into(self) -> Result<Vec<u8>,Self::Error> {
+    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
         self.to_bytes()
     }
 }
