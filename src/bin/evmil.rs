@@ -40,7 +40,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subcommand(
             Command::new("disassemble")
                 .about("Disassemble a raw hex string into EVM bytecode")
-                .arg(Arg::new("code").required(true))
+                .arg(Arg::new("code").short('c').long("code"))
+                .arg(Arg::new("target").required(true))
                 .visible_alias("d"),
         )
         .get_matches();
@@ -83,7 +84,19 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 /// Disassemble a given bytecode sequence.
 fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Extract hex string to be disassembled.
-    let hex = args.get_one::<String>("code").unwrap();
+    let mut hex = String::new();
+    // Determine disassembly target
+    let target = args.get_one::<String>("target").unwrap();
+    // Decide whether bytecode provided directly, or via a file.
+    if args.contains_id("code") {
+        // Provided directly
+        hex.push_str(target);
+    } else {
+        // Read hex from file
+        let context = fs::read_to_string(target)?;
+        // Read all lines of file
+        for l in context.lines() { hex.push_str(l); }
+    }
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct disassembly
