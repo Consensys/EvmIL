@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt::{Debug};
 use crate::evm::{Evm, Stack, Stepper};
 use crate::ll::{Instruction, Instruction::*};
 use crate::util::{
@@ -35,7 +36,7 @@ impl<'a, S: Stack + JoinSemiLattice> Bottom for Evm<'a, S> {
 
 impl<'a, S: Stack + Clone + JoinSemiLattice> Stepper for Evm<'a, S>
 where
-    S::Word: JoinLattice + Concretizable<Item = w256>,
+    S::Word: Debug + JoinLattice + Concretizable<Item = w256>,
 {
     type Result = (Evm<'a, S>, Evm<'a, S>);
 
@@ -129,6 +130,7 @@ where
             CREATE2 => self.pop(4).push(S::Word::TOP),
             JUMP => {
                 // Extract jump address
+                println!("GOT TARGET: {:?}",self.peek(0));
                 let target: usize = self.peek(0).constant().into();
                 // Branch!
                 return (Evm::BOTTOM, self.pop(1).goto(target));

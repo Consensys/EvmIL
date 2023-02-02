@@ -9,12 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt::{Debug};
 use crate::evm::{Evm, Stack, Stepper};
 use crate::ll::{Instruction, Instruction::*};
 use crate::util::{
     w256, Bottom, Concretizable, IsBottom, JoinInto, JoinLattice, JoinSemiLattice,
 };
-use std::fmt;
 
 // ============================================================================
 // Disassembly
@@ -70,7 +70,7 @@ pub struct Disassembly<'a, S: Stack> {
 impl<'a, S> Disassembly<'a, S>
 where
     S: Clone + Stack + JoinSemiLattice,
-    S::Word: JoinLattice + Concretizable<Item = w256>,
+    S::Word: JoinLattice + Concretizable<Item = w256> + Debug,
 {
     pub fn new(bytes: &'a [u8]) -> Self {
         // Perform linear scan of blocks
@@ -235,8 +235,8 @@ where
 
 impl<'a, S> Disassembly<'a, S>
 where
-    S: Clone + Stack + JoinSemiLattice + fmt::Display + fmt::Debug,
-    S::Word: Concretizable<Item = w256> + JoinLattice,
+    S: Clone + Debug + Stack + JoinSemiLattice,
+    S::Word: Debug + Concretizable<Item = w256> + JoinLattice
 {
     /// Apply flow analysis to refine the results of this disassembly.
     pub fn build(mut self) -> Self {

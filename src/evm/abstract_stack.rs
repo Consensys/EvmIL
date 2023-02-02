@@ -9,9 +9,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::{cmp, fmt, mem};
+use std::fmt::{Debug,Display};
 use crate::evm;
 use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice};
-use std::{cmp, fmt, mem};
 
 // ============================================================================
 // Disassembly Context
@@ -196,9 +197,9 @@ where
     }
 }
 
-impl<T> fmt::Display for AbstractStack<T>
+impl<T> Display for AbstractStack<T>
 where
-    T: Copy + PartialEq + Bottom + fmt::Display,
+    T: Copy + Display + PartialEq + Bottom,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self == &Self::BOTTOM {
@@ -250,7 +251,7 @@ where
 // evm::Word
 // ===================================================================
 
-impl<T: evm::Word> evm::Stack for AbstractStack<T>
+impl<T: evm::Word+Display> evm::Stack for AbstractStack<T>
 where
     T: PartialEq + JoinLattice,
 {
@@ -282,7 +283,25 @@ where
             //
             self.upper[i - 1] = item;
         } else {
-            todo!("")
+            // Determine index in lower portion being set.
+            let d = (self.upper.len() - n) + 1;
+            // Check whether lower portion has space
+            if d <= self.lower.start {
+                let l = self.len();
+                // Pad out with unknown elements as necessary
+                for i in 1..d { self.upper.insert(0,T::TOP); }
+                // Insert the actual element
+                self.upper.insert(0,item);
+                // Remove elements from lower portion
+                self.lower = self.lower.sub(d.into());
+                // Sanity check
+                assert_eq!(self.len(),l);
+            } else {
+                // Not sure how to handle this.  It essentially
+                // indicates that the original bytecode sequence
+                // causes a stack underflow.
+                panic!("invalid assignment ({} into {})",n,self);
+            }
         }
     }
 }

@@ -23,7 +23,7 @@ pub const MAX_INTERVAL: Interval<w256> = Interval {
 
 /// Represents an interval of values `x..y` (much like `Range<usize>`)
 /// which supports various arithmetic operations.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Interval<T>
 where
     T: Copy + Ord,
@@ -112,6 +112,15 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}..{}", self.start, self.end)
+    }
+}
+
+impl<T> fmt::Debug for Interval<T>
+where
+    T: Copy + Ord + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}..{:?}", self.start, self.end)
     }
 }
 
