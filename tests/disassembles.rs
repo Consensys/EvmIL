@@ -1,4 +1,4 @@
-use evmil::evm::{AbstractStack, Disassembly};
+use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
 use evmil::ll::Instruction;
 use evmil::ll::Instruction::*;
 use evmil::util::{w256, FromHexString, Interval};
@@ -2392,7 +2392,7 @@ fn check(hex: &str, insns: &[Instruction]) {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
-    let disasm: Disassembly<AbstractStack<Interval<w256>>> = Disassembly::new(&bytes).build();
+    let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // Check against expected instruction sequence
     assert_eq!(insns, disasm.to_vec());
 }

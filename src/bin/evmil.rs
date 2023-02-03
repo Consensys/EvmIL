@@ -19,7 +19,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{AbstractStack, Disassembly};
+use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
 use evmil::il::Parser;
 use evmil::ll::{Bytecode, Instruction};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
@@ -100,7 +100,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct disassembly
-    let disasm: Disassembly<AbstractStack<Interval<w256>>> = Disassembly::new(&bytes).build();
+    let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // Disassemble bytes into instructions
     let instructions = disasm.to_vec();
     // Print them all out.

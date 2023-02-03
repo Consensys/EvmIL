@@ -110,14 +110,15 @@ where
             // 80s: Duplicate Operations
             DUP(n) => {
                 let m = (n - 1) as usize;
-                let nth = self.peek(m);
+                let nth = self.peek(m).clone();
                 self.push(nth)
             }
             // 90s: Exchange Operations
             SWAP(n) => {
                 let m = n as usize;
-                let x = self.peek(m);
-                let y = self.peek(0);
+                let x = self.peek(m).clone();
+                let y = self.peek(0).clone();
+                // FIXME: supporting swap would avoid cloning.
                 self.set(0, x).set(m, y)
             }
             // a0s: Logging Operations
@@ -129,7 +130,6 @@ where
             CREATE2 => self.pop(4).push(S::Word::TOP),
             JUMP => {
                 // Extract jump address
-                println!("GOT TARGET: {:?}",self.peek(0));
                 let target: usize = self.peek(0).constant().into();
                 // Branch!
                 return (Evm::BOTTOM, self.pop(1).goto(target));

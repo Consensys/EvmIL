@@ -12,6 +12,7 @@
 
 mod abstract_evm;
 mod abstract_stack;
+mod abstract_word;
 mod concrete_evm;
 mod concrete_stack;
 mod disassembler;
@@ -19,6 +20,7 @@ pub mod opcode;
 
 pub use crate::evm::abstract_evm::*;
 pub use crate::evm::abstract_stack::*;
+pub use crate::evm::abstract_word::*;
 pub use crate::evm::concrete_evm::*;
 pub use crate::evm::concrete_stack::*;
 pub use crate::evm::disassembler::*;
@@ -28,7 +30,7 @@ use crate::util::{w256, Interval};
 /// Represents the fundamental unit of computation within the EVM,
 /// namely a word.  This is intentially left abstract, so that it
 /// could be reused across both _concrete_ and _abstract_ semantics.
-pub trait Word: Sized + Copy + From<w256> + PartialEq + std::ops::Add<Output = Self> {}
+pub trait Word: Sized + Clone + From<w256> + PartialEq + std::ops::Add<Output = Self> {}
 
 /// Default implementations for `w256`
 impl Word for w256 {}

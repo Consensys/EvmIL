@@ -32,7 +32,7 @@ pub struct AbstractStack<T: PartialEq> {
 
 impl<T> AbstractStack<T>
 where
-    T: PartialEq + Copy + JoinLattice,
+    T: PartialEq + Clone + JoinLattice,
 {
     pub fn new(lower: impl Into<Interval<usize>>, upper: Vec<T>) -> Self {
         let lower_iv = lower.into();
@@ -59,7 +59,7 @@ where
             // Determine stack index
             let i = self.upper.len() - (1 + n);
             // Extract value
-            self.upper[i]
+            self.upper[i].clone()
         } else {
             T::TOP
         }
@@ -179,7 +179,7 @@ where
 // Standard Traits
 // ==================================================================
 
-impl<T: PartialEq + Copy + JoinLattice> Default for AbstractStack<T> {
+impl<T: PartialEq + Clone + JoinLattice> Default for AbstractStack<T> {
     fn default() -> Self {
         Self::empty()
     }
@@ -199,7 +199,7 @@ where
 
 impl<T> Display for AbstractStack<T>
 where
-    T: Copy + Display + PartialEq + Bottom,
+    T: Clone + Display + PartialEq + Bottom,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self == &Self::BOTTOM {
@@ -220,7 +220,7 @@ where
 
 impl<T> Bottom for AbstractStack<T>
 where
-    T: PartialEq + Copy + Bottom,
+    T: PartialEq + Clone + Bottom,
 {
     const BOTTOM: Self = Self {
         lower: Interval::BOTTOM,
@@ -230,7 +230,7 @@ where
 
 impl<T> JoinInto for AbstractStack<T>
 where
-    T: PartialEq + Copy + JoinLattice,
+    T: PartialEq + Clone + JoinLattice,
 {
     /// Merge an abstract stack into this stack, whilst reporting
     /// whether this stack changed or not.

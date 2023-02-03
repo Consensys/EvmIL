@@ -3,13 +3,18 @@ use std::{cmp,fmt,ops};
 /// A vector where all elements are maintained in sorted order
 /// (without duplicates).  This allows for efficient lookup and
 /// duplicate removal.
-#[derive(PartialEq,Eq,Ord,PartialOrd)]
+#[derive(Clone,PartialEq,Eq,Ord,PartialOrd)]
 pub struct SortedVec<T:Ord> {
     items: Vec<T>
 }
 
 impl<T:Ord+Clone> SortedVec<T> {
-    pub fn new() -> Self { SortedVec{items: Vec::new()} }
+    pub const fn new() -> Self { SortedVec{items: Vec::new()} }
+
+    /// Get the number of items in this sorted vector
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
 
     /// Get item at given index in vector
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -42,6 +47,17 @@ impl<T:Ord+Clone> SortedVec<T> {
                 true
             }
         }
+    }
+
+    /// Insert zero or more elements into this sorted vector.
+    pub fn insert_all(&mut self, other: &SortedVec<T>) -> bool {
+        let mut changed = false;
+        // FIXME: performance could be improved!
+        for v in &other.items {
+            changed |= self.insert(v.clone());
+        }
+        // done
+        changed
     }
 }
 
