@@ -76,7 +76,7 @@ impl Concretizable for AbstractWord {
         if items.len() == 1 {
             items[0]
         } else {
-            panic!("not constant");
+            panic!("not constant: {}", self);
         }
     }
 

@@ -2383,6 +2383,33 @@ pub fn test_disassemble_split_04() {
 }
 
 // ============================================================================
+// Function Call tests
+// ============================================================================
+
+#[test]
+pub fn test_disassemble_call_01() {
+    check(
+        "0x60056007565b005b56",
+        &[PUSH(vec![5]), PUSH(vec![7]), JUMP, JUMPDEST(5), STOP, JUMPDEST(7), JUMP],
+    );
+}
+
+#[test]
+pub fn test_disassemble_call_02() {
+//         if storage[0] goto l1;
+//         call fn();
+//         succeed;
+// .l1
+//         call fn();
+//         revert;
+// .fn
+//         return;
+    check(
+        "0x600054600d57600b6019565b005b60136019565b60006000fd5b56",
+        &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST(0xb),STOP,JUMPDEST(0xd),PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST(0x13),PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST(0x19),JUMP]);
+}
+
+// ============================================================================
 // Helpers
 // ============================================================================
 

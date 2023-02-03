@@ -87,11 +87,13 @@ impl<'a> Compiler<'a> {
             Term::Goto(l) => self.translate_goto(l),
             Term::IfGoto(e, l) => self.translate_ifgoto(e, l),
             Term::Label(l) => self.translate_label(l),
+            Term::Return(es) => self.translate_return(es),
             Term::Revert(es) => self.translate_revert(es),
             Term::Succeed(es) => self.translate_succeed(es),
             Term::Stop => self.translate_stop(),
             // Expressions
             Term::Binary(bop, e1, e2) => self.translate_binary(*bop, e1, e2),
+            Term::Call(n,es) => self.translate_call(n,es),
             Term::ArrayAccess(src, index) => self.translate_array_access(src, index),
             Term::MemoryAccess(_) => Err(CompilerError::InvalidMemoryAccess),
             // Values
@@ -156,6 +158,23 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    fn translate_call(&mut self, name: &str, exprs: &[Term]) -> Result {
+        let retlab = self.bytecode.fresh_label();
+        // Allocate labels branch target
+        let fnlab = self.label(name);
+        // Translate arguments
+        for e in exprs { self.translate(e); }
+        // Push return address
+        self.bytecode.push(Instruction::PUSHL(retlab));
+        // Push function address
+        self.bytecode.push(Instruction::PUSHL(fnlab));
+        // Perform jump
+        self.bytecode.push(Instruction::JUMP);
+        // Identify return point
+        self.bytecode.push(Instruction::JUMPDEST(retlab));
+        Ok(())
+    }
+
     fn translate_fail(&mut self) -> Result {
         self.bytecode.push(Instruction::INVALID);
         Ok(())
@@ -184,6 +203,21 @@ impl<'a> Compiler<'a> {
         // Construct corresponding JumpDest
         self.bytecode.push(Instruction::JUMPDEST(lab));
         // Done
+        Ok(())
+    }
+
+    fn translate_return(&mut self, exprs: &[Term]) -> Result {
+        if exprs.len() > 0 {
+            // Translate each expression (except first)
+            for i in 1..exprs.len() { self.translate(&exprs[i])?; }
+            // Translate first expression
+            self.translate(&exprs[0]);
+            // Swap with returna address
+            self.bytecode.push(Instruction::SWAP(exprs.len() as u8));
+        }
+        // A return statement is just an unconditional jump
+        self.bytecode.push(Instruction::JUMP);
+        //
         Ok(())
     }
 
