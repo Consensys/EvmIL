@@ -98,7 +98,6 @@ where
             MSTORE | MSTORE8 => self.pop(2),
             SLOAD => self.pop(1).push(S::Word::TOP),
             SSTORE => self.pop(2),
-            //JUMPI => self.pop(2),
             PC | MSIZE | GAS => self.push(S::Word::TOP),
             JUMPDEST(_) => self, // nop
             // 60 & 70s: Push Operations
