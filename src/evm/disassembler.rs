@@ -262,13 +262,13 @@ where
                 // Parse the block
                 while !st.is_bottom() && st.pc < blk.end {
                     // Execute next instruction
-                    let (nst, bst) = st.step();
-                    // Check whether a branch is possible
-                    if !bst.is_bottom() {
+                    let (nst, branches) = st.step();
+                    // Merge any branches
+                    for b in &branches {
                         // Convert target into block ID.
-                        let block_id = self.get_enclosing_block_id(bst.pc);
+                        let block_id = self.get_enclosing_block_id(b.pc);
                         // Merge in updated state
-                        changed |= self.contexts[block_id].join_into(&bst);
+                        changed |= self.contexts[block_id].join_into(&b);
                     }
                     st = nst;
                 }

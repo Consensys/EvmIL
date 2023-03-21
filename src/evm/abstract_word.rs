@@ -1,8 +1,8 @@
-use std::{fmt,ops};
+use std::{cmp,fmt,ops};
 use crate::evm::Word;
 use crate::util::{w256,SortedVec,SortedVecIter,JoinInto,Bottom,Concretizable,Top};
 
-#[derive(Clone,Debug,PartialOrd,Eq)]
+#[derive(Clone,Debug,PartialOrd,Ord,Eq)]
 pub struct AbstractWord {
     items: Option<SortedVec<w256>>
 }

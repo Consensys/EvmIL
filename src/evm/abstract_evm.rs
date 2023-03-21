@@ -86,7 +86,7 @@ where S::Word: Debug + JoinLattice + Concretizable<Item = w256> {
         } else {
             assert_eq!(self.pc, other.pc); // see #63
             // PROBLEM!!
-            todo!();
+            self.stacks.insert_all(&other.stacks)
         }
     }
 }
@@ -100,7 +100,7 @@ impl<'a, S: Stack + Clone + Ord + JoinSemiLattice> Stepper for AbstractEvm<'a, S
 where
     S::Word: Debug + JoinLattice + Concretizable<Item = w256>,
 {
-    type Result = (AbstractEvm<'a, S>, AbstractEvm<'a, S>);
+    type Result = (AbstractEvm<'a, S>, Vec<AbstractEvm<'a, S>>);
 
     fn step(mut self) -> Self::Result {
         // Decode instruction at the current position
@@ -191,19 +191,47 @@ where
             DELEGATECALL | STATICCALL => self.pop(6).push(S::Word::TOP),
             CREATE2 => self.pop(4).push(S::Word::TOP),
             JUMP => {
-                // Extract jump address
-                let target: usize = self.peek(0).constant().into();
+                let mut branches = Vec::new();
+                // NOTE: performance could be improved here my
+                // coalescing states which have the same target pc.
+                // Unclear whether this is useful or not?
+                for s in &self.stacks {
+                    // Extract jump address
+                    let target: usize = s.peek(0).constant().into();
+                    let mut stack = s.clone();
+                    stack.pop(1);
+                    let mut stacks = SortedVec::new();
+                    stacks.insert(stack);
+                    // Create new EVM
+                    let nevm = Self{pc:target, code: self.code, stacks};
+                    //
+                    branches.push(nevm);
+                }
                 // Branch!
-                return (AbstractEvm::BOTTOM, self.pop(1).goto(target));
+                return (AbstractEvm::BOTTOM, branches);
             }
             JUMPI => {
-                // Extract jump address
-                let target: usize = self.peek(0).constant().into();
+                let mut branches = Vec::new();
+                // NOTE: performance could be improved here my
+                // coalescing states which have the same target pc.
+                // Unclear whether this is useful or not?
+                for s in &self.stacks {
+                    // Extract jump address
+                    let target: usize = s.peek(0).constant().into();
+                    let mut stack = s.clone();
+                    // Pop jump address & value
+                    stack.pop(2);
+                    let mut stacks = SortedVec::new();
+                    stacks.insert(stack);
+                    // Create new EVM
+                    let nevm = Self{pc:target, code: self.code, stacks};
+                    //
+                    branches.push(nevm);
+                }
                 // Pop jump address & value
                 self = self.pop(2);
-                let other = self.clone();
                 // Branch!
-                return (self, other.goto(target));
+                return (self, branches);
             }
             INVALID | RETURN | REVERT => AbstractEvm::BOTTOM,
             SELFDESTRUCT => { self.pop(1); AbstractEvm::BOTTOM },
@@ -214,6 +242,6 @@ where
             }
         };
         //
-        (st, AbstractEvm::BOTTOM)
+        (st, Vec::new())
     }
 }

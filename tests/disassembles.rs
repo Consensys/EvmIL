@@ -2405,9 +2405,56 @@ pub fn test_disassemble_call_02() {
 // .fn
 //         return;
     check(
-        "0x600054600d57600b6019565b005b60136019565b60006000fd5b56",
-        &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST(0xb),STOP,JUMPDEST(0xd),PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST(0x13),PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST(0x19),JUMP]);
+        "0x600054600d57600b6019565b005b60136019565b60006000fd5b5600",
+        &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST(0xb),STOP,JUMPDEST(0xd),PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST(0x13),PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST(0x19),JUMP,DATA(vec![0x00])]);
 }
+
+#[test]
+pub fn test_disassemble_call_03() {
+//         if storage[0] goto l1;
+//         call fn();
+//         succeed;
+// .l1
+//         call fn();
+//         revert;
+// .fn
+//         if storage[0] goto l2;
+//         return;
+//         stop;
+// .l2
+//         revert;
+    check("0x600054600d57600b6019565b005b60136019565b60006000fd5b60005460225756005b60006000fd",&[
+        PUSH(vec![0x0]),
+        SLOAD,
+        PUSH(vec![0xd]),
+        JUMPI,
+        PUSH(vec![0xb]),
+        PUSH(vec![0x19]),
+        JUMP,
+        JUMPDEST(0xb),
+        STOP,
+        JUMPDEST(0xd),
+        PUSH(vec![0x13]),
+        PUSH(vec![0x19]),
+        JUMP,
+        JUMPDEST(0x13),
+        PUSH(vec![0]),
+        PUSH(vec![0]),
+        REVERT,
+        JUMPDEST(0x19),
+        PUSH(vec![0]),
+        SLOAD,
+        PUSH(vec![0x22]),
+        JUMPI,
+        JUMP,
+        DATA(vec![0x00]),
+        JUMPDEST(0x22),
+        PUSH(vec![0]),
+        PUSH(vec![0]),
+        REVERT
+    ]);
+}
+
 
 // ============================================================================
 // Helpers

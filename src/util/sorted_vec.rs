@@ -11,7 +11,7 @@ pub struct SortedVec<T:Ord> {
     items: Vec<T>
 }
 
-impl<T:Ord+Clone> SortedVec<T> {
+impl<T:Ord> SortedVec<T> {
     pub const fn new() -> Self { SortedVec{items: Vec::new()} }
 
     /// Get the number of items in this sorted vector
@@ -59,7 +59,9 @@ impl<T:Ord+Clone> SortedVec<T> {
             }
         }
     }
+}
 
+impl<T:Ord+Clone> SortedVec<T> {
     /// Insert zero or more elements into this sorted vector.
     pub fn insert_all(&mut self, other: &SortedVec<T>) -> bool {
         let mut changed = false;
@@ -133,6 +135,6 @@ impl<'a,T:Ord> IntoIterator for &'a SortedVec<T> {
     type IntoIter = SortedVecIter<'a,T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        todo!("got here");
+        self.iter()
     }
 }

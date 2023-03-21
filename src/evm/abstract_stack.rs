@@ -18,7 +18,7 @@ use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice};
 // Disassembly Context
 // ============================================================================
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct AbstractStack<T: PartialEq> {
     // The lower segment of an abstract stack represents a variable
     // number of unknown values.  An interval is used for a compact
@@ -211,18 +211,6 @@ where
             }
             write!(f, "]")
         }
-    }
-}
-
-impl<T: PartialEq + Eq> PartialOrd for AbstractStack<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        todo!();
-    }
-}
-
-impl<T: PartialEq + Eq> Ord for AbstractStack<T> {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        todo!();
     }
 }
 
