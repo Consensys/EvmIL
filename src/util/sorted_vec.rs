@@ -1,6 +1,7 @@
 use std::{cmp,fmt,ops};
 
 pub type SortedVecIter<'a,T> = std::slice::Iter<'a,T>;
+pub type SortedVecIterMut<'a,T> = std::slice::IterMut<'a,T>;
 
 /// A vector where all elements are maintained in sorted order
 /// (without duplicates).  This allows for efficient lookup and
@@ -30,6 +31,10 @@ impl<T:Ord+Clone> SortedVec<T> {
 
     pub fn iter<'a>(&'a self) -> SortedVecIter<'a,T> {
         self.items.iter()
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> SortedVecIterMut<'a,T> {
+        self.items.iter_mut()
     }
 
     /// Check whether a given item is already contained in the sorted

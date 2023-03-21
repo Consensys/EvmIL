@@ -109,13 +109,14 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         match insn {
             Instruction::JUMPDEST(_) => {
                 let st = disasm.get_state(pc);
-                let len = st.stack.len();
                 println!("");
-                if len.is_constant() {
-                    println!("// Stack +{}", len.unwrap());
-                } else {
-                    println!("// Stack +{}", len);
-                }
+                // NOTE: to be restored once the API has settled.
+                //let len = st.evm.stack.len();
+                // if len.is_constant() {
+                //     println!("// Stack +{}", len.unwrap());
+                // } else {
+                //     println!("// Stack +{}", len);
+                // }
                 println!("{:#08x}: {}", pc, insn);
             }
             Instruction::JUMP | Instruction::JUMPI => {

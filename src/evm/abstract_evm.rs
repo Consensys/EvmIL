@@ -10,35 +10,97 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::{Debug};
-use crate::evm::{Evm, Stack, Stepper};
+use crate::evm::{Stack, Stepper};
 use crate::ll::{Instruction, Instruction::*};
 use crate::util::{
-    w256, Bottom, Concretizable, IsBottom, JoinInto, JoinLattice, JoinSemiLattice, Top,
+    w256, Bottom, Concretizable, IsBottom, JoinInto, JoinLattice, JoinSemiLattice, Top, SortedVec
 };
 
-impl<'a, S: Stack + Clone + JoinSemiLattice> JoinInto for Evm<'a, S> {
+#[derive(Clone,PartialEq)]
+pub struct AbstractEvm<'a, S>
+where S: Stack + Clone + Ord + JoinSemiLattice,
+      S::Word: Debug + JoinLattice + Concretizable<Item = w256> {
+    /// Program Counter
+    pub pc: usize,
+    /// Bytecode being executed
+    pub code: &'a [u8],
+    /// The internal set of stacks
+    stacks: SortedVec<S>
+}
+
+impl<'a, S: Stack + Clone + Ord + JoinSemiLattice> AbstractEvm<'a, S>
+where S::Word: Debug + JoinLattice + Concretizable<Item = w256> {
+    pub fn new(code: &'a [u8]) -> Self {
+        let mut stacks = SortedVec::new();
+        stacks.insert(S::default());
+        Self{pc:0, code, stacks}
+    }
+
+    /// Peek 'n'th item on the stack.
+    pub fn peek(&self, n: usize) -> S::Word {
+        let mut w = S::Word::BOTTOM;
+        self.stacks.iter().for_each(|s| { w.join_into(&s.peek(n)); });
+        w
+    }
+
+    /// Pop `n` items of the stack.
+    pub fn pop(mut self, n: usize) -> Self {
+        self.stacks.iter_mut().for_each(|s| s.pop(n));
+        self
+    }
+
+    /// Push a word onto the stack.
+    pub fn push(mut self, word: S::Word) -> Self {
+        self.stacks.iter_mut().for_each(|s| s.push(word.clone()));
+        self
+    }
+
+    pub fn set(mut self, n: usize, word: S::Word) -> Self {
+        self.stacks.iter_mut().for_each(|s| s.set(n,word.clone()));
+        self
+    }
+
+    /// Shift the `pc` by `n` bytes.
+    pub fn next(mut self, n: usize) -> Self {
+        self.pc = self.pc + n;
+        self
+    }
+
+    /// Update `pc` to a given location.
+    pub fn goto(mut self, n: usize) -> Self {
+        self.pc = n;
+        self
+    }
+}
+
+impl<'a, S: Stack + Clone + Ord + JoinSemiLattice> JoinInto for AbstractEvm<'a, S>
+where S::Word: Debug + JoinLattice + Concretizable<Item = w256> {
     fn join_into(&mut self, other: &Self) -> bool {
         if other.is_bottom() {
             false
         } else if self.is_bottom() {
-            *self = (*other).clone();
+            self.pc = other.pc;
+            self.code = other.code;
+            self.stacks = other.stacks.clone();
             true // We've definitely changed
         } else {
             assert_eq!(self.pc, other.pc); // see #63
-            self.stack.join_into(&other.stack)
+            // PROBLEM!!
+            todo!();
         }
     }
 }
 
-impl<'a, S: Stack + JoinSemiLattice> Bottom for Evm<'a, S> {
-    const BOTTOM: Evm<'a, S> = Evm::new_const(&[], S::BOTTOM);
+impl<'a, S: Stack + Clone + Ord + JoinSemiLattice> Bottom for AbstractEvm<'a, S>
+where S::Word: Debug + JoinLattice + Concretizable<Item = w256> {
+    const BOTTOM: AbstractEvm<'a, S> = AbstractEvm{pc: 0, code: &[], stacks: SortedVec::new()};
 }
 
-impl<'a, S: Stack + Clone + JoinSemiLattice> Stepper for Evm<'a, S>
+impl<'a, S: Stack + Clone + Ord + JoinSemiLattice> Stepper for AbstractEvm<'a, S>
 where
     S::Word: Debug + JoinLattice + Concretizable<Item = w256>,
 {
-    type Result = (Evm<'a, S>, Evm<'a, S>);
+    type Result = (AbstractEvm<'a, S>, AbstractEvm<'a, S>);
 
     fn step(mut self) -> Self::Result {
         // Decode instruction at the current position
@@ -132,7 +194,7 @@ where
                 // Extract jump address
                 let target: usize = self.peek(0).constant().into();
                 // Branch!
-                return (Evm::BOTTOM, self.pop(1).goto(target));
+                return (AbstractEvm::BOTTOM, self.pop(1).goto(target));
             }
             JUMPI => {
                 // Extract jump address
@@ -143,8 +205,8 @@ where
                 // Branch!
                 return (self, other.goto(target));
             }
-            INVALID | RETURN | REVERT => Evm::BOTTOM,
-            SELFDESTRUCT => { self.pop(1); Evm::BOTTOM },
+            INVALID | RETURN | REVERT => AbstractEvm::BOTTOM,
+            SELFDESTRUCT => { self.pop(1); AbstractEvm::BOTTOM },
             _ => {
                 // This is a catch all to ensure no instructions are
                 // missed above.
@@ -152,6 +214,6 @@ where
             }
         };
         //
-        (st, Evm::BOTTOM)
+        (st, AbstractEvm::BOTTOM)
     }
 }
