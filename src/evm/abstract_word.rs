@@ -1,6 +1,6 @@
 use std::{fmt,ops};
 use crate::evm::Word;
-use crate::util::{w256,SortedVec,JoinInto,Bottom,Concretizable,Top};
+use crate::util::{w256,SortedVec,SortedVecIter,JoinInto,Bottom,Concretizable,Top};
 
 #[derive(Clone,Debug,PartialOrd)]
 pub struct AbstractWord {
@@ -94,4 +94,17 @@ impl Concretizable for AbstractWord {
 
 impl Word for AbstractWord {
 
+}
+
+// ==========================================================
+// Misc
+// ==========================================================
+
+impl<'a> IntoIterator for &'a AbstractWord {
+    type Item = &'a w256;
+    type IntoIter = SortedVecIter<'a,w256>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        todo!("got here");
+    }
 }
