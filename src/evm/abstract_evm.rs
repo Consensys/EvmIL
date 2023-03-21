@@ -144,7 +144,7 @@ where
                 return (self, other.goto(target));
             }
             INVALID | RETURN | REVERT => Evm::BOTTOM,
-            SELFDESTRUCT => self.pop(1),
+            SELFDESTRUCT => { self.pop(1); Evm::BOTTOM },
             _ => {
                 // This is a catch all to ensure no instructions are
                 // missed above.

@@ -2249,8 +2249,8 @@ pub fn test_disassemble_insn_ff() {
             PUSH(vec![0x06]),
             PUSH(vec![0x01]),
             SELFDESTRUCT,
-            JUMP,
-            JUMPDEST(6),
+            DATA(vec![0x56]),
+            DATA(vec![0x5b])
         ],
     );
 }

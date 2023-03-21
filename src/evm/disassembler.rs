@@ -206,7 +206,7 @@ where
                         start = pc - 1;
                     }
                 }
-                INVALID | JUMP | RETURN | REVERT | STOP => {
+                INVALID | JUMP | RETURN | REVERT | SELFDESTRUCT | STOP => {
                     blocks.push(Block::new(start, pc));
                     start = pc;
                 }
