@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::{Debug};
-use crate::evm::{Evm, Stack, Stepper};
+use crate::evm::{AbstractEvm, Stack, Stepper};
 use crate::ll::{Instruction, Instruction::*};
 use crate::util::{
     w256, Bottom, Concretizable, IsBottom, JoinInto, JoinLattice, JoinSemiLattice,
@@ -58,27 +58,31 @@ impl Block {
 /// can only appear as the first instruction of a block.  In fact,
 /// every reachable block (except the root block) begins with a
 /// `JUMPDEST`.
-pub struct Disassembly<'a, S: Stack> {
+pub struct Disassembly<'a, S: Stack>
+where
+    S: Clone + Ord + Stack + JoinSemiLattice,
+    S::Word: JoinLattice + Concretizable<Item = w256> + Debug
+{
     /// The bytes we are disassembling.
     bytes: &'a [u8],
     /// The set of known blocks (in order).
     blocks: Vec<Block>,
     /// The (incoming) contexts for each block.
-    contexts: Vec<Evm<'a, S>>,
+    contexts: Vec<AbstractEvm<'a, S>>,
 }
 
 impl<'a, S> Disassembly<'a, S>
 where
-    S: Clone + Stack + JoinSemiLattice,
-    S::Word: JoinLattice + Concretizable<Item = w256> + Debug,
+    S: Clone + Stack + Ord + JoinSemiLattice,
+    S::Word: JoinLattice + Concretizable<Item = w256> + Debug
 {
     pub fn new(bytes: &'a [u8]) -> Self {
         // Perform linear scan of blocks
         let blocks = Self::scan_blocks(bytes);
         // Construct default contexts
-        let mut contexts = vec![Evm::BOTTOM; blocks.len()];
+        let mut contexts = vec![AbstractEvm::BOTTOM; blocks.len()];
         // Update origin context
-        contexts[0] = Evm::new(bytes);
+        contexts[0] = AbstractEvm::new(bytes);
         // Done
         Disassembly {
             bytes,
@@ -88,7 +92,7 @@ where
     }
 
     /// Get the state at a given program location.
-    pub fn get_state(&self, loc: usize) -> Evm<'a, S> {
+    pub fn get_state(&self, loc: usize) -> AbstractEvm<'a, S> {
         // Determine enclosing block
         let bid = self.get_enclosing_block_id(loc);
         let mut st = self.contexts[bid].clone();
@@ -115,7 +119,7 @@ where
     /// reachable or not.  Observe the root block (`id=0`) is _always_
     /// considered reachable.
     pub fn is_block_reachable(&self, id: usize) -> bool {
-        id == 0 || self.contexts[id] != Evm::BOTTOM
+        id == 0 || self.contexts[id] != AbstractEvm::BOTTOM
     }
 
     /// Read a slice of bytes from the bytecode program, padding with
@@ -148,7 +152,7 @@ where
             let blk = &self.blocks[i];
             let ctx = &self.contexts[i];
             // Check for reachability
-            if i == 0 || ctx != &Evm::BOTTOM {
+            if i == 0 || ctx != &AbstractEvm::BOTTOM {
                 // Disassemble block
                 self.disassemble_into(blk, &mut insns);
             } else {
@@ -206,7 +210,7 @@ where
                         start = pc - 1;
                     }
                 }
-                INVALID | JUMP | RETURN | REVERT | STOP => {
+                INVALID | JUMP | RETURN | REVERT | SELFDESTRUCT | STOP => {
                     blocks.push(Block::new(start, pc));
                     start = pc;
                 }
@@ -235,7 +239,7 @@ where
 
 impl<'a, S> Disassembly<'a, S>
 where
-    S: Clone + Debug + Stack + JoinSemiLattice,
+    S: Clone + Debug + Ord + Stack + JoinSemiLattice,
     S::Word: Debug + Concretizable<Item = w256> + JoinLattice
 {
     /// Apply flow analysis to refine the results of this disassembly.
@@ -258,13 +262,13 @@ where
                 // Parse the block
                 while !st.is_bottom() && st.pc < blk.end {
                     // Execute next instruction
-                    let (nst, bst) = st.step();
-                    // Check whether a branch is possible
-                    if !bst.is_bottom() {
+                    let (nst, branches) = st.step();
+                    // Merge any branches
+                    for b in &branches {
                         // Convert target into block ID.
-                        let block_id = self.get_enclosing_block_id(bst.pc);
+                        let block_id = self.get_enclosing_block_id(b.pc);
                         // Merge in updated state
-                        changed |= self.contexts[block_id].join_into(&bst);
+                        changed |= self.contexts[block_id].join_into(&b);
                     }
                     st = nst;
                 }

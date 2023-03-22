@@ -131,11 +131,13 @@ impl Parser {
         // Dispatch on lookahead
         match self.lexer.peek().kind {
             Token::Assert => self.parse_stmt_assert(),
+            Token::Call => self.parse_stmt_call(),
             Token::Fail => self.parse_stmt_fail(),
             Token::Stop => self.parse_stmt_stop(),
             Token::Goto => self.parse_stmt_goto(),
             Token::If => self.parse_stmt_if(),
             Token::Dot => self.parse_stmt_label(),
+            Token::Return => self.parse_stmt_return(),
             Token::Revert => self.parse_stmt_revert(),
             Token::Succeed => self.parse_stmt_succeed(),
             _ => self.parse_stmt_assign(),
@@ -156,6 +158,18 @@ impl Parser {
         let rhs = self.parse_expr()?;
         self.lexer.snap(Token::SemiColon)?;
         Ok(Term::Assignment(Box::new(lhs), Box::new(rhs)))
+    }
+
+    pub fn parse_stmt_call(&mut self) -> Result<Term> {
+        self.lexer.snap(Token::Call)?;
+        self.skip_whitespace();
+        let target = self.lexer.snap(Token::Identifier)?;
+        // FIXME: update this
+        self.lexer.snap(Token::LeftBrace)?;
+        let exprs = self.parse_expr_list(Token::RightBrace)?;
+        self.lexer.snap(Token::RightBrace)?;
+        self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Call(self.lexer.get_str(target),exprs))
     }
 
     pub fn parse_stmt_fail(&mut self) -> Result<Term> {
@@ -193,6 +207,13 @@ impl Parser {
         self.lexer.snap(Token::Dot)?;
         let target = self.lexer.snap(Token::Identifier)?;
         Ok(Term::Label(self.lexer.get_str(target)))
+    }
+
+    pub fn parse_stmt_return(&mut self) -> Result<Term> {
+        self.lexer.snap(Token::Return)?;
+        let exprs = self.parse_expr_list(Token::SemiColon)?;
+        self.lexer.snap(Token::SemiColon)?;
+        Ok(Term::Return(exprs))
     }
 
     pub fn parse_stmt_revert(&mut self) -> Result<Term> {

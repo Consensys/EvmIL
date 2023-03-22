@@ -21,6 +21,7 @@ pub enum Token {
     AmpersandAmpersand,
     Assert,
     BarBar,
+    Call,
     Comma,
     Dot,
     EOF,
@@ -41,6 +42,7 @@ pub enum Token {
     NewLine,
     Percent,
     Plus,
+    Return,
     Revert,
     RightAngle,
     RightAngleEquals,
@@ -59,10 +61,12 @@ pub enum Token {
 // ======================================================
 
 const ASSERT: &'static [char] = &['a', 's', 's', 'e', 'r', 't'];
+const CALL: &'static [char] = &['c', 'a', 'l', 'l'];
 const FAIL: &'static [char] = &['f', 'a', 'i', 'l'];
 const GOTO: &'static [char] = &['g', 'o', 't', 'o'];
 const IF: &'static [char] = &['i', 'f'];
 const REVERT: &'static [char] = &['r', 'e', 'v', 'e', 'r', 't'];
+const RETURN: &'static [char] = &['r', 'e', 't', 'u', 'r', 'n'];
 const SUCCEED: &'static [char] = &['s', 'u', 'c', 'c', 'e', 'e', 'd'];
 const STOP: &'static [char] = &['s', 't', 'o', 'p'];
 
@@ -94,10 +98,12 @@ fn scan_keyword(input: &[char]) -> ScannerResult {
     // Attempt to match it
     let t = match &input[r.range()] {
         ASSERT => Token::Assert,
+        CALL => Token::Call,
         FAIL => Token::Fail,
         GOTO => Token::Goto,
         IF => Token::If,
         REVERT => Token::Revert,
+        RETURN => Token::Return,
         SUCCEED => Token::Succeed,
         STOP => Token::Stop,
         _ => {

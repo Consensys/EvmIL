@@ -24,12 +24,14 @@ pub enum Term {
     Label(String),
     Succeed(Vec<Term>),
     Revert(Vec<Term>),
+    Return(Vec<Term>),
     Fail,
     Stop,
     // Expressions
     Binary(BinOp, Box<Term>, Box<Term>),
     ArrayAccess(Box<Term>, Box<Term>),
     MemoryAccess(Region),
+    Call(String,Vec<Term>),
     // Values
     Int(Vec<u8>),
     Hex(Vec<u8>),

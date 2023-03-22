@@ -23,7 +23,7 @@ pub const MAX_INTERVAL: Interval<w256> = Interval {
 
 /// Represents an interval of values `x..y` (much like `Range<usize>`)
 /// which supports various arithmetic operations.
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Interval<T>
 where
     T: Copy + Ord,

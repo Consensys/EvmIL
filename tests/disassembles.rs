@@ -1,4 +1,4 @@
-use evmil::evm::{AbstractStack, Disassembly};
+use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
 use evmil::ll::Instruction;
 use evmil::ll::Instruction::*;
 use evmil::util::{w256, FromHexString, Interval};
@@ -2249,8 +2249,8 @@ pub fn test_disassemble_insn_ff() {
             PUSH(vec![0x06]),
             PUSH(vec![0x01]),
             SELFDESTRUCT,
-            JUMP,
-            JUMPDEST(6),
+            DATA(vec![0x56]),
+            DATA(vec![0x5b])
         ],
     );
 }
@@ -2383,6 +2383,80 @@ pub fn test_disassemble_split_04() {
 }
 
 // ============================================================================
+// Function Call tests
+// ============================================================================
+
+#[test]
+pub fn test_disassemble_call_01() {
+    check(
+        "0x60056007565b005b56",
+        &[PUSH(vec![5]), PUSH(vec![7]), JUMP, JUMPDEST(5), STOP, JUMPDEST(7), JUMP],
+    );
+}
+
+#[test]
+pub fn test_disassemble_call_02() {
+//         if storage[0] goto l1;
+//         call fn();
+//         succeed;
+// .l1
+//         call fn();
+//         revert;
+// .fn
+//         return;
+    check(
+        "0x600054600d57600b6019565b005b60136019565b60006000fd5b5600",
+        &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST(0xb),STOP,JUMPDEST(0xd),PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST(0x13),PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST(0x19),JUMP,DATA(vec![0x00])]);
+}
+
+#[test]
+pub fn test_disassemble_call_03() {
+//         if storage[0] goto l1;
+//         call fn();
+//         succeed;
+// .l1
+//         call fn();
+//         revert;
+// .fn
+//         if storage[0] goto l2;
+//         return;
+//         stop;
+// .l2
+//         revert;
+    check("0x600054600d57600b6019565b005b60136019565b60006000fd5b60005460225756005b60006000fd",&[
+        PUSH(vec![0x0]),
+        SLOAD,
+        PUSH(vec![0xd]),
+        JUMPI,
+        PUSH(vec![0xb]),
+        PUSH(vec![0x19]),
+        JUMP,
+        JUMPDEST(0xb),
+        STOP,
+        JUMPDEST(0xd),
+        PUSH(vec![0x13]),
+        PUSH(vec![0x19]),
+        JUMP,
+        JUMPDEST(0x13),
+        PUSH(vec![0]),
+        PUSH(vec![0]),
+        REVERT,
+        JUMPDEST(0x19),
+        PUSH(vec![0]),
+        SLOAD,
+        PUSH(vec![0x22]),
+        JUMPI,
+        JUMP,
+        DATA(vec![0x00]),
+        JUMPDEST(0x22),
+        PUSH(vec![0]),
+        PUSH(vec![0]),
+        REVERT
+    ]);
+}
+
+
+// ============================================================================
 // Helpers
 // ============================================================================
 
@@ -2392,7 +2466,7 @@ fn check(hex: &str, insns: &[Instruction]) {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
-    let disasm: Disassembly<AbstractStack<Interval<w256>>> = Disassembly::new(&bytes).build();
+    let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // Check against expected instruction sequence
     assert_eq!(insns, disasm.to_vec());
 }

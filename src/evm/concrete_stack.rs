@@ -36,7 +36,7 @@ impl<T: Word> Default for ConcreteStack<T> {
     }
 }
 
-impl<T: Word> Stack for ConcreteStack<T> {
+impl<T: Word+Copy> Stack for ConcreteStack<T> {
     type Word = T;
 
     fn peek(&self, n: usize) -> T {

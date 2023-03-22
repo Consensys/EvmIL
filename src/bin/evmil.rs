@@ -19,7 +19,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{AbstractStack, Disassembly};
+use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
 use evmil::il::Parser;
 use evmil::ll::{Bytecode, Instruction};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
@@ -100,7 +100,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct disassembly
-    let disasm: Disassembly<AbstractStack<Interval<w256>>> = Disassembly::new(&bytes).build();
+    let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // Disassemble bytes into instructions
     let instructions = disasm.to_vec();
     // Print them all out.
@@ -109,13 +109,14 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         match insn {
             Instruction::JUMPDEST(_) => {
                 let st = disasm.get_state(pc);
-                let len = st.stack.len();
                 println!("");
-                if len.is_constant() {
-                    println!("// Stack +{}", len.unwrap());
-                } else {
-                    println!("// Stack +{}", len);
-                }
+                // NOTE: to be restored once the API has settled.
+                //let len = st.evm.stack.len();
+                // if len.is_constant() {
+                //     println!("// Stack +{}", len.unwrap());
+                // } else {
+                //     println!("// Stack +{}", len);
+                // }
                 println!("{:#08x}: {}", pc, insn);
             }
             Instruction::JUMP | Instruction::JUMPI => {
