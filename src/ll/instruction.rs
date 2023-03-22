@@ -165,6 +165,7 @@ impl Instruction {
             Instruction::STOP => false,
             Instruction::RETURN => false,
             Instruction::REVERT => false,
+            Instruction::SELFDESTRUCT => false,
             _ => true,
         }
     }

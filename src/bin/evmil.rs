@@ -21,7 +21,7 @@ use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
 use evmil::il::Parser;
-use evmil::ll::{Bytecode, Instruction};
+use evmil::ll::{Assembler, Bytecode, Instruction};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -35,14 +35,20 @@ fn main() -> Result<(), Box<dyn Error>> {
             Command::new("compile")
                 .about("Compile EvmIL code to EVM bytecode")
                 .arg(Arg::new("file").required(true))
-                .visible_alias("c"),
+                .visible_alias("c")
         )
         .subcommand(
             Command::new("disassemble")
                 .about("Disassemble a raw hex string into EVM bytecode")
                 .arg(Arg::new("code").short('c').long("code"))
                 .arg(Arg::new("target").required(true))
-                .visible_alias("d"),
+                .visible_alias("d")
+        )
+        .subcommand(
+            Command::new("assemble")
+                .about("Assemble EVM bytecode into a raw hex string")
+                .arg(Arg::new("target").required(true))
+                .visible_alias("a")
         )
         .get_matches();
     // Extract top-level flags
@@ -53,6 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     // Dispatch on outcome
     let ok = match matches.subcommand() {
+        Some(("assemble", args)) => assemble(args),
         Some(("compile", args)) => compile(args),
         Some(("disassemble", args)) => disassemble(args),
         _ => unreachable!(),
@@ -130,6 +137,23 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         pc = pc + insn.length(&[]); // broken
     }
     // TODO
+    Ok(true)
+}
+
+/// Assemble a given bytecode sequence.
+fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
+    let target = args.get_one::<String>("target").unwrap();
+    // Read from asm file
+    let context = fs::read_to_string(target)?;
+    // Construct assembler
+    let asm = Assembler::new(&context);
+    // Parse assembly into instructions
+    let insns = asm.parse()?;
+    // Translate instructions into bytes
+    let bytes: Vec<u8> = insns.try_into().unwrap();
+    // Print the final hex string
+    println!("{}", bytes.to_hex_string());
+    //
     Ok(true)
 }
 
