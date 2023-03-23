@@ -96,7 +96,7 @@ impl Bytecode {
         // Calculate label offsets
         for b in &self.bytecodes {
             match b {
-                Instruction::JUMPDEST(lab) => {
+                Instruction::LABEL(lab) => {
                     // Extract old offset
                     let oldoff = offsets[*lab];
                     // Construct new offset
@@ -110,14 +110,17 @@ impl Bytecode {
                         offsets[*lab] = newoff;
                     }
                 }
-                Instruction::PUSH(bs) => offset = offset + (bs.len() as u16),
+                Instruction::PUSH(bs) => {
+                    offset = offset + 1 + (bs.len() as u16)
+                }
                 Instruction::PUSHL(lab) => {
                     // This time calculate a more accurate figure.
-                    offset = offset + offsets[*lab].width()
+                    offset = offset + 1 + offsets[*lab].width()
                 }
-                _ => {}
+                _ => {
+                    offset = offset + 1;
+                }
             }
-            offset = offset + 1;
         }
         //
         changed

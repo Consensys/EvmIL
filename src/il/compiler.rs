@@ -115,7 +115,8 @@ impl<'a> Compiler<'a> {
         // False branch
         self.bytecode.push(Instruction::INVALID);
         // True branch
-        self.bytecode.push(Instruction::JUMPDEST(lab));
+        self.bytecode.push(Instruction::LABEL(lab));
+        self.bytecode.push(Instruction::JUMPDEST);
         //
         Ok(())
     }
@@ -171,7 +172,8 @@ impl<'a> Compiler<'a> {
         // Perform jump
         self.bytecode.push(Instruction::JUMP);
         // Identify return point
-        self.bytecode.push(Instruction::JUMPDEST(retlab));
+        self.bytecode.push(Instruction::LABEL(retlab));
+        self.bytecode.push(Instruction::JUMPDEST);
         Ok(())
     }
 
@@ -201,7 +203,8 @@ impl<'a> Compiler<'a> {
         // Determine underlying index of label
         let lab = self.label(label);
         // Construct corresponding JumpDest
-        self.bytecode.push(Instruction::JUMPDEST(lab));
+        self.bytecode.push(Instruction::LABEL(lab));
+        self.bytecode.push(Instruction::JUMPDEST);
         // Done
         Ok(())
     }
@@ -305,7 +308,8 @@ impl<'a> Compiler<'a> {
                 let lab = self.bytecode.fresh_label();
                 self.translate_conditional(lhs, None, Some(lab))?;
                 self.translate_conditional(rhs, true_lab, None)?;
-                self.bytecode.push(Instruction::JUMPDEST(lab));
+                self.bytecode.push(Instruction::LABEL(lab));
+                self.bytecode.push(Instruction::JUMPDEST);
             }
             (None, Some(_)) => {
                 // Easy case
@@ -334,7 +338,8 @@ impl<'a> Compiler<'a> {
                 let lab = self.bytecode.fresh_label();
                 self.translate_conditional(lhs, Some(lab), None)?;
                 self.translate_conditional(rhs, None, false_lab)?;
-                self.bytecode.push(Instruction::JUMPDEST(lab));
+                self.bytecode.push(Instruction::LABEL(lab));
+                self.bytecode.push(Instruction::JUMPDEST);
             }
             (Some(_), None) => {
                 // Easy case
@@ -407,7 +412,8 @@ impl<'a> Compiler<'a> {
         self.bytecode.push(Instruction::JUMPI);
         self.bytecode.push(Instruction::POP);
         self.translate(rhs)?;
-        self.bytecode.push(Instruction::JUMPDEST(lab));
+        self.bytecode.push(Instruction::LABEL(lab));
+        self.bytecode.push(Instruction::JUMPDEST);
         // Done
         Ok(())
     }

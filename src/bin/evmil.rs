@@ -114,7 +114,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     let mut pc = 0;
     for insn in instructions {
         match insn {
-            Instruction::JUMPDEST(_) => {
+            Instruction::JUMPDEST => {
                 let st = disasm.get_state(pc);
                 println!("");
                 // NOTE: to be restored once the API has settled.

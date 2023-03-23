@@ -128,7 +128,7 @@ pub enum Instruction {
     PC,
     MSIZE,
     GAS,
-    JUMPDEST(usize),
+    JUMPDEST,
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
     PUSHL(usize), // Push label offset.
@@ -149,6 +149,8 @@ pub enum Instruction {
     REVERT,
     INVALID,
     SELFDESTRUCT,
+    // Represents an named location within a bytecode sequence.
+    LABEL(usize),
     // Signals arbitrary data in the contract, rather than bytecode
     // instructions.
     DATA(Vec<u8>),
@@ -183,18 +185,29 @@ impl Instruction {
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
     pub fn encode(&self, offsets: &[Offset], bytes: &mut Vec<u8>) -> Result<(), Error> {
-        // Push opcode
-        bytes.push(self.opcode(&offsets)?);
         // Push operands (if applicable)
         match self {
+            Instruction::DATA(args) => {
+                // Push operands
+                bytes.extend(args);
+            }
+            Instruction::LABEL(_) => {
+            }
             Instruction::PUSH(args) => {
+                // Push opcode
+                bytes.push(self.opcode(&offsets)?);
+                // Push operands
                 bytes.extend(args);
             }
             Instruction::PUSHL(idx) => {
+                // Push opcode
+                bytes.push(self.opcode(&offsets)?);
+                // Push operands
                 bytes.extend(offsets[*idx].to_bytes());
             }
             _ => {
                 // All other instructions have no operands.
+                bytes.push(self.opcode(&offsets)?);
             }
         }
         //
@@ -291,7 +304,7 @@ impl Instruction {
             Instruction::PC => 0x58,
             Instruction::MSIZE => 0x59,
             Instruction::GAS => 0x5a,
-            Instruction::JUMPDEST(_) => 0x5b,
+            Instruction::JUMPDEST => 0x5b,
             //
             // 60s & 70s: Push Operations
             Instruction::PUSH(bs) => {
@@ -343,7 +356,7 @@ impl Instruction {
             Instruction::INVALID => 0xfe,
             Instruction::SELFDESTRUCT => 0xff,
             //
-            Instruction::DATA(_) => {
+            Instruction::DATA(_)|Instruction::LABEL(_) => {
                 panic!("Invalid instruction ({:?})", self);
             }
         };
@@ -428,7 +441,7 @@ impl Instruction {
             0x58 => Instruction::PC,
             0x59 => Instruction::MSIZE,
             0x5a => Instruction::GAS,
-            0x5b => Instruction::JUMPDEST(pc),
+            0x5b => Instruction::JUMPDEST,
             // 60s & 70s: Push Operations
             0x60..=0x7f => {
                 let m = pc + 1;
@@ -488,7 +501,13 @@ impl fmt::Display for Instruction {
             Instruction::DUP(n) => {
                 write!(f, "DUP{n}")
             }
-            Instruction::JUMPDEST(_) => {
+            Instruction::LABEL(i) => {
+                write!(f, ".lab{i}")
+            }
+            Instruction::LOG(n) => {
+                write!(f, "LOG{n}")
+            }
+            Instruction::JUMPDEST => {
                 write!(f, "JUMPDEST")
             }
             Instruction::PUSH(bytes) => {

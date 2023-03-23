@@ -28,7 +28,7 @@ pub fn test_disassemble_insn_01() {
             ADD,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -45,7 +45,7 @@ pub fn test_disassemble_insn_02() {
             MUL,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -62,7 +62,7 @@ pub fn test_disassemble_insn_03() {
             SUB,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -79,7 +79,7 @@ pub fn test_disassemble_insn_04() {
             DIV,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -96,7 +96,7 @@ pub fn test_disassemble_insn_05() {
             SDIV,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -113,7 +113,7 @@ pub fn test_disassemble_insn_06() {
             MOD,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -130,7 +130,7 @@ pub fn test_disassemble_insn_07() {
             SMOD,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -148,7 +148,7 @@ pub fn test_disassemble_insn_08() {
             ADDMOD,
             POP,
             JUMP,
-            JUMPDEST(9),
+            JUMPDEST,
         ],
     );
 }
@@ -166,7 +166,7 @@ pub fn test_disassemble_insn_09() {
             MULMOD,
             POP,
             JUMP,
-            JUMPDEST(9),
+            JUMPDEST,
         ],
     );
 }
@@ -183,7 +183,7 @@ pub fn test_disassemble_insn_0a() {
             EXP,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -200,7 +200,7 @@ pub fn test_disassemble_insn_0b() {
             SIGNEXTEND,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -219,7 +219,7 @@ pub fn test_disassemble_insn_10() {
             LT,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -236,7 +236,7 @@ pub fn test_disassemble_insn_11() {
             GT,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -253,7 +253,7 @@ pub fn test_disassemble_insn_12() {
             SLT,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -270,7 +270,7 @@ pub fn test_disassemble_insn_13() {
             SGT,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -287,7 +287,7 @@ pub fn test_disassemble_insn_14() {
             EQ,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -303,7 +303,7 @@ pub fn test_disassemble_insn_15() {
             ISZERO,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -320,7 +320,7 @@ pub fn test_disassemble_insn_16() {
             AND,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -337,7 +337,7 @@ pub fn test_disassemble_insn_17() {
             OR,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -354,7 +354,7 @@ pub fn test_disassemble_insn_18() {
             XOR,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -370,7 +370,7 @@ pub fn test_disassemble_insn_19() {
             NOT,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -387,7 +387,7 @@ pub fn test_disassemble_insn_1a() {
             BYTE,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -404,7 +404,7 @@ pub fn test_disassemble_insn_1b() {
             SHL,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -421,7 +421,7 @@ pub fn test_disassemble_insn_1c() {
             SHR,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -438,7 +438,7 @@ pub fn test_disassemble_insn_1d() {
             SAR,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -457,7 +457,7 @@ pub fn test_disassemble_insn_20() {
             KECCAK256,
             POP,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -469,7 +469,7 @@ pub fn test_disassemble_insn_30() {
     let bytecode = format!("0x6005{}50565b", "30");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), ADDRESS, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), ADDRESS, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -484,7 +484,7 @@ pub fn test_disassemble_insn_31() {
             BALANCE,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -494,7 +494,7 @@ pub fn test_disassemble_insn_32() {
     let bytecode = format!("0x6005{}50565b", "32");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), ORIGIN, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), ORIGIN, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -503,7 +503,7 @@ pub fn test_disassemble_insn_33() {
     let bytecode = format!("0x6005{}50565b", "33");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), CALLER, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), CALLER, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -511,7 +511,7 @@ pub fn test_disassemble_insn_33() {
 pub fn test_disassemble_insn_34() {
     check(
         "0x60053450565b",
-        &[PUSH(vec![0x05]), CALLVALUE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), CALLVALUE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -525,7 +525,7 @@ pub fn test_disassemble_insn_35() {
             CALLDATALOAD,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -534,7 +534,7 @@ pub fn test_disassemble_insn_35() {
 pub fn test_disassemble_insn_36() {
     check(
         "0x60053650565b",
-        &[PUSH(vec![0x05]), CALLDATASIZE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), CALLDATASIZE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -550,7 +550,7 @@ pub fn test_disassemble_insn_37() {
             DUP(1),
             CALLDATACOPY,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -560,7 +560,7 @@ pub fn test_disassemble_insn_38() {
     let bytecode = format!("0x6005{}50565b", "38");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), CODESIZE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), CODESIZE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -576,7 +576,7 @@ pub fn test_disassemble_insn_39() {
             DUP(1),
             CODECOPY,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -586,7 +586,7 @@ pub fn test_disassemble_insn_3a() {
     let bytecode = format!("0x6005{}50565b", "3a");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), GASPRICE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), GASPRICE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -601,7 +601,7 @@ pub fn test_disassemble_insn_3b() {
             EXTCODESIZE,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -619,7 +619,7 @@ pub fn test_disassemble_insn_3c() {
             DUP(1),
             EXTCODECOPY,
             JUMP,
-            JUMPDEST(9),
+            JUMPDEST,
         ],
     );
 }
@@ -629,7 +629,7 @@ pub fn test_disassemble_insn_3d() {
     let bytecode = format!("0x6005{}50565b", "3d");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), RETURNDATASIZE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), RETURNDATASIZE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -645,7 +645,7 @@ pub fn test_disassemble_insn_3e() {
             DUP(1),
             RETURNDATACOPY,
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -661,7 +661,7 @@ pub fn test_disassemble_insn_3f() {
             EXTCODEHASH,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -679,7 +679,7 @@ pub fn test_disassemble_insn_40() {
             BLOCKHASH,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -689,7 +689,7 @@ pub fn test_disassemble_insn_41() {
     let bytecode = format!("0x6005{}50565b", "41");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), COINBASE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), COINBASE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -698,7 +698,7 @@ pub fn test_disassemble_insn_42() {
     let bytecode = format!("0x6005{}50565b", "42");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), TIMESTAMP, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), TIMESTAMP, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -707,7 +707,7 @@ pub fn test_disassemble_insn_43() {
     let bytecode = format!("0x6005{}50565b", "43");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), NUMBER, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), NUMBER, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -716,7 +716,7 @@ pub fn test_disassemble_insn_44() {
     let bytecode = format!("0x6005{}50565b", "44");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), DIFFICULTY, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), DIFFICULTY, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -725,7 +725,7 @@ pub fn test_disassemble_insn_45() {
     let bytecode = format!("0x6005{}50565b", "45");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), GASLIMIT, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), GASLIMIT, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -734,7 +734,7 @@ pub fn test_disassemble_insn_46() {
     let bytecode = format!("0x6005{}50565b", "46");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), CHAINID, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), CHAINID, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -743,7 +743,7 @@ pub fn test_disassemble_insn_47() {
     let bytecode = format!("0x6005{}50565b", "47");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), SELFBALANCE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), SELFBALANCE, POP, JUMP, JUMPDEST],
     );
 }
 
@@ -753,7 +753,7 @@ pub fn test_disassemble_insn_47() {
 pub fn test_disassemble_insn_50() {
     check(
         "0x6006600150565b",
-        &[PUSH(vec![0x06]), PUSH(vec![0x01]), POP, JUMP, JUMPDEST(6)],
+        &[PUSH(vec![0x06]), PUSH(vec![0x01]), POP, JUMP, JUMPDEST],
     );
 }
 
@@ -767,7 +767,7 @@ pub fn test_disassemble_insn_51() {
             MLOAD,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -783,7 +783,7 @@ pub fn test_disassemble_insn_52() {
             DUP(1),
             MSTORE,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -799,7 +799,7 @@ pub fn test_disassemble_insn_53() {
             DUP(1),
             MSTORE8,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -815,7 +815,7 @@ pub fn test_disassemble_insn_54() {
             SLOAD,
             POP,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -831,7 +831,7 @@ pub fn test_disassemble_insn_55() {
             DUP(1),
             SSTORE,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -845,9 +845,9 @@ pub fn test_disassemble_insn_56() {
             PUSH(vec![7]),
             PUSH(vec![5]),
             JUMP,
-            JUMPDEST(5),
+            JUMPDEST,
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -863,9 +863,9 @@ pub fn test_disassemble_insn_57() {
             MLOAD,
             PUSH(vec![0x8]),
             JUMPI,
-            JUMPDEST(8),
+            JUMPDEST,
             JUMP,
-            JUMPDEST(0xa),
+            JUMPDEST,
         ],
     );
 }
@@ -873,7 +873,7 @@ pub fn test_disassemble_insn_57() {
 #[test]
 pub fn test_disassemble_insn_58() {
     let bytecode = format!("0x6005{}50565b", "58");
-    check(&bytecode, &[PUSH(vec![0x05]), PC, POP, JUMP, JUMPDEST(5)]);
+    check(&bytecode, &[PUSH(vec![0x05]), PC, POP, JUMP, JUMPDEST]);
 }
 
 #[test]
@@ -881,14 +881,14 @@ pub fn test_disassemble_insn_59() {
     let bytecode = format!("0x6005{}50565b", "59");
     check(
         &bytecode,
-        &[PUSH(vec![0x05]), MSIZE, POP, JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x05]), MSIZE, POP, JUMP, JUMPDEST],
     );
 }
 
 #[test]
 pub fn test_disassemble_insn_5a() {
     let bytecode = format!("0x6005{}50565b", "5a");
-    check(&bytecode, &[PUSH(vec![0x05]), GAS, POP, JUMP, JUMPDEST(5)]);
+    check(&bytecode, &[PUSH(vec![0x05]), GAS, POP, JUMP, JUMPDEST]);
 }
 
 #[test]
@@ -896,7 +896,7 @@ pub fn test_disassemble_insn_5b() {
     let bytecode = format!("0x6004{}565b", "5b");
     check(
         &bytecode,
-        &[PUSH(vec![0x04]), JUMPDEST(2), JUMP, JUMPDEST(4)],
+        &[PUSH(vec![0x04]), JUMPDEST, JUMP, JUMPDEST],
     );
 }
 
@@ -904,19 +904,19 @@ pub fn test_disassemble_insn_5b() {
 
 #[test]
 pub fn test_disassemble_insn_60() {
-    check("0x6003565b", &[PUSH(vec![0x03]), JUMP, JUMPDEST(3)]);
+    check("0x6003565b", &[PUSH(vec![0x03]), JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_insn_61() {
-    check("0x610004565b", &[PUSH(vec![0x0, 0x04]), JUMP, JUMPDEST(4)]);
+    check("0x610004565b", &[PUSH(vec![0x0, 0x04]), JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_insn_62() {
     check(
         "0x62000005565b",
-        &[PUSH(vec![0x0, 0x0, 0x05]), JUMP, JUMPDEST(5)],
+        &[PUSH(vec![0x0, 0x0, 0x05]), JUMP, JUMPDEST],
     );
 }
 
@@ -924,7 +924,7 @@ pub fn test_disassemble_insn_62() {
 pub fn test_disassemble_insn_63() {
     check(
         "0x6300000006565b",
-        &[PUSH(vec![0x0, 0x0, 0x0, 0x06]), JUMP, JUMPDEST(6)],
+        &[PUSH(vec![0x0, 0x0, 0x0, 0x06]), JUMP, JUMPDEST],
     );
 }
 
@@ -932,7 +932,7 @@ pub fn test_disassemble_insn_63() {
 pub fn test_disassemble_insn_64() {
     check(
         "0x640000000007565b",
-        &[PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x07]), JUMP, JUMPDEST(7)],
+        &[PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x07]), JUMP, JUMPDEST],
     );
 }
 
@@ -940,7 +940,7 @@ pub fn test_disassemble_insn_64() {
 pub fn test_disassemble_insn_65() {
     check(
         "0x65000000000008565b",
-        &[PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x08]), JUMP, JUMPDEST(8)],
+        &[PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x08]), JUMP, JUMPDEST],
     );
 }
 
@@ -951,7 +951,7 @@ pub fn test_disassemble_insn_66() {
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x09]),
             JUMP,
-            JUMPDEST(9),
+            JUMPDEST,
         ],
     );
 }
@@ -963,7 +963,7 @@ pub fn test_disassemble_insn_67() {
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0a]),
             JUMP,
-            JUMPDEST(10),
+            JUMPDEST,
         ],
     );
 }
@@ -975,7 +975,7 @@ pub fn test_disassemble_insn_68() {
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0b]),
             JUMP,
-            JUMPDEST(11),
+            JUMPDEST,
         ],
     );
 }
@@ -987,7 +987,7 @@ pub fn test_disassemble_insn_69() {
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0c]),
             JUMP,
-            JUMPDEST(12),
+            JUMPDEST,
         ],
     );
 }
@@ -999,7 +999,7 @@ pub fn test_disassemble_insn_6a() {
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0d]),
             JUMP,
-            JUMPDEST(13),
+            JUMPDEST,
         ],
     );
 }
@@ -1013,7 +1013,7 @@ pub fn test_disassemble_insn_6b() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0e,
             ]),
             JUMP,
-            JUMPDEST(14),
+            JUMPDEST,
         ],
     );
 }
@@ -1027,7 +1027,7 @@ pub fn test_disassemble_insn_6c() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0f,
             ]),
             JUMP,
-            JUMPDEST(15),
+            JUMPDEST,
         ],
     );
 }
@@ -1041,7 +1041,7 @@ pub fn test_disassemble_insn_6d() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x10,
             ]),
             JUMP,
-            JUMPDEST(16),
+            JUMPDEST,
         ],
     );
 }
@@ -1055,7 +1055,7 @@ pub fn test_disassemble_insn_6e() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x11,
             ]),
             JUMP,
-            JUMPDEST(17),
+            JUMPDEST,
         ],
     );
 }
@@ -1069,7 +1069,7 @@ pub fn test_disassemble_insn_6f() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x12,
             ]),
             JUMP,
-            JUMPDEST(18),
+            JUMPDEST,
         ],
     );
 }
@@ -1084,7 +1084,7 @@ pub fn test_disassemble_insn_70() {
                 0x13,
             ]),
             JUMP,
-            JUMPDEST(19),
+            JUMPDEST,
         ],
     );
 }
@@ -1099,7 +1099,7 @@ pub fn test_disassemble_insn_71() {
                 0x0, 0x14,
             ]),
             JUMP,
-            JUMPDEST(20),
+            JUMPDEST,
         ],
     );
 }
@@ -1114,7 +1114,7 @@ pub fn test_disassemble_insn_72() {
                 0x0, 0x0, 0x15,
             ]),
             JUMP,
-            JUMPDEST(21),
+            JUMPDEST,
         ],
     );
 }
@@ -1129,7 +1129,7 @@ pub fn test_disassemble_insn_73() {
                 0x0, 0x0, 0x0, 0x16,
             ]),
             JUMP,
-            JUMPDEST(22),
+            JUMPDEST,
         ],
     );
 }
@@ -1144,7 +1144,7 @@ pub fn test_disassemble_insn_74() {
                 0x0, 0x0, 0x0, 0x0, 0x17,
             ]),
             JUMP,
-            JUMPDEST(23),
+            JUMPDEST,
         ],
     );
 }
@@ -1159,7 +1159,7 @@ pub fn test_disassemble_insn_75() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x18,
             ]),
             JUMP,
-            JUMPDEST(24),
+            JUMPDEST,
         ],
     );
 }
@@ -1174,7 +1174,7 @@ pub fn test_disassemble_insn_76() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x19,
             ]),
             JUMP,
-            JUMPDEST(25),
+            JUMPDEST,
         ],
     );
 }
@@ -1189,7 +1189,7 @@ pub fn test_disassemble_insn_77() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1a,
             ]),
             JUMP,
-            JUMPDEST(26),
+            JUMPDEST,
         ],
     );
 }
@@ -1204,7 +1204,7 @@ pub fn test_disassemble_insn_78() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1b,
             ]),
             JUMP,
-            JUMPDEST(27),
+            JUMPDEST,
         ],
     );
 }
@@ -1219,7 +1219,7 @@ pub fn test_disassemble_insn_79() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1c,
             ]),
             JUMP,
-            JUMPDEST(28),
+            JUMPDEST,
         ],
     );
 }
@@ -1234,7 +1234,7 @@ pub fn test_disassemble_insn_7a() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1d,
             ]),
             JUMP,
-            JUMPDEST(29),
+            JUMPDEST,
         ],
     );
 }
@@ -1249,7 +1249,7 @@ pub fn test_disassemble_insn_7b() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1e,
             ]),
             JUMP,
-            JUMPDEST(30),
+            JUMPDEST,
         ],
     );
 }
@@ -1264,7 +1264,7 @@ pub fn test_disassemble_insn_7c() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1f,
             ]),
             JUMP,
-            JUMPDEST(31),
+            JUMPDEST,
         ],
     );
 }
@@ -1279,7 +1279,7 @@ pub fn test_disassemble_insn_7d() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x20,
             ]),
             JUMP,
-            JUMPDEST(32),
+            JUMPDEST,
         ],
     );
 }
@@ -1294,7 +1294,7 @@ pub fn test_disassemble_insn_7e() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x21,
             ]),
             JUMP,
-            JUMPDEST(33),
+            JUMPDEST,
         ],
     );
 }
@@ -1309,7 +1309,7 @@ pub fn test_disassemble_insn_7f() {
                 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x22,
             ]),
             JUMP,
-            JUMPDEST(34),
+            JUMPDEST,
         ],
     );
 }
@@ -1320,7 +1320,7 @@ pub fn test_disassemble_insn_7f() {
 pub fn test_disassemble_insn_80() {
     check(
         "0x600480565b",
-        &[PUSH(vec![0x04]), DUP(1), JUMP, JUMPDEST(0x04)],
+        &[PUSH(vec![0x04]), DUP(1), JUMP, JUMPDEST],
     );
 }
 
@@ -1333,7 +1333,7 @@ pub fn test_disassemble_insn_81() {
             PUSH(vec![0x00]),
             DUP(2),
             JUMP,
-            JUMPDEST(0x06),
+            JUMPDEST,
         ],
     );
 }
@@ -1348,7 +1348,7 @@ pub fn test_disassemble_insn_82() {
             PUSH(vec![0x00]),
             DUP(3),
             JUMP,
-            JUMPDEST(0x08),
+            JUMPDEST,
         ],
     );
 }
@@ -1364,7 +1364,7 @@ pub fn test_disassemble_insn_83() {
             PUSH(vec![0x00]),
             DUP(4),
             JUMP,
-            JUMPDEST(0x0a),
+            JUMPDEST,
         ],
     );
 }
@@ -1381,7 +1381,7 @@ pub fn test_disassemble_insn_84() {
             PUSH(vec![0x00]),
             DUP(5),
             JUMP,
-            JUMPDEST(0x0c),
+            JUMPDEST,
         ],
     );
 }
@@ -1399,7 +1399,7 @@ pub fn test_disassemble_insn_85() {
             PUSH(vec![0x00]),
             DUP(6),
             JUMP,
-            JUMPDEST(0x0e),
+            JUMPDEST,
         ],
     );
 }
@@ -1418,7 +1418,7 @@ pub fn test_disassemble_insn_86() {
             PUSH(vec![0x00]),
             DUP(7),
             JUMP,
-            JUMPDEST(0x10),
+            JUMPDEST,
         ],
     );
 }
@@ -1438,7 +1438,7 @@ pub fn test_disassemble_insn_87() {
             PUSH(vec![0x00]),
             DUP(8),
             JUMP,
-            JUMPDEST(0x12),
+            JUMPDEST,
         ],
     );
 }
@@ -1459,7 +1459,7 @@ pub fn test_disassemble_insn_88() {
             PUSH(vec![0x00]),
             DUP(9),
             JUMP,
-            JUMPDEST(0x14),
+            JUMPDEST,
         ],
     );
 }
@@ -1481,7 +1481,7 @@ pub fn test_disassemble_insn_89() {
             PUSH(vec![0x00]),
             DUP(10),
             JUMP,
-            JUMPDEST(0x16),
+            JUMPDEST,
         ],
     );
 }
@@ -1504,7 +1504,7 @@ pub fn test_disassemble_insn_8a() {
             PUSH(vec![0x00]),
             DUP(11),
             JUMP,
-            JUMPDEST(0x18),
+            JUMPDEST,
         ],
     );
 }
@@ -1528,7 +1528,7 @@ pub fn test_disassemble_insn_8b() {
             PUSH(vec![0x00]),
             DUP(12),
             JUMP,
-            JUMPDEST(0x1a),
+            JUMPDEST,
         ],
     );
 }
@@ -1553,7 +1553,7 @@ pub fn test_disassemble_insn_8c() {
             PUSH(vec![0x00]),
             DUP(13),
             JUMP,
-            JUMPDEST(0x1c),
+            JUMPDEST,
         ],
     );
 }
@@ -1579,7 +1579,7 @@ pub fn test_disassemble_insn_8d() {
             PUSH(vec![0x00]),
             DUP(14),
             JUMP,
-            JUMPDEST(0x1e),
+            JUMPDEST,
         ],
     );
 }
@@ -1606,7 +1606,7 @@ pub fn test_disassemble_insn_8e() {
             PUSH(vec![0x00]),
             DUP(15),
             JUMP,
-            JUMPDEST(0x20),
+            JUMPDEST,
         ],
     );
 }
@@ -1634,7 +1634,7 @@ pub fn test_disassemble_insn_8f() {
             PUSH(vec![0x00]),
             DUP(16),
             JUMP,
-            JUMPDEST(0x22),
+            JUMPDEST,
         ],
     );
 }
@@ -1645,7 +1645,7 @@ pub fn test_disassemble_insn_8f() {
 pub fn test_disassemble_insn_90() {
     check(
         "0x60053490565b",
-        &[PUSH(vec![0x05]), CALLVALUE, SWAP(1), JUMP, JUMPDEST(0x05)],
+        &[PUSH(vec![0x05]), CALLVALUE, SWAP(1), JUMP, JUMPDEST],
     );
 }
 
@@ -1659,7 +1659,7 @@ pub fn test_disassemble_insn_91() {
             CALLVALUE,
             SWAP(2),
             JUMP,
-            JUMPDEST(0x07),
+            JUMPDEST,
         ],
     );
 }
@@ -1675,7 +1675,7 @@ pub fn test_disassemble_insn_92() {
             CALLVALUE,
             SWAP(3),
             JUMP,
-            JUMPDEST(0x09),
+            JUMPDEST,
         ],
     );
 }
@@ -1692,7 +1692,7 @@ pub fn test_disassemble_insn_93() {
             CALLVALUE,
             SWAP(4),
             JUMP,
-            JUMPDEST(0x0b),
+            JUMPDEST,
         ],
     );
 }
@@ -1710,7 +1710,7 @@ pub fn test_disassemble_insn_94() {
             CALLVALUE,
             SWAP(5),
             JUMP,
-            JUMPDEST(0x0d),
+            JUMPDEST,
         ],
     );
 }
@@ -1729,7 +1729,7 @@ pub fn test_disassemble_insn_95() {
             CALLVALUE,
             SWAP(6),
             JUMP,
-            JUMPDEST(0x0f),
+            JUMPDEST,
         ],
     );
 }
@@ -1749,7 +1749,7 @@ pub fn test_disassemble_insn_96() {
             CALLVALUE,
             SWAP(7),
             JUMP,
-            JUMPDEST(0x11),
+            JUMPDEST,
         ],
     );
 }
@@ -1770,7 +1770,7 @@ pub fn test_disassemble_insn_97() {
             CALLVALUE,
             SWAP(8),
             JUMP,
-            JUMPDEST(0x13),
+            JUMPDEST,
         ],
     );
 }
@@ -1792,7 +1792,7 @@ pub fn test_disassemble_insn_98() {
             CALLVALUE,
             SWAP(9),
             JUMP,
-            JUMPDEST(0x15),
+            JUMPDEST,
         ],
     );
 }
@@ -1815,7 +1815,7 @@ pub fn test_disassemble_insn_99() {
             CALLVALUE,
             SWAP(10),
             JUMP,
-            JUMPDEST(0x17),
+            JUMPDEST,
         ],
     );
 }
@@ -1839,7 +1839,7 @@ pub fn test_disassemble_insn_9a() {
             CALLVALUE,
             SWAP(11),
             JUMP,
-            JUMPDEST(0x19),
+            JUMPDEST,
         ],
     );
 }
@@ -1864,7 +1864,7 @@ pub fn test_disassemble_insn_9b() {
             CALLVALUE,
             SWAP(12),
             JUMP,
-            JUMPDEST(0x1b),
+            JUMPDEST,
         ],
     );
 }
@@ -1890,7 +1890,7 @@ pub fn test_disassemble_insn_9c() {
             CALLVALUE,
             SWAP(13),
             JUMP,
-            JUMPDEST(0x1d),
+            JUMPDEST,
         ],
     );
 }
@@ -1917,7 +1917,7 @@ pub fn test_disassemble_insn_9d() {
             CALLVALUE,
             SWAP(14),
             JUMP,
-            JUMPDEST(0x1f),
+            JUMPDEST,
         ],
     );
 }
@@ -1945,7 +1945,7 @@ pub fn test_disassemble_insn_9e() {
             CALLVALUE,
             SWAP(15),
             JUMP,
-            JUMPDEST(0x21),
+            JUMPDEST,
         ],
     );
 }
@@ -1974,7 +1974,7 @@ pub fn test_disassemble_insn_9f() {
             CALLVALUE,
             SWAP(16),
             JUMP,
-            JUMPDEST(0x23),
+            JUMPDEST,
         ],
     );
 }
@@ -1992,7 +1992,7 @@ pub fn test_disassemble_insn_a0() {
             DUP(1),
             LOG(0),
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -2009,7 +2009,7 @@ pub fn test_disassemble_insn_a1() {
             DUP(1),
             LOG(1),
             JUMP,
-            JUMPDEST(8),
+            JUMPDEST,
         ],
     );
 }
@@ -2027,7 +2027,7 @@ pub fn test_disassemble_insn_a2() {
             DUP(1),
             LOG(2),
             JUMP,
-            JUMPDEST(9),
+            JUMPDEST,
         ],
     );
 }
@@ -2046,7 +2046,7 @@ pub fn test_disassemble_insn_a3() {
             DUP(1),
             LOG(3),
             JUMP,
-            JUMPDEST(0xa),
+            JUMPDEST,
         ],
     );
 }
@@ -2066,7 +2066,7 @@ pub fn test_disassemble_insn_a4() {
             DUP(1),
             LOG(4),
             JUMP,
-            JUMPDEST(0xb),
+            JUMPDEST,
         ],
     );
 }
@@ -2086,7 +2086,7 @@ pub fn test_disassemble_insn_f0() {
             CREATE,
             POP,
             JUMP,
-            JUMPDEST(9),
+            JUMPDEST,
         ],
     );
 }
@@ -2108,7 +2108,7 @@ pub fn test_disassemble_insn_f1() {
             CALL,
             POP,
             JUMP,
-            JUMPDEST(0xd),
+            JUMPDEST,
         ],
     );
 }
@@ -2130,7 +2130,7 @@ pub fn test_disassemble_insn_f2() {
             CALLCODE,
             POP,
             JUMP,
-            JUMPDEST(0xd),
+            JUMPDEST,
         ],
     );
 }
@@ -2166,7 +2166,7 @@ pub fn test_disassemble_insn_f4() {
             DELEGATECALL,
             POP,
             JUMP,
-            JUMPDEST(0xc),
+            JUMPDEST,
         ],
     );
 }
@@ -2185,7 +2185,7 @@ pub fn test_disassemble_insn_f5() {
             CREATE2,
             POP,
             JUMP,
-            JUMPDEST(0xa),
+            JUMPDEST,
         ],
     );
 }
@@ -2206,7 +2206,7 @@ pub fn test_disassemble_insn_fa() {
             STATICCALL,
             POP,
             JUMP,
-            JUMPDEST(0xc),
+            JUMPDEST,
         ],
     );
 }
@@ -2269,7 +2269,7 @@ pub fn test_disassemble_insn_ff() {
 #[test]
 pub fn test_disassemble_jdouble_01() {
     // A minimal two-block program
-    check("0x6003565b", &[PUSH(vec![3]), JUMP, JUMPDEST(3)]);
+    check("0x6003565b", &[PUSH(vec![3]), JUMP, JUMPDEST]);
 }
 
 #[test]
@@ -2277,7 +2277,7 @@ pub fn test_disassemble_jdouble_03() {
     // A minimal conditional two-block program
     check(
         "0x60016005575b",
-        &[PUSH(vec![1]), PUSH(vec![5]), JUMPI, JUMPDEST(5)],
+        &[PUSH(vec![1]), PUSH(vec![5]), JUMPI, JUMPDEST],
     );
 }
 
@@ -2286,7 +2286,7 @@ pub fn test_disassemble_jdouble_04() {
     // A simple conditional two-block program
     check(
         "0x6001600657005b",
-        &[PUSH(vec![1]), PUSH(vec![6]), JUMPI, STOP, JUMPDEST(6)],
+        &[PUSH(vec![1]), PUSH(vec![6]), JUMPI, STOP, JUMPDEST],
     );
 }
 
@@ -2302,7 +2302,7 @@ pub fn test_disassemble_jdouble_05() {
             PUSH(vec![0x9]),
             JUMPI,
             POP,
-            JUMPDEST(9),
+            JUMPDEST,
             PUSH(vec![0x0]),
         ],
     );
@@ -2320,10 +2320,10 @@ pub fn test_disassemble_triple_01() {
         &[
             PUSH(vec![3]),
             JUMP,
-            JUMPDEST(3),
+            JUMPDEST,
             PUSH(vec![7]),
             JUMP,
-            JUMPDEST(7),
+            JUMPDEST,
         ],
     );
 }
@@ -2336,9 +2336,9 @@ pub fn test_disassemble_triple_02() {
         &[
             PUSH(vec![5]),
             JUMP,
-            JUMPDEST(3),
+            JUMPDEST,
             STOP,
-            JUMPDEST(5),
+            JUMPDEST,
             PUSH(vec![3]),
             JUMP,
         ],
@@ -2354,7 +2354,7 @@ pub fn test_disassemble_split_01() {
     // A minimal split multiblock program
     check(
         "0x600456005b",
-        &[PUSH(vec![4]), JUMP, DATA(vec![0]), JUMPDEST(4)],
+        &[PUSH(vec![4]), JUMP, DATA(vec![0]), JUMPDEST],
     );
 }
 
@@ -2370,7 +2370,7 @@ pub fn test_disassemble_split_03() {
     // A minimal split multiblock program
     check(
         "0x6003565b0061",
-        &[PUSH(vec![3]), JUMP, JUMPDEST(3), STOP, DATA(vec![0x61])],
+        &[PUSH(vec![3]), JUMP, JUMPDEST, STOP, DATA(vec![0x61])],
     );
 }
 
@@ -2379,7 +2379,7 @@ pub fn test_disassemble_split_04() {
     // A minimal split multiblock program
     check(
         "0x60055601025b",
-        &[PUSH(vec![5]), JUMP, DATA(vec![1, 2]), JUMPDEST(5)],
+        &[PUSH(vec![5]), JUMP, DATA(vec![1, 2]), JUMPDEST],
     );
 }
 
@@ -2391,7 +2391,7 @@ pub fn test_disassemble_split_04() {
 pub fn test_disassemble_zcall_01() {
     check(
         "0x60056007565b005b56",
-        &[PUSH(vec![5]), PUSH(vec![7]), JUMP, JUMPDEST(5), STOP, JUMPDEST(7), JUMP],
+        &[PUSH(vec![5]), PUSH(vec![7]), JUMP, JUMPDEST, STOP, JUMPDEST, JUMP],
     );
 }
 
@@ -2407,7 +2407,7 @@ pub fn test_disassemble_zcall_02() {
 //         return;
     check(
         "0x600054600d57600b6019565b005b60136019565b60006000fd5b5600",
-        &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST(0xb),STOP,JUMPDEST(0xd),PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST(0x13),PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST(0x19),JUMP,DATA(vec![0x00])]);
+        &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST,STOP,JUMPDEST,PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST,PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST,JUMP,DATA(vec![0x00])]);
 }
 
 #[test]
@@ -2432,24 +2432,24 @@ pub fn test_disassemble_zcall_03() {
         PUSH(vec![0xb]),
         PUSH(vec![0x19]),
         JUMP,
-        JUMPDEST(0xb),
+        JUMPDEST,
         STOP,
-        JUMPDEST(0xd),
+        JUMPDEST,
         PUSH(vec![0x13]),
         PUSH(vec![0x19]),
         JUMP,
-        JUMPDEST(0x13),
+        JUMPDEST,
         PUSH(vec![0]),
         PUSH(vec![0]),
         REVERT,
-        JUMPDEST(0x19),
+        JUMPDEST,
         PUSH(vec![0]),
         SLOAD,
         PUSH(vec![0x22]),
         JUMPI,
         JUMP,
         DATA(vec![0x00]),
-        JUMPDEST(0x22),
+        JUMPDEST,
         PUSH(vec![0]),
         PUSH(vec![0]),
         REVERT
@@ -2464,7 +2464,7 @@ pub fn test_disassemble_zcall_03() {
 /// Check that disassembling a given hex string produces a given
 /// sequence of instructions.
 fn check(hex: &str, insns: &[Instruction]) {
-    write_file(hex,insns);
+    //write_file(hex,insns);
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
