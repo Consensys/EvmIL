@@ -201,7 +201,7 @@ where
             pc = pc + insn.length(&[]);
             // Check whether terminating instruction
             match insn {
-                JUMPDEST(_) => {
+                JUMPDEST => {
                     // Determine whether start of this block, or next
                     // block.
                     if (pc - 1) != start {

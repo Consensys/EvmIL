@@ -161,7 +161,7 @@ where
             SLOAD => self.pop(1).push(S::Word::TOP),
             SSTORE => self.pop(2),
             PC | MSIZE | GAS => self.push(S::Word::TOP),
-            JUMPDEST(_) => self, // nop
+            JUMPDEST => self, // nop
             // 60 & 70s: Push Operations
             PUSH(bytes) => {
                 // Extract word from bytes
