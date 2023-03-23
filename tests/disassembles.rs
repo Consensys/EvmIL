@@ -1,3 +1,4 @@
+use std::io::Write;
 use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
 use evmil::ll::Instruction;
 use evmil::ll::Instruction::*;
@@ -2266,13 +2267,13 @@ pub fn test_disassemble_insn_ff() {
 // ============================================================================
 
 #[test]
-pub fn test_disassemble_double_01() {
+pub fn test_disassemble_jdouble_01() {
     // A minimal two-block program
     check("0x6003565b", &[PUSH(vec![3]), JUMP, JUMPDEST(3)]);
 }
 
 #[test]
-pub fn test_disassemble_double_03() {
+pub fn test_disassemble_jdouble_03() {
     // A minimal conditional two-block program
     check(
         "0x60016005575b",
@@ -2281,7 +2282,7 @@ pub fn test_disassemble_double_03() {
 }
 
 #[test]
-pub fn test_disassemble_double_04() {
+pub fn test_disassemble_jdouble_04() {
     // A simple conditional two-block program
     check(
         "0x6001600657005b",
@@ -2290,7 +2291,7 @@ pub fn test_disassemble_double_04() {
 }
 
 #[test]
-pub fn test_disassemble_double_05() {
+pub fn test_disassemble_jdouble_05() {
     // A minimal example requiring different stack heights
     check(
         "0x60ff600054600957505b6000",
@@ -2387,7 +2388,7 @@ pub fn test_disassemble_split_04() {
 // ============================================================================
 
 #[test]
-pub fn test_disassemble_call_01() {
+pub fn test_disassemble_zcall_01() {
     check(
         "0x60056007565b005b56",
         &[PUSH(vec![5]), PUSH(vec![7]), JUMP, JUMPDEST(5), STOP, JUMPDEST(7), JUMP],
@@ -2395,7 +2396,7 @@ pub fn test_disassemble_call_01() {
 }
 
 #[test]
-pub fn test_disassemble_call_02() {
+pub fn test_disassemble_zcall_02() {
 //         if storage[0] goto l1;
 //         call fn();
 //         succeed;
@@ -2410,7 +2411,7 @@ pub fn test_disassemble_call_02() {
 }
 
 #[test]
-pub fn test_disassemble_call_03() {
+pub fn test_disassemble_zcall_03() {
 //         if storage[0] goto l1;
 //         call fn();
 //         succeed;
@@ -2463,10 +2464,34 @@ pub fn test_disassemble_call_03() {
 /// Check that disassembling a given hex string produces a given
 /// sequence of instructions.
 fn check(hex: &str, insns: &[Instruction]) {
+    write_file(hex,insns);
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
     let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // Check against expected instruction sequence
     assert_eq!(insns, disasm.to_vec());
+}
+
+// This is a conversion utility to move me from inline test (as above)
+// to separated test files.
+
+static mut counter : usize = 0;
+static TESTS_DIR: &str = "tests/files";
+
+fn write_file(hex: &str, insns: &[Instruction]) {
+    let cstr = unsafe {
+        counter = counter + 1;
+        format!("{:x}",(counter-1))
+    };
+    let bin_name = format!("{:0>6}.bin",cstr);
+    let bin_filename = std::path::Path::new(TESTS_DIR).join(bin_name);
+    let mut bin_file = std::fs::File::create(bin_filename).unwrap();
+    writeln!(bin_file,"{}",hex);
+    let asm_name = format!("{:0>6}.asm",cstr);
+    let asm_filename = std::path::Path::new(TESTS_DIR).join(asm_name);
+    let mut asm_file = std::fs::File::create(asm_filename).unwrap();
+    for insn in insns {
+        writeln!(asm_file,"{}",insn);
+    }
 }

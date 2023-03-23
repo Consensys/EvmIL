@@ -78,19 +78,21 @@ fn parse_line(line: &str) -> Result<Instruction,AsmError> {
     if arg_end != chars.len() {
         panic!("unknown trailing garbage");
     }
-    // Parse the various bits
-    let opcode = parse_opcode(&line[insn_start..insn_end])?;
-    // Extract argument (if present)
+    // Parse argument (if present)
     let arg = parse_hex_string(&line[arg_start..arg_end])?;
+    let arg_len = arg.clone().map(|v| v.len() as u8);
+    // Parse the various bits
+    let opcode = parse_opcode(&line[insn_start..insn_end], arg_len)?;
     // Pretty much done!
     let insn = match arg {
         None => {
             assert!(!requires_argument(opcode));
             Instruction::decode(0,&[opcode])
         }
-        Some(bytes) => {
+        Some(mut bytes) => {
             assert!(requires_argument(opcode));
-            todo!("GOT HERE");
+            bytes.insert(0,opcode);
+            Instruction::decode(0,&bytes)
         }
     };
     Ok(insn)
@@ -109,8 +111,9 @@ where P: Fn(char) -> bool {
 }
 
 /// Parse a given opcode from a string.
-fn parse_opcode(insn: &str) -> Result<u8,AsmError> {
+fn parse_opcode(insn: &str, arg: Option<u8>) -> Result<u8,AsmError> {
     let opcode = match insn {
+        // 0s: Stop and Arithmetic Operations
         "stop"|"STOP" => opcode::STOP,
         "add"|"ADD" => opcode::ADD,
         "mul"|"MUL" => opcode::MUL,
@@ -123,6 +126,18 @@ fn parse_opcode(insn: &str) -> Result<u8,AsmError> {
         "mulmod"|"MULMOD" => opcode::MULMOD,
         "exp"|"EXP" => opcode::EXP,
         "signextend"|"SIGNEXTEND" => opcode::SIGNEXTEND,
+        // 10s: Comparison & Bitwise Logic Operations
+        // 20s: Keccak256
+        // 30s: Environmental Information
+        // 40s: Block Information
+        // 50s: Stack, Memory, Storage and Flow Operations
+        // 60s & 70s: Push Operations
+        "push"|"PUSH" => opcode::PUSH1 + (arg.unwrap() - 1),
+        // 80s: Duplication Operations
+        // 90s: Swap Operations
+        // a0s: Log Operations
+        // f0s: System Operations
+        //
         _ => {
             todo!()
         }

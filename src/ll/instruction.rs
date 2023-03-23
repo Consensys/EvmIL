@@ -481,15 +481,24 @@ impl fmt::Display for Instruction {
         // Use the default (debug) formatter.  Its only for certain
         // instructions that we need to do anything different.
         match self {
+            Instruction::DATA(bytes) => {
+                // Print bytes as hex string
+                write!(f, "{}", bytes.to_hex_string())
+            }
+            Instruction::DUP(n) => {
+                write!(f, "DUP{n}")
+            }
+            Instruction::JUMPDEST(_) => {
+                write!(f, "JUMPDEST")
+            }
             Instruction::PUSH(bytes) => {
                 // Convert bytes into hex string
                 let hex = bytes.to_hex_string();
                 // Print!
-                write!(f, "PUSH{} {}", bytes.len(), hex)
+                write!(f, "PUSH {}", hex)
             }
-            Instruction::DATA(bytes) => {
-                // Print bytes as hex string
-                write!(f, "{}", bytes.to_hex_string())
+            Instruction::SWAP(n) => {
+                write!(f, "SWAP{n}")
             }
             _ => write!(f, "{:?}", self),
         }
