@@ -1,0 +1,1 @@
+if memory[0] > 0 goto lab; memory[0] = 1; .lab

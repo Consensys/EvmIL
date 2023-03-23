@@ -4,6 +4,8 @@ use evmil::ll::Instruction;
 use evmil::ll::Instruction::*;
 use evmil::util::{w256, FromHexString, Interval};
 
+mod util;
+
 // ============================================================================
 // Instruction Tests
 // ============================================================================
@@ -13,13 +15,13 @@ use evmil::util::{w256, FromHexString, Interval};
 
 #[test]
 pub fn test_disassemble_insn_00() {
-    check("0x00", &[STOP]);
+    check("opcode","0x00", &[STOP]);
 }
 
 #[test]
 pub fn test_disassemble_insn_01() {
     let bytecode = format!("0x6008600180{}50565b", "01");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -36,7 +38,7 @@ pub fn test_disassemble_insn_01() {
 #[test]
 pub fn test_disassemble_insn_02() {
     let bytecode = format!("0x6008600180{}50565b", "02");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -53,7 +55,7 @@ pub fn test_disassemble_insn_02() {
 #[test]
 pub fn test_disassemble_insn_03() {
     let bytecode = format!("0x6008600180{}50565b", "03");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -70,7 +72,7 @@ pub fn test_disassemble_insn_03() {
 #[test]
 pub fn test_disassemble_insn_04() {
     let bytecode = format!("0x6008600180{}50565b", "04");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -87,7 +89,7 @@ pub fn test_disassemble_insn_04() {
 #[test]
 pub fn test_disassemble_insn_05() {
     let bytecode = format!("0x6008600180{}50565b", "05");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -104,7 +106,7 @@ pub fn test_disassemble_insn_05() {
 #[test]
 pub fn test_disassemble_insn_06() {
     let bytecode = format!("0x6008600180{}50565b", "06");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -121,7 +123,7 @@ pub fn test_disassemble_insn_06() {
 #[test]
 pub fn test_disassemble_insn_07() {
     let bytecode = format!("0x6008600180{}50565b", "07");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -138,7 +140,7 @@ pub fn test_disassemble_insn_07() {
 #[test]
 pub fn test_disassemble_insn_08() {
     let bytecode = format!("0x600960018080{}50565b", "08");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x09]),
@@ -156,7 +158,7 @@ pub fn test_disassemble_insn_08() {
 #[test]
 pub fn test_disassemble_insn_09() {
     let bytecode = format!("0x600960018080{}50565b", "09");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x09]),
@@ -174,7 +176,7 @@ pub fn test_disassemble_insn_09() {
 #[test]
 pub fn test_disassemble_insn_0a() {
     let bytecode = format!("0x6008600180{}50565b", "0a");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -191,7 +193,7 @@ pub fn test_disassemble_insn_0a() {
 #[test]
 pub fn test_disassemble_insn_0b() {
     let bytecode = format!("0x6008600180{}50565b", "0b");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -210,7 +212,7 @@ pub fn test_disassemble_insn_0b() {
 #[test]
 pub fn test_disassemble_insn_10() {
     let bytecode = format!("0x6008600180{}50565b", "10");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -227,7 +229,7 @@ pub fn test_disassemble_insn_10() {
 #[test]
 pub fn test_disassemble_insn_11() {
     let bytecode = format!("0x6008600180{}50565b", "11");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -244,7 +246,7 @@ pub fn test_disassemble_insn_11() {
 #[test]
 pub fn test_disassemble_insn_12() {
     let bytecode = format!("0x6008600180{}50565b", "12");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -261,7 +263,7 @@ pub fn test_disassemble_insn_12() {
 #[test]
 pub fn test_disassemble_insn_13() {
     let bytecode = format!("0x6008600180{}50565b", "13");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -278,7 +280,7 @@ pub fn test_disassemble_insn_13() {
 #[test]
 pub fn test_disassemble_insn_14() {
     let bytecode = format!("0x6008600180{}50565b", "14");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -295,7 +297,7 @@ pub fn test_disassemble_insn_14() {
 #[test]
 pub fn test_disassemble_insn_15() {
     let bytecode = format!("0x60076001{}50565b", "15");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -311,7 +313,7 @@ pub fn test_disassemble_insn_15() {
 #[test]
 pub fn test_disassemble_insn_16() {
     let bytecode = format!("0x6008600180{}50565b", "16");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -328,7 +330,7 @@ pub fn test_disassemble_insn_16() {
 #[test]
 pub fn test_disassemble_insn_17() {
     let bytecode = format!("0x6008600180{}50565b", "17");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -345,7 +347,7 @@ pub fn test_disassemble_insn_17() {
 #[test]
 pub fn test_disassemble_insn_18() {
     let bytecode = format!("0x6008600180{}50565b", "18");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -362,7 +364,7 @@ pub fn test_disassemble_insn_18() {
 #[test]
 pub fn test_disassemble_insn_19() {
     let bytecode = format!("0x60076001{}50565b", "19");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -378,7 +380,7 @@ pub fn test_disassemble_insn_19() {
 #[test]
 pub fn test_disassemble_insn_1a() {
     let bytecode = format!("0x6008600180{}50565b", "1a");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -395,7 +397,7 @@ pub fn test_disassemble_insn_1a() {
 #[test]
 pub fn test_disassemble_insn_1b() {
     let bytecode = format!("0x6008600180{}50565b", "1b");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -412,7 +414,7 @@ pub fn test_disassemble_insn_1b() {
 #[test]
 pub fn test_disassemble_insn_1c() {
     let bytecode = format!("0x6008600180{}50565b", "1c");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -429,7 +431,7 @@ pub fn test_disassemble_insn_1c() {
 #[test]
 pub fn test_disassemble_insn_1d() {
     let bytecode = format!("0x6008600180{}50565b", "1d");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -448,7 +450,7 @@ pub fn test_disassemble_insn_1d() {
 #[test]
 pub fn test_disassemble_insn_20() {
     let bytecode = format!("0x6008600180{}50565b", "20");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -467,7 +469,7 @@ pub fn test_disassemble_insn_20() {
 #[test]
 pub fn test_disassemble_insn_30() {
     let bytecode = format!("0x6005{}50565b", "30");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), ADDRESS, POP, JUMP, JUMPDEST],
     );
@@ -476,7 +478,7 @@ pub fn test_disassemble_insn_30() {
 #[test]
 pub fn test_disassemble_insn_31() {
     let bytecode = format!("0x60076001{}50565b", "31");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -492,7 +494,7 @@ pub fn test_disassemble_insn_31() {
 #[test]
 pub fn test_disassemble_insn_32() {
     let bytecode = format!("0x6005{}50565b", "32");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), ORIGIN, POP, JUMP, JUMPDEST],
     );
@@ -501,7 +503,7 @@ pub fn test_disassemble_insn_32() {
 #[test]
 pub fn test_disassemble_insn_33() {
     let bytecode = format!("0x6005{}50565b", "33");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), CALLER, POP, JUMP, JUMPDEST],
     );
@@ -509,7 +511,7 @@ pub fn test_disassemble_insn_33() {
 
 #[test]
 pub fn test_disassemble_insn_34() {
-    check(
+    check("opcode",
         "0x60053450565b",
         &[PUSH(vec![0x05]), CALLVALUE, POP, JUMP, JUMPDEST],
     );
@@ -517,7 +519,7 @@ pub fn test_disassemble_insn_34() {
 
 #[test]
 pub fn test_disassemble_insn_35() {
-    check(
+    check("opcode",
         "0x600760003550565b",
         &[
             PUSH(vec![0x07]),
@@ -532,7 +534,7 @@ pub fn test_disassemble_insn_35() {
 
 #[test]
 pub fn test_disassemble_insn_36() {
-    check(
+    check("opcode",
         "0x60053650565b",
         &[PUSH(vec![0x05]), CALLDATASIZE, POP, JUMP, JUMPDEST],
     );
@@ -541,7 +543,7 @@ pub fn test_disassemble_insn_36() {
 #[test]
 pub fn test_disassemble_insn_37() {
     let bytecode = format!("0x600860018080{}565b", "37");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -558,7 +560,7 @@ pub fn test_disassemble_insn_37() {
 #[test]
 pub fn test_disassemble_insn_38() {
     let bytecode = format!("0x6005{}50565b", "38");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), CODESIZE, POP, JUMP, JUMPDEST],
     );
@@ -567,7 +569,7 @@ pub fn test_disassemble_insn_38() {
 #[test]
 pub fn test_disassemble_insn_39() {
     let bytecode = format!("0x600860018080{}565b", "39");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -584,7 +586,7 @@ pub fn test_disassemble_insn_39() {
 #[test]
 pub fn test_disassemble_insn_3a() {
     let bytecode = format!("0x6005{}50565b", "3a");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), GASPRICE, POP, JUMP, JUMPDEST],
     );
@@ -593,7 +595,7 @@ pub fn test_disassemble_insn_3a() {
 #[test]
 pub fn test_disassemble_insn_3b() {
     let bytecode = format!("0x60076001{}50565b", "3b");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -609,7 +611,7 @@ pub fn test_disassemble_insn_3b() {
 #[test]
 pub fn test_disassemble_insn_3c() {
     let bytecode = format!("0x60096001808080{}565b", "3c");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x09]),
@@ -627,7 +629,7 @@ pub fn test_disassemble_insn_3c() {
 #[test]
 pub fn test_disassemble_insn_3d() {
     let bytecode = format!("0x6005{}50565b", "3d");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), RETURNDATASIZE, POP, JUMP, JUMPDEST],
     );
@@ -636,7 +638,7 @@ pub fn test_disassemble_insn_3d() {
 #[test]
 pub fn test_disassemble_insn_3e() {
     let bytecode = format!("0x600860018080{}565b", "3e");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -653,7 +655,7 @@ pub fn test_disassemble_insn_3e() {
 #[test]
 pub fn test_disassemble_insn_3f() {
     let bytecode = format!("0x60076001{}50565b", "3f");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -671,7 +673,7 @@ pub fn test_disassemble_insn_3f() {
 #[test]
 pub fn test_disassemble_insn_40() {
     let bytecode = format!("0x60076001{}50565b", "40");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -687,7 +689,7 @@ pub fn test_disassemble_insn_40() {
 #[test]
 pub fn test_disassemble_insn_41() {
     let bytecode = format!("0x6005{}50565b", "41");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), COINBASE, POP, JUMP, JUMPDEST],
     );
@@ -696,7 +698,7 @@ pub fn test_disassemble_insn_41() {
 #[test]
 pub fn test_disassemble_insn_42() {
     let bytecode = format!("0x6005{}50565b", "42");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), TIMESTAMP, POP, JUMP, JUMPDEST],
     );
@@ -705,7 +707,7 @@ pub fn test_disassemble_insn_42() {
 #[test]
 pub fn test_disassemble_insn_43() {
     let bytecode = format!("0x6005{}50565b", "43");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), NUMBER, POP, JUMP, JUMPDEST],
     );
@@ -714,7 +716,7 @@ pub fn test_disassemble_insn_43() {
 #[test]
 pub fn test_disassemble_insn_44() {
     let bytecode = format!("0x6005{}50565b", "44");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), DIFFICULTY, POP, JUMP, JUMPDEST],
     );
@@ -723,7 +725,7 @@ pub fn test_disassemble_insn_44() {
 #[test]
 pub fn test_disassemble_insn_45() {
     let bytecode = format!("0x6005{}50565b", "45");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), GASLIMIT, POP, JUMP, JUMPDEST],
     );
@@ -732,7 +734,7 @@ pub fn test_disassemble_insn_45() {
 #[test]
 pub fn test_disassemble_insn_46() {
     let bytecode = format!("0x6005{}50565b", "46");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), CHAINID, POP, JUMP, JUMPDEST],
     );
@@ -741,7 +743,7 @@ pub fn test_disassemble_insn_46() {
 #[test]
 pub fn test_disassemble_insn_47() {
     let bytecode = format!("0x6005{}50565b", "47");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), SELFBALANCE, POP, JUMP, JUMPDEST],
     );
@@ -751,7 +753,7 @@ pub fn test_disassemble_insn_47() {
 
 #[test]
 pub fn test_disassemble_insn_50() {
-    check(
+    check("opcode",
         "0x6006600150565b",
         &[PUSH(vec![0x06]), PUSH(vec![0x01]), POP, JUMP, JUMPDEST],
     );
@@ -759,7 +761,7 @@ pub fn test_disassemble_insn_50() {
 
 #[test]
 pub fn test_disassemble_insn_51() {
-    check(
+    check("opcode",
         "0x600760015150565b",
         &[
             PUSH(vec![0x07]),
@@ -775,7 +777,7 @@ pub fn test_disassemble_insn_51() {
 #[test]
 pub fn test_disassemble_insn_52() {
     let bytecode = format!("0x6007600180{}565b", "52");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -791,7 +793,7 @@ pub fn test_disassemble_insn_52() {
 #[test]
 pub fn test_disassemble_insn_53() {
     let bytecode = format!("0x6007600180{}565b", "53");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -807,7 +809,7 @@ pub fn test_disassemble_insn_53() {
 #[test]
 pub fn test_disassemble_insn_54() {
     let bytecode = format!("0x60076001{}50565b", "54");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -823,7 +825,7 @@ pub fn test_disassemble_insn_54() {
 #[test]
 pub fn test_disassemble_insn_55() {
     let bytecode = format!("0x6007600180{}565b", "55");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -839,7 +841,7 @@ pub fn test_disassemble_insn_55() {
 #[test]
 pub fn test_disassemble_insn_56() {
     // A minimal two-block program
-    check(
+    check("opcode",
         "0x60076005565b565b",
         &[
             PUSH(vec![7]),
@@ -855,7 +857,7 @@ pub fn test_disassemble_insn_56() {
 #[test]
 pub fn test_disassemble_insn_57() {
     // A minimal two-block program
-    check(
+    check("opcode",
         "0x600a6000516008575b565b",
         &[
             PUSH(vec![0xa]),
@@ -873,13 +875,13 @@ pub fn test_disassemble_insn_57() {
 #[test]
 pub fn test_disassemble_insn_58() {
     let bytecode = format!("0x6005{}50565b", "58");
-    check(&bytecode, &[PUSH(vec![0x05]), PC, POP, JUMP, JUMPDEST]);
+    check("opcode",&bytecode, &[PUSH(vec![0x05]), PC, POP, JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_insn_59() {
     let bytecode = format!("0x6005{}50565b", "59");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x05]), MSIZE, POP, JUMP, JUMPDEST],
     );
@@ -888,13 +890,13 @@ pub fn test_disassemble_insn_59() {
 #[test]
 pub fn test_disassemble_insn_5a() {
     let bytecode = format!("0x6005{}50565b", "5a");
-    check(&bytecode, &[PUSH(vec![0x05]), GAS, POP, JUMP, JUMPDEST]);
+    check("opcode",&bytecode, &[PUSH(vec![0x05]), GAS, POP, JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_insn_5b() {
     let bytecode = format!("0x6004{}565b", "5b");
-    check(
+    check("opcode",
         &bytecode,
         &[PUSH(vec![0x04]), JUMPDEST, JUMP, JUMPDEST],
     );
@@ -904,17 +906,17 @@ pub fn test_disassemble_insn_5b() {
 
 #[test]
 pub fn test_disassemble_insn_60() {
-    check("0x6003565b", &[PUSH(vec![0x03]), JUMP, JUMPDEST]);
+    check("opcode","0x6003565b", &[PUSH(vec![0x03]), JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_insn_61() {
-    check("0x610004565b", &[PUSH(vec![0x0, 0x04]), JUMP, JUMPDEST]);
+    check("opcode","0x610004565b", &[PUSH(vec![0x0, 0x04]), JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_insn_62() {
-    check(
+    check("opcode",
         "0x62000005565b",
         &[PUSH(vec![0x0, 0x0, 0x05]), JUMP, JUMPDEST],
     );
@@ -922,7 +924,7 @@ pub fn test_disassemble_insn_62() {
 
 #[test]
 pub fn test_disassemble_insn_63() {
-    check(
+    check("opcode",
         "0x6300000006565b",
         &[PUSH(vec![0x0, 0x0, 0x0, 0x06]), JUMP, JUMPDEST],
     );
@@ -930,7 +932,7 @@ pub fn test_disassemble_insn_63() {
 
 #[test]
 pub fn test_disassemble_insn_64() {
-    check(
+    check("opcode",
         "0x640000000007565b",
         &[PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x07]), JUMP, JUMPDEST],
     );
@@ -938,7 +940,7 @@ pub fn test_disassemble_insn_64() {
 
 #[test]
 pub fn test_disassemble_insn_65() {
-    check(
+    check("opcode",
         "0x65000000000008565b",
         &[PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x08]), JUMP, JUMPDEST],
     );
@@ -946,7 +948,7 @@ pub fn test_disassemble_insn_65() {
 
 #[test]
 pub fn test_disassemble_insn_66() {
-    check(
+    check("opcode",
         "0x6600000000000009565b",
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x09]),
@@ -958,7 +960,7 @@ pub fn test_disassemble_insn_66() {
 
 #[test]
 pub fn test_disassemble_insn_67() {
-    check(
+    check("opcode",
         "0x67000000000000000a565b",
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0a]),
@@ -970,7 +972,7 @@ pub fn test_disassemble_insn_67() {
 
 #[test]
 pub fn test_disassemble_insn_68() {
-    check(
+    check("opcode",
         "0x6800000000000000000b565b",
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0b]),
@@ -982,7 +984,7 @@ pub fn test_disassemble_insn_68() {
 
 #[test]
 pub fn test_disassemble_insn_69() {
-    check(
+    check("opcode",
         "0x690000000000000000000c565b",
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0c]),
@@ -994,7 +996,7 @@ pub fn test_disassemble_insn_69() {
 
 #[test]
 pub fn test_disassemble_insn_6a() {
-    check(
+    check("opcode",
         "0x6a000000000000000000000d565b",
         &[
             PUSH(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0d]),
@@ -1006,7 +1008,7 @@ pub fn test_disassemble_insn_6a() {
 
 #[test]
 pub fn test_disassemble_insn_6b() {
-    check(
+    check("opcode",
         "0x6b00000000000000000000000e565b",
         &[
             PUSH(vec![
@@ -1020,7 +1022,7 @@ pub fn test_disassemble_insn_6b() {
 
 #[test]
 pub fn test_disassemble_insn_6c() {
-    check(
+    check("opcode",
         "0x6c0000000000000000000000000f565b",
         &[
             PUSH(vec![
@@ -1034,7 +1036,7 @@ pub fn test_disassemble_insn_6c() {
 
 #[test]
 pub fn test_disassemble_insn_6d() {
-    check(
+    check("opcode",
         "0x6d0000000000000000000000000010565b",
         &[
             PUSH(vec![
@@ -1048,7 +1050,7 @@ pub fn test_disassemble_insn_6d() {
 
 #[test]
 pub fn test_disassemble_insn_6e() {
-    check(
+    check("opcode",
         "0x6e000000000000000000000000000011565b",
         &[
             PUSH(vec![
@@ -1062,7 +1064,7 @@ pub fn test_disassemble_insn_6e() {
 
 #[test]
 pub fn test_disassemble_insn_6f() {
-    check(
+    check("opcode",
         "0x6f00000000000000000000000000000012565b",
         &[
             PUSH(vec![
@@ -1076,7 +1078,7 @@ pub fn test_disassemble_insn_6f() {
 
 #[test]
 pub fn test_disassemble_insn_70() {
-    check(
+    check("opcode",
         "0x700000000000000000000000000000000013565b",
         &[
             PUSH(vec![
@@ -1091,7 +1093,7 @@ pub fn test_disassemble_insn_70() {
 
 #[test]
 pub fn test_disassemble_insn_71() {
-    check(
+    check("opcode",
         "0x71000000000000000000000000000000000014565b",
         &[
             PUSH(vec![
@@ -1106,7 +1108,7 @@ pub fn test_disassemble_insn_71() {
 
 #[test]
 pub fn test_disassemble_insn_72() {
-    check(
+    check("opcode",
         "0x7200000000000000000000000000000000000015565b",
         &[
             PUSH(vec![
@@ -1121,7 +1123,7 @@ pub fn test_disassemble_insn_72() {
 
 #[test]
 pub fn test_disassemble_insn_73() {
-    check(
+    check("opcode",
         "0x730000000000000000000000000000000000000016565b",
         &[
             PUSH(vec![
@@ -1136,7 +1138,7 @@ pub fn test_disassemble_insn_73() {
 
 #[test]
 pub fn test_disassemble_insn_74() {
-    check(
+    check("opcode",
         "0x74000000000000000000000000000000000000000017565b",
         &[
             PUSH(vec![
@@ -1151,7 +1153,7 @@ pub fn test_disassemble_insn_74() {
 
 #[test]
 pub fn test_disassemble_insn_75() {
-    check(
+    check("opcode",
         "0x7500000000000000000000000000000000000000000018565b",
         &[
             PUSH(vec![
@@ -1166,7 +1168,7 @@ pub fn test_disassemble_insn_75() {
 
 #[test]
 pub fn test_disassemble_insn_76() {
-    check(
+    check("opcode",
         "0x760000000000000000000000000000000000000000000019565b",
         &[
             PUSH(vec![
@@ -1181,7 +1183,7 @@ pub fn test_disassemble_insn_76() {
 
 #[test]
 pub fn test_disassemble_insn_77() {
-    check(
+    check("opcode",
         "0x7700000000000000000000000000000000000000000000001a565b",
         &[
             PUSH(vec![
@@ -1196,7 +1198,7 @@ pub fn test_disassemble_insn_77() {
 
 #[test]
 pub fn test_disassemble_insn_78() {
-    check(
+    check("opcode",
         "0x780000000000000000000000000000000000000000000000001b565b",
         &[
             PUSH(vec![
@@ -1211,7 +1213,7 @@ pub fn test_disassemble_insn_78() {
 
 #[test]
 pub fn test_disassemble_insn_79() {
-    check(
+    check("opcode",
         "0x79000000000000000000000000000000000000000000000000001c565b",
         &[
             PUSH(vec![
@@ -1226,7 +1228,7 @@ pub fn test_disassemble_insn_79() {
 
 #[test]
 pub fn test_disassemble_insn_7a() {
-    check(
+    check("opcode",
         "0x7a00000000000000000000000000000000000000000000000000001d565b",
         &[
             PUSH(vec![
@@ -1241,7 +1243,7 @@ pub fn test_disassemble_insn_7a() {
 
 #[test]
 pub fn test_disassemble_insn_7b() {
-    check(
+    check("opcode",
         "0x7b0000000000000000000000000000000000000000000000000000001e565b",
         &[
             PUSH(vec![
@@ -1256,7 +1258,7 @@ pub fn test_disassemble_insn_7b() {
 
 #[test]
 pub fn test_disassemble_insn_7c() {
-    check(
+    check("opcode",
         "0x7c000000000000000000000000000000000000000000000000000000001f565b",
         &[
             PUSH(vec![
@@ -1271,7 +1273,7 @@ pub fn test_disassemble_insn_7c() {
 
 #[test]
 pub fn test_disassemble_insn_7d() {
-    check(
+    check("opcode",
         "0x7d000000000000000000000000000000000000000000000000000000000020565b",
         &[
             PUSH(vec![
@@ -1286,7 +1288,7 @@ pub fn test_disassemble_insn_7d() {
 
 #[test]
 pub fn test_disassemble_insn_7e() {
-    check(
+    check("opcode",
         "0x7e00000000000000000000000000000000000000000000000000000000000021565b",
         &[
             PUSH(vec![
@@ -1301,7 +1303,7 @@ pub fn test_disassemble_insn_7e() {
 
 #[test]
 pub fn test_disassemble_insn_7f() {
-    check(
+    check("opcode",
         "0x7f0000000000000000000000000000000000000000000000000000000000000022565b",
         &[
             PUSH(vec![
@@ -1318,7 +1320,7 @@ pub fn test_disassemble_insn_7f() {
 
 #[test]
 pub fn test_disassemble_insn_80() {
-    check(
+    check("opcode",
         "0x600480565b",
         &[PUSH(vec![0x04]), DUP(1), JUMP, JUMPDEST],
     );
@@ -1326,7 +1328,7 @@ pub fn test_disassemble_insn_80() {
 
 #[test]
 pub fn test_disassemble_insn_81() {
-    check(
+    check("opcode",
         "0x6006600081565b",
         &[
             PUSH(vec![0x06]),
@@ -1340,7 +1342,7 @@ pub fn test_disassemble_insn_81() {
 
 #[test]
 pub fn test_disassemble_insn_82() {
-    check(
+    check("opcode",
         "0x60086000600082565b",
         &[
             PUSH(vec![0x08]),
@@ -1355,7 +1357,7 @@ pub fn test_disassemble_insn_82() {
 
 #[test]
 pub fn test_disassemble_insn_83() {
-    check(
+    check("opcode",
         "0x600a60006000600083565b",
         &[
             PUSH(vec![0x0a]),
@@ -1371,7 +1373,7 @@ pub fn test_disassemble_insn_83() {
 
 #[test]
 pub fn test_disassemble_insn_84() {
-    check(
+    check("opcode",
         "0x600c600060006000600084565b",
         &[
             PUSH(vec![0x0c]),
@@ -1388,7 +1390,7 @@ pub fn test_disassemble_insn_84() {
 
 #[test]
 pub fn test_disassemble_insn_85() {
-    check(
+    check("opcode",
         "0x600e6000600060006000600085565b",
         &[
             PUSH(vec![0x0e]),
@@ -1406,7 +1408,7 @@ pub fn test_disassemble_insn_85() {
 
 #[test]
 pub fn test_disassemble_insn_86() {
-    check(
+    check("opcode",
         "0x601060006000600060006000600086565b",
         &[
             PUSH(vec![0x10]),
@@ -1425,7 +1427,7 @@ pub fn test_disassemble_insn_86() {
 
 #[test]
 pub fn test_disassemble_insn_87() {
-    check(
+    check("opcode",
         "0x6012600060006000600060006000600087565b",
         &[
             PUSH(vec![0x12]),
@@ -1445,7 +1447,7 @@ pub fn test_disassemble_insn_87() {
 
 #[test]
 pub fn test_disassemble_insn_88() {
-    check(
+    check("opcode",
         "0x60146000600060006000600060006000600088565b",
         &[
             PUSH(vec![0x14]),
@@ -1466,7 +1468,7 @@ pub fn test_disassemble_insn_88() {
 
 #[test]
 pub fn test_disassemble_insn_89() {
-    check(
+    check("opcode",
         "0x601660006000600060006000600060006000600089565b",
         &[
             PUSH(vec![0x16]),
@@ -1488,7 +1490,7 @@ pub fn test_disassemble_insn_89() {
 
 #[test]
 pub fn test_disassemble_insn_8a() {
-    check(
+    check("opcode",
         "0x601860006000600060006000600060006000600060008a565b",
         &[
             PUSH(vec![0x18]),
@@ -1511,7 +1513,7 @@ pub fn test_disassemble_insn_8a() {
 
 #[test]
 pub fn test_disassemble_insn_8b() {
-    check(
+    check("opcode",
         "0x601a600060006000600060006000600060006000600060008b565b",
         &[
             PUSH(vec![0x1a]),
@@ -1535,7 +1537,7 @@ pub fn test_disassemble_insn_8b() {
 
 #[test]
 pub fn test_disassemble_insn_8c() {
-    check(
+    check("opcode",
         "0x601c6000600060006000600060006000600060006000600060008c565b",
         &[
             PUSH(vec![0x1c]),
@@ -1560,7 +1562,7 @@ pub fn test_disassemble_insn_8c() {
 
 #[test]
 pub fn test_disassemble_insn_8d() {
-    check(
+    check("opcode",
         "0x601e60006000600060006000600060006000600060006000600060008d565b",
         &[
             PUSH(vec![0x1e]),
@@ -1586,7 +1588,7 @@ pub fn test_disassemble_insn_8d() {
 
 #[test]
 pub fn test_disassemble_insn_8e() {
-    check(
+    check("opcode",
         "0x6020600060006000600060006000600060006000600060006000600060008e565b",
         &[
             PUSH(vec![0x20]),
@@ -1613,7 +1615,7 @@ pub fn test_disassemble_insn_8e() {
 
 #[test]
 pub fn test_disassemble_insn_8f() {
-    check(
+    check("opcode",
         "0x60226000600060006000600060006000600060006000600060006000600060008f565b",
         &[
             PUSH(vec![0x22]),
@@ -1643,7 +1645,7 @@ pub fn test_disassemble_insn_8f() {
 
 #[test]
 pub fn test_disassemble_insn_90() {
-    check(
+    check("opcode",
         "0x60053490565b",
         &[PUSH(vec![0x05]), CALLVALUE, SWAP(1), JUMP, JUMPDEST],
     );
@@ -1651,7 +1653,7 @@ pub fn test_disassemble_insn_90() {
 
 #[test]
 pub fn test_disassemble_insn_91() {
-    check(
+    check("opcode",
         "0x600760003491565b",
         &[
             PUSH(vec![0x07]),
@@ -1666,7 +1668,7 @@ pub fn test_disassemble_insn_91() {
 
 #[test]
 pub fn test_disassemble_insn_92() {
-    check(
+    check("opcode",
         "0x6009600060003492565b",
         &[
             PUSH(vec![0x09]),
@@ -1682,7 +1684,7 @@ pub fn test_disassemble_insn_92() {
 
 #[test]
 pub fn test_disassemble_insn_93() {
-    check(
+    check("opcode",
         "0x600b6000600060003493565b",
         &[
             PUSH(vec![0x0b]),
@@ -1699,7 +1701,7 @@ pub fn test_disassemble_insn_93() {
 
 #[test]
 pub fn test_disassemble_insn_94() {
-    check(
+    check("opcode",
         "0x600d60006000600060003494565b",
         &[
             PUSH(vec![0x0d]),
@@ -1717,7 +1719,7 @@ pub fn test_disassemble_insn_94() {
 
 #[test]
 pub fn test_disassemble_insn_95() {
-    check(
+    check("opcode",
         "0x600f600060006000600060003495565b",
         &[
             PUSH(vec![0x0f]),
@@ -1736,7 +1738,7 @@ pub fn test_disassemble_insn_95() {
 
 #[test]
 pub fn test_disassemble_insn_96() {
-    check(
+    check("opcode",
         "0x60116000600060006000600060003496565b",
         &[
             PUSH(vec![0x11]),
@@ -1756,7 +1758,7 @@ pub fn test_disassemble_insn_96() {
 
 #[test]
 pub fn test_disassemble_insn_97() {
-    check(
+    check("opcode",
         "0x601360006000600060006000600060003497565b",
         &[
             PUSH(vec![0x13]),
@@ -1777,7 +1779,7 @@ pub fn test_disassemble_insn_97() {
 
 #[test]
 pub fn test_disassemble_insn_98() {
-    check(
+    check("opcode",
         "0x6015600060006000600060006000600060003498565b",
         &[
             PUSH(vec![0x15]),
@@ -1799,7 +1801,7 @@ pub fn test_disassemble_insn_98() {
 
 #[test]
 pub fn test_disassemble_insn_99() {
-    check(
+    check("opcode",
         "0x60176000600060006000600060006000600060003499565b",
         &[
             PUSH(vec![0x17]),
@@ -1822,7 +1824,7 @@ pub fn test_disassemble_insn_99() {
 
 #[test]
 pub fn test_disassemble_insn_9a() {
-    check(
+    check("opcode",
         "0x60196000600060006000600060006000600060006000349a565b",
         &[
             PUSH(vec![0x19]),
@@ -1846,7 +1848,7 @@ pub fn test_disassemble_insn_9a() {
 
 #[test]
 pub fn test_disassemble_insn_9b() {
-    check(
+    check("opcode",
         "0x601b60006000600060006000600060006000600060006000349b565b",
         &[
             PUSH(vec![0x1b]),
@@ -1871,7 +1873,7 @@ pub fn test_disassemble_insn_9b() {
 
 #[test]
 pub fn test_disassemble_insn_9c() {
-    check(
+    check("opcode",
         "0x601d600060006000600060006000600060006000600060006000349c565b",
         &[
             PUSH(vec![0x1d]),
@@ -1897,7 +1899,7 @@ pub fn test_disassemble_insn_9c() {
 
 #[test]
 pub fn test_disassemble_insn_9d() {
-    check(
+    check("opcode",
         "0x601f6000600060006000600060006000600060006000600060006000349d565b",
         &[
             PUSH(vec![0x1f]),
@@ -1924,7 +1926,7 @@ pub fn test_disassemble_insn_9d() {
 
 #[test]
 pub fn test_disassemble_insn_9e() {
-    check(
+    check("opcode",
         "0x602160006000600060006000600060006000600060006000600060006000349e565b",
         &[
             PUSH(vec![0x21]),
@@ -1952,7 +1954,7 @@ pub fn test_disassemble_insn_9e() {
 
 #[test]
 pub fn test_disassemble_insn_9f() {
-    check(
+    check("opcode",
         "0x6023600060006000600060006000600060006000600060006000600060006000349f565b",
         &[
             PUSH(vec![0x23]),
@@ -1984,7 +1986,7 @@ pub fn test_disassemble_insn_9f() {
 #[test]
 pub fn test_disassemble_insn_a0() {
     let bytecode = format!("0x6007600180{}565b", "a0");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -2000,7 +2002,7 @@ pub fn test_disassemble_insn_a0() {
 #[test]
 pub fn test_disassemble_insn_a1() {
     let bytecode = format!("0x600860018080{}565b", "a1");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x08]),
@@ -2017,7 +2019,7 @@ pub fn test_disassemble_insn_a1() {
 #[test]
 pub fn test_disassemble_insn_a2() {
     let bytecode = format!("0x60096001808080{}565b", "a2");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x09]),
@@ -2035,7 +2037,7 @@ pub fn test_disassemble_insn_a2() {
 #[test]
 pub fn test_disassemble_insn_a3() {
     let bytecode = format!("0x600a600180808080{}565b", "a3");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0a]),
@@ -2054,7 +2056,7 @@ pub fn test_disassemble_insn_a3() {
 #[test]
 pub fn test_disassemble_insn_a4() {
     let bytecode = format!("0x600b60018080808080{}565b", "a4");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0b]),
@@ -2076,7 +2078,7 @@ pub fn test_disassemble_insn_a4() {
 #[test]
 pub fn test_disassemble_insn_f0() {
     let bytecode = format!("0x600960018080{}50565b", "f0");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x09]),
@@ -2094,7 +2096,7 @@ pub fn test_disassemble_insn_f0() {
 #[test]
 pub fn test_disassemble_insn_f1() {
     let bytecode = format!("0x600d6001808080808080{}50565b", "f1");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0d]),
@@ -2116,7 +2118,7 @@ pub fn test_disassemble_insn_f1() {
 #[test]
 pub fn test_disassemble_insn_f2() {
     let bytecode = format!("0x600d6001808080808080{}50565b", "f2");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0d]),
@@ -2138,7 +2140,7 @@ pub fn test_disassemble_insn_f2() {
 #[test]
 pub fn test_disassemble_insn_f3() {
     let bytecode = format!("0x6007600180{}56", "f3");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -2153,7 +2155,7 @@ pub fn test_disassemble_insn_f3() {
 #[test]
 pub fn test_disassemble_insn_f4() {
     let bytecode = format!("0x600c60018080808080{}50565b", "f4");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0c]),
@@ -2174,7 +2176,7 @@ pub fn test_disassemble_insn_f4() {
 #[test]
 pub fn test_disassemble_insn_f5() {
     let bytecode = format!("0x600a6001808080{}50565b", "f5");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0a]),
@@ -2193,7 +2195,7 @@ pub fn test_disassemble_insn_f5() {
 #[test]
 pub fn test_disassemble_insn_fa() {
     let bytecode = format!("0x600c60018080808080{}50565b", "fa");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x0c]),
@@ -2214,7 +2216,7 @@ pub fn test_disassemble_insn_fa() {
 #[test]
 pub fn test_disassemble_insn_fd() {
     let bytecode = format!("0x6007600180{}56", "fd");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -2229,7 +2231,7 @@ pub fn test_disassemble_insn_fd() {
 #[test]
 pub fn test_disassemble_insn_fe() {
     let bytecode = format!("0x6007600180{}56", "fe");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x07]),
@@ -2244,7 +2246,7 @@ pub fn test_disassemble_insn_fe() {
 #[test]
 pub fn test_disassemble_insn_ff() {
     let bytecode = format!("0x60066001{}565b", "ff");
-    check(
+    check("opcode",
         &bytecode,
         &[
             PUSH(vec![0x06]),
@@ -2269,13 +2271,13 @@ pub fn test_disassemble_insn_ff() {
 #[test]
 pub fn test_disassemble_jdouble_01() {
     // A minimal two-block program
-    check("0x6003565b", &[PUSH(vec![3]), JUMP, JUMPDEST]);
+    check("cfg","0x6003565b", &[PUSH(vec![3]), JUMP, JUMPDEST]);
 }
 
 #[test]
 pub fn test_disassemble_jdouble_03() {
     // A minimal conditional two-block program
-    check(
+    check("cfg",
         "0x60016005575b",
         &[PUSH(vec![1]), PUSH(vec![5]), JUMPI, JUMPDEST],
     );
@@ -2284,7 +2286,7 @@ pub fn test_disassemble_jdouble_03() {
 #[test]
 pub fn test_disassemble_jdouble_04() {
     // A simple conditional two-block program
-    check(
+    check("cfg",
         "0x6001600657005b",
         &[PUSH(vec![1]), PUSH(vec![6]), JUMPI, STOP, JUMPDEST],
     );
@@ -2293,7 +2295,7 @@ pub fn test_disassemble_jdouble_04() {
 #[test]
 pub fn test_disassemble_jdouble_05() {
     // A minimal example requiring different stack heights
-    check(
+    check("cfg",
         "0x60ff600054600957505b6000",
         &[
             PUSH(vec![0xff]),
@@ -2315,7 +2317,7 @@ pub fn test_disassemble_jdouble_05() {
 #[test]
 pub fn test_disassemble_triple_01() {
     // Minimal three-block program
-    check(
+    check("cfg",
         "0x6003565b6007565b",
         &[
             PUSH(vec![3]),
@@ -2331,7 +2333,7 @@ pub fn test_disassemble_triple_01() {
 #[test]
 pub fn test_disassemble_triple_02() {
     // Three-block program with back jump
-    check(
+    check("cfg",
         "0x6005565b005b600356",
         &[
             PUSH(vec![5]),
@@ -2352,7 +2354,7 @@ pub fn test_disassemble_triple_02() {
 #[test]
 pub fn test_disassemble_split_01() {
     // A minimal split multiblock program
-    check(
+    check("cfg",
         "0x600456005b",
         &[PUSH(vec![4]), JUMP, DATA(vec![0]), JUMPDEST],
     );
@@ -2362,13 +2364,13 @@ pub fn test_disassemble_split_01() {
 pub fn test_disassemble_split_02() {
     // A minimal split multiblock program.  This program contains an
     // invalid JUMPDEST.
-    check("0x600456605b", &[PUSH(vec![4]), JUMP, PUSH(vec![0x5b])]);
+    check("cfg","0x600456605b", &[PUSH(vec![4]), JUMP, PUSH(vec![0x5b])]);
 }
 
 #[test]
 pub fn test_disassemble_split_03() {
     // A minimal split multiblock program
-    check(
+    check("cfg",
         "0x6003565b0061",
         &[PUSH(vec![3]), JUMP, JUMPDEST, STOP, DATA(vec![0x61])],
     );
@@ -2377,7 +2379,7 @@ pub fn test_disassemble_split_03() {
 #[test]
 pub fn test_disassemble_split_04() {
     // A minimal split multiblock program
-    check(
+    check("cfg",
         "0x60055601025b",
         &[PUSH(vec![5]), JUMP, DATA(vec![1, 2]), JUMPDEST],
     );
@@ -2389,7 +2391,7 @@ pub fn test_disassemble_split_04() {
 
 #[test]
 pub fn test_disassemble_zcall_01() {
-    check(
+    check("cfg",
         "0x60056007565b005b56",
         &[PUSH(vec![5]), PUSH(vec![7]), JUMP, JUMPDEST, STOP, JUMPDEST, JUMP],
     );
@@ -2405,7 +2407,7 @@ pub fn test_disassemble_zcall_02() {
 //         revert;
 // .fn
 //         return;
-    check(
+    check("cfg",
         "0x600054600d57600b6019565b005b60136019565b60006000fd5b5600",
         &[PUSH(vec![0x0]),SLOAD,PUSH(vec![0xd]),JUMPI,PUSH(vec![0xb]),PUSH(vec![0x19]),JUMP,JUMPDEST,STOP,JUMPDEST,PUSH(vec![0x13]),PUSH(vec![0x19]),JUMP,JUMPDEST,PUSH(vec![0]),PUSH(vec![0]),REVERT,JUMPDEST,JUMP,DATA(vec![0x00])]);
 }
@@ -2424,7 +2426,7 @@ pub fn test_disassemble_zcall_03() {
 //         stop;
 // .l2
 //         revert;
-    check("0x600054600d57600b6019565b005b60136019565b60006000fd5b60005460225756005b60006000fd",&[
+    check("cfg","0x600054600d57600b6019565b005b60136019565b60006000fd5b60005460225756005b60006000fd",&[
         PUSH(vec![0x0]),
         SLOAD,
         PUSH(vec![0xd]),
@@ -2463,35 +2465,12 @@ pub fn test_disassemble_zcall_03() {
 
 /// Check that disassembling a given hex string produces a given
 /// sequence of instructions.
-fn check(hex: &str, insns: &[Instruction]) {
-    //write_file(hex,insns);
+fn check(prefix: &str, hex: &str, insns: &[Instruction]) {
+    util::log_half_test(prefix,hex,insns);
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Disassemble bytes into instructions
     let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // Check against expected instruction sequence
     assert_eq!(insns, disasm.to_vec());
-}
-
-// This is a conversion utility to move me from inline test (as above)
-// to separated test files.
-
-static mut counter : usize = 0;
-static TESTS_DIR: &str = "tests/files";
-
-fn write_file(hex: &str, insns: &[Instruction]) {
-    let cstr = unsafe {
-        counter = counter + 1;
-        format!("{:x}",(counter-1))
-    };
-    let bin_name = format!("{:0>6}.bin",cstr);
-    let bin_filename = std::path::Path::new(TESTS_DIR).join(bin_name);
-    let mut bin_file = std::fs::File::create(bin_filename).unwrap();
-    writeln!(bin_file,"{}",hex);
-    let asm_name = format!("{:0>6}.asm",cstr);
-    let asm_filename = std::path::Path::new(TESTS_DIR).join(asm_name);
-    let mut asm_file = std::fs::File::create(asm_filename).unwrap();
-    for insn in insns {
-        writeln!(asm_file,"{}",insn);
-    }
 }

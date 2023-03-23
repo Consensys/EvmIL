@@ -1,0 +1,1 @@
+assert storage[1] >= 0;

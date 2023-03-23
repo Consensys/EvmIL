@@ -2,6 +2,8 @@ use evmil::il::Parser;
 use evmil::ll::Bytecode;
 use evmil::util::ToHexString;
 
+mod util;
+
 // ============================================================================
 // Fail
 // ============================================================================
@@ -55,6 +57,8 @@ fn check(stmt: &str, hex: &str) {
     let ts = Parser::new(stmt).parse().unwrap();
     // Translate statements into bytecode instructions
     let code = Bytecode::try_from(ts.as_slice()).unwrap();
+    //
+    util::log_full_test("outcome",stmt,hex,&code);
     // Translate instructions into bytes
     let bytes: Vec<u8> = code.try_into().unwrap();
     // Check against expected hex string

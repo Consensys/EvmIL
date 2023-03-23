@@ -1,0 +1,3 @@
+PUSH 0x01
+PUSHL(0)
+JUMPI

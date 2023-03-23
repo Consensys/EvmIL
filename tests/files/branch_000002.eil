@@ -1,0 +1,1 @@
+goto lab; assert 0; .lab

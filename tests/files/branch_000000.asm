@@ -1,0 +1,2 @@
+PUSHL(0)
+JUMP
