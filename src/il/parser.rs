@@ -115,10 +115,17 @@ impl Parser {
     /// Parse a line of text into a term.
     pub fn parse(&mut self) -> Result<Vec<Term>> {
         let mut terms = Vec::new();
-        while !self.lexer.is_eof() {
-            terms.push(self.parse_stmt()?);
+        loop {
+            // Skip any leading whitespace
+            self.skip_whitespace();
+            // Dispatch on lookahead
+            match self.lexer.peek().kind {
+                Token::EOF => { return Ok(terms); }
+                _ => {
+                    terms.push(self.parse_stmt()?);
+                }
+            }
         }
-        Ok(terms)
     }
 
     // =========================================================================
