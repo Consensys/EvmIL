@@ -11,9 +11,6 @@ pub static TESTS_DIR: &str = "tests/files";
 // Include the programmatically generated test file.
 include!(concat!(env!("OUT_DIR"), "/eil_tests.rs"));
 
-/// Run a specific test by loading the file out of the reference tests
-/// repository and attempting to parse it.  All reference tests should
-/// parse correctly.
 fn check(test: &str) {
     // Construct input files
     let eilfile = to_eilfile(test);

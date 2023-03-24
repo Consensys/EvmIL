@@ -4,6 +4,7 @@ use std::path::Path;
 
 pub static TESTS_DIR: &str = "tests/files";
 pub static ASM_EXT: &str = "asm";
+pub static BIN_EXT: &str = "bin";
 pub static EIL_EXT: &str = "eil";
 
 fn gentests(testdir: &str, ext: &str, target: &Path) {
@@ -31,6 +32,9 @@ fn main() {
     // Assembly => Bytecode tests
     let asm_file = std::path::Path::new(&out_dir).join("asm_tests.rs");
     gentests(TESTS_DIR,ASM_EXT,&asm_file);
+    // Bytecode => Assembly tests
+    let bin_file = std::path::Path::new(&out_dir).join("bin_tests.rs");
+    gentests(TESTS_DIR,BIN_EXT,&bin_file);
     // EvmIL => Assembly
     let eil_file = std::path::Path::new(&out_dir).join("eil_tests.rs");
     gentests(TESTS_DIR,EIL_EXT,&eil_file);
