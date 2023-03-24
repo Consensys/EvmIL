@@ -496,30 +496,36 @@ impl fmt::Display for Instruction {
         match self {
             Instruction::DATA(bytes) => {
                 // Print bytes as hex string
-                write!(f, "{}", bytes.to_hex_string())
+                write!(f, "   {}", bytes.to_hex_string())
             }
             Instruction::DUP(n) => {
-                write!(f, "DUP{n}")
+                write!(f, "   dup{}",n)
             }
             Instruction::LABEL(i) => {
-                write!(f, ".lab{i}")
+                write!(f, "lab{i}:")
             }
             Instruction::LOG(n) => {
-                write!(f, "LOG{n}")
+                write!(f, "   log{n}")
             }
             Instruction::JUMPDEST => {
-                write!(f, "JUMPDEST")
+                write!(f, "   jumpdest")
             }
             Instruction::PUSH(bytes) => {
                 // Convert bytes into hex string
                 let hex = bytes.to_hex_string();
                 // Print!
-                write!(f, "PUSH {}", hex)
+                write!(f, "   push {}", hex)
+            }
+            Instruction::PUSHL(idx) => {
+                write!(f, "   push lab{}", idx)
             }
             Instruction::SWAP(n) => {
-                write!(f, "SWAP{n}")
+                write!(f, "   swap{n}")
             }
-            _ => write!(f, "{:?}", self),
+            _ => {
+                let s = format!("{:?}",self).to_lowercase();
+                write!(f, "   {s}")
+            }
         }
     }
 }

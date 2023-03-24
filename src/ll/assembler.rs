@@ -1,4 +1,5 @@
 use std::fmt;
+use std::collections::{HashMap};
 use crate::evm::opcode;
 use crate::ll::{Bytecode,Instruction};
 use crate::util::FromHexString;
@@ -9,7 +10,11 @@ use crate::util::FromHexString;
 
 #[derive(Debug)]
 pub enum AsmError {
-    INVALID
+    ExpectedOperand,
+    InvalidHexString,
+    InvalidInstruction,
+    UnexpectedCharacter,
+    UnexpectedToken
 }
 
 impl fmt::Display for AsmError {
@@ -27,83 +32,174 @@ impl std::error::Error for AsmError {
 // ===================================================================
 
 pub struct Assembler<'a> {
-    // Holds the set of lines being parsed.
-    lines: Vec<&'a str>
+    input: &'a str,
+    // Maps labels to identifiers
+    labels: HashMap<String,usize>,
+    // Bytecode package being constructed
+    bytecode: Bytecode
 }
 
 impl<'a> Assembler<'a> {
     /// Construct a new parser from a given string slice.
     pub fn new(input: &'a str) -> Self {
-        // Split lines up
-        let lines = input.lines().collect();
+        let labels = HashMap::new();
+        let bytecode = Bytecode::new();
         //
-        Assembler { lines }
-    }
-
-    /// Determine how many lines there are.
-    pub fn len(&self) -> usize {
-        self.lines.len()
+        Assembler { input, labels, bytecode }
     }
 
     /// Parse file into a bytecode
-    pub fn parse(&self) -> Result<Bytecode,AsmError> {
-        let mut code = Bytecode::new();
+    pub fn parse(mut self) -> Result<Bytecode,AsmError> {
+        // Holds the set of lines being parsed.
+        let lines : Vec<&str> = self.input.lines().collect();
         //
-        for l in &self.lines {
-            let insn = parse_line(l)?;
-            code.push(insn);
+        for l in &lines {
+            let insn = self.parse_line(l)?;
+            self.bytecode.push(insn);
         }
         // Done
-        Ok(code)
+        Ok(self.bytecode)
     }
 
-    // ===============================================================
-    // Internal
-    // ===============================================================
-}
-
-fn parse_line(line: &str) -> Result<Instruction,AsmError> {
-    let insn : Instruction;
-    // Convert string slice into Vec<char>
-    let chars : Vec<char> = line.chars().collect();
-    // Skip any leading whitespace
-    let insn_start = skip(&chars,0, |c| c.is_ascii_whitespace());
-    // Parse the instruction
-    let insn_end = skip(&chars,insn_start, |c| c.is_ascii_alphanumeric());
-    // Skip any further whitespace
-    let arg_start = skip(&chars,insn_end, |c| c.is_ascii_whitespace());
-    // Skip over argument
-    let arg_end = skip(&chars,arg_start, |c| c.is_ascii_alphanumeric());
-    // Sanity check any remaining characters
-    if arg_end != chars.len() {
-        panic!("unknown trailing garbage");
-    }
-    // Extract insn string (if any)
-    let insn = &line[insn_start..insn_end];
-    // Check whether this is data or not.
-    if insn.starts_with("0x") {
-        assert_eq!(arg_start,arg_end);
-        let hex = insn.from_hex_string().unwrap();
-        Ok(Instruction::DATA(hex))
-    } else {
-        // Parse argument (if present)
-        let arg = parse_hex_string(&line[arg_start..arg_end])?;
-        let arg_len = arg.clone().map(|v| v.len() as u8);
-        // Parse the various bits
-        let opcode = parse_opcode(&line[insn_start..insn_end], arg_len)?;
-        // Pretty much done!
-        let insn = match arg {
-            None => {
-                assert!(!requires_argument(opcode));
-                Instruction::decode(0,&[opcode])
-            }
-            Some(mut bytes) => {
-                assert!(requires_argument(opcode));
-                bytes.insert(0,opcode);
-                Instruction::decode(0,&bytes)
+    fn parse_line(&mut self, line: &'a str) -> Result<Instruction,AsmError> {
+        let mut lexer = Lexer::new(line);
+        //
+        let insn = match lexer.next()? {
+            Token::Hex(s) => Instruction::DATA(parse_hex(s)?),
+            Token::Identifier("push"|"PUSH") => self.parse_push(lexer.next()?)?,
+            Token::Identifier(id) => parse_opcode(id)?,
+            Token::Label(s) => Instruction::LABEL(self.get_label_index(s)),
+            _ => {
+                // Something went wrong
+                return Err(AsmError::UnexpectedToken);
             }
         };
-        Ok(insn)
+        // Sanity check what's left
+        match lexer.next()? {
+            Token::EOF => Ok(insn),
+            _ => Err(AsmError::UnexpectedToken)
+        }
+    }
+
+
+    /// Parse a push instruction with a given operand.
+    fn parse_push(&mut self, operand: Token) -> Result<Instruction,AsmError> {
+        // Push always expects an argument, though it could be a
+        // label or a hexadecimal operand.
+        match operand {
+            Token::Hex(s) => Ok(Instruction::PUSH(parse_hex(s)?)),
+            Token::EOF => Err(AsmError::ExpectedOperand),
+            Token::Identifier(s) => Ok(Instruction::PUSHL(self.get_label_index(s))),
+            _ => Err(AsmError::UnexpectedToken)
+        }
+    }
+
+    /// Determine the index of a given label.  If the label has not
+    /// been registered yet, then we register a new label.
+    fn get_label_index(&mut self, lab: &str) -> usize {
+        match self.labels.get(lab) {
+            Some(index) => *index,
+            None => {
+                // Register a new label index
+                let index = self.bytecode.fresh_label();
+                // Record index against the label
+                self.labels.insert(lab.to_string(),index);
+                // Done
+                index
+            }
+        }
+
+    }
+}
+
+// ===================================================================
+// Lexer
+// ===================================================================
+
+enum Token<'a> {
+    EOF,
+    Hex(&'a str),
+    Identifier(&'a str),
+    Label(&'a str)
+}
+
+impl<'a> Token<'a> {
+    // Return the "length" of a token.  That is, the number of
+    // characters it represents.
+    pub fn len(&self) -> usize {
+        match self {
+            Token::EOF => 0,
+            Token::Hex(s) => s.len(),
+            Token::Identifier(s) => s.len(),
+            Token::Label(s) => s.len() + 1
+        }
+    }
+}
+
+/// A very simple lexer
+struct Lexer<'a> {
+    input: &'a str,
+    chars: Vec<char>,
+    index: usize
+}
+
+impl<'a> Lexer<'a> {
+    pub fn new(input: &'a str) -> Self {
+        // FIXME: this could be made more efficient by using an
+        // iterator instead of allocating a new vector.
+        let chars : Vec<char> = input.chars().collect();
+        //
+        Self{input, chars, index: 0}
+    }
+
+    pub fn lookahead(&self) -> Result<Token<'a>,AsmError> {
+        // Skip any whitespace
+        let start = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
+        // Sanity check for end-of-file
+        if start >= self.chars.len() {
+            Ok(Token::EOF)
+        } else {
+            // Determine what kind of token we have.
+            match self.chars[start] {
+                '0'..='9' => self.scan_hex_literal(start),
+                'a'..='z'|'A'..='Z'|'_' => self.scan_id_or_label(start),
+                _ => Err(AsmError::UnexpectedCharacter)
+            }
+        }
+    }
+
+    pub fn next(&mut self) -> Result<Token<'a>,AsmError> {
+        // Skip any whitespace
+        self.index = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
+        // Determine next token
+        let tok = self.lookahead()?;
+        // Account for next token
+        self.index += tok.len();
+        //
+        Ok(tok)
+    }
+
+    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,AsmError> {
+        // Sanity check literal starts with "0x"
+        if self.chars[start..].starts_with(&['0','x']) {
+            // Scan all digits of this hex literal
+            let end = skip(&self.chars,start + 2,|c| c.is_ascii_alphanumeric());
+            // Construct token
+            Ok(Token::Hex(&self.input[start..end]))
+        } else {
+            Err(AsmError::InvalidHexString)
+        }
+    }
+
+    fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,AsmError> {
+        // Scan all characters of this identifier or label
+        let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
+        // Distinguish label versus identifier.
+        if end < self.chars.len() && self.chars[end] == ':' {
+            Ok(Token::Label(&self.input[start..end]))
+        } else {
+            Ok(Token::Identifier(&self.input[start..end]))
+        }
     }
 }
 
@@ -119,8 +215,21 @@ where P: Fn(char) -> bool {
     i
 }
 
-/// Parse a given opcode from a string.
-fn parse_opcode(insn: &str, arg: Option<u8>) -> Result<u8,AsmError> {
+// ===================================================================
+// Helpers
+// ===================================================================
+
+/// Parse a hexadecimal string
+fn parse_hex(hex: &str) -> Result<Vec<u8>,AsmError> {
+    match hex.from_hex_string() {
+        Ok(bytes) => { Ok(bytes) }
+        Err(e) => Err(AsmError::InvalidHexString)
+    }
+}
+
+/// Parse a given opcode from a string, and a given number of operand
+/// bytes.
+fn parse_opcode(insn: &str) -> Result<Instruction,AsmError> {
     let opcode = match insn {
         // 0s: Stop and Arithmetic Operations
         "stop"|"STOP" => opcode::STOP,
@@ -192,7 +301,10 @@ fn parse_opcode(insn: &str, arg: Option<u8>) -> Result<u8,AsmError> {
         "gas"|"GAS" => opcode::GAS,
         "jumpdest"|"JUMPDEST" => opcode::JUMPDEST,
         // 60s & 70s: Push Operations
-        "push"|"PUSH" => opcode::PUSH1 + (arg.unwrap() - 1),
+        "push"|"PUSH" => {
+            // Should be impossible to get here!
+            unreachable!();
+        }
         // 80s: Duplication Operations
         "dup1"|"DUP1" => opcode::DUP1,
         "dup2"|"DUP2" => opcode::DUP2,
@@ -246,25 +358,9 @@ fn parse_opcode(insn: &str, arg: Option<u8>) -> Result<u8,AsmError> {
         "selfdestruct"|"SELFDESTRUCT" => opcode::SELFDESTRUCT,
         //
         _ => {
-            panic!("unknown instruction encountered: {insn}");
+            return Err(AsmError::InvalidInstruction);
         }
     };
-    Ok(opcode)
-}
-
-/// Parse a hexadecimal string
-fn parse_hex_string(hex: &str) -> Result<Option<Vec<u8>>,AsmError> {
-    if hex == "" {
-        Ok(None)
-    } else {
-        match hex.from_hex_string() {
-            Ok(bytes) => { Ok(Some(bytes)) }
-            Err(e) => Err(AsmError::INVALID)
-        }
-    }
-}
-
-/// Check whether a given argument requires an operand or not.
-fn requires_argument(opcode: u8) -> bool {
-    opcode >= 0x60 && opcode <= 0x7f
+    //
+    Ok(Instruction::decode(0, &[opcode]))
 }

@@ -8,11 +8,8 @@ use evmil::util::{FromHexString};
 pub static TESTS_DIR: &str = "tests/files";
 
 // Include the programmatically generated test file.
-include!(concat!(env!("OUT_DIR"), "/tests.rs"));
+include!(concat!(env!("OUT_DIR"), "/asm_tests.rs"));
 
-/// Run a specific test by loading the file out of the reference tests
-/// repository and attempting to parse it.  All reference tests should
-/// parse correctly.
 fn check(test: &str) {
     // Construct input files
     let asmfile = to_asmfile(test);
@@ -23,9 +20,7 @@ fn check(test: &str) {
     // Parse assembly into instructions
     let insns = match Assembler::new(&asm).parse() {
         Ok(insns) => insns,
-        Err(e) => {
-            panic!("Error parsing assembly: {e}");
-        }
+        Err(e) => panic!("{test}.asm: {e}")
     };
     // Translate instructions into bytes
     let asm_bytes: Vec<u8> = insns.try_into().unwrap();

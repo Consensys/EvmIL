@@ -1,0 +1,12 @@
+        if storage[0] goto l1;
+        call fn();
+        succeed;
+.l1
+        call fn();
+        revert;
+.fn
+        if storage[0] goto l2;
+        return;
+        stop;
+.l2
+        revert;

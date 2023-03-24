@@ -1,0 +1,5 @@
+   push 0x07
+   push 0x01
+   dup1
+   invalid
+   0x56

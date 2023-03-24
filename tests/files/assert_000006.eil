@@ -1,0 +1,1 @@
+assert calldata[1] >= 0;
