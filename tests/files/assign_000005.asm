@@ -1,5 +1,5 @@
-PUSH 0x02
-PUSH 0x01
-ADD
-PUSH 0x00
-SSTORE
+   push 0x02
+   push 0x01
+   add
+   push 0x00
+   sstore

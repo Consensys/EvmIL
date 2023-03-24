@@ -1,10 +1,10 @@
-PUSH 0x00
-PUSH 0x01
-CALLDATALOAD
-LT
-ISZERO
-PUSHL(0)
-JUMPI
-INVALID
-.lab0
-JUMPDEST
+   push 0x00
+   push 0x01
+   calldataload
+   lt
+   iszero
+   push lab0
+   jumpi
+   invalid
+lab0:
+   jumpdest

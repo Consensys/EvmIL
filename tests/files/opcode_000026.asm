@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x01
-EXTCODESIZE
-POP
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x01
+   extcodesize
+   pop
+   jump
+   jumpdest

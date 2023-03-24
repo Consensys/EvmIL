@@ -1,5 +1,5 @@
-PUSH 0x05
-CALLVALUE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   callvalue
+   pop
+   jump
+   jumpdest

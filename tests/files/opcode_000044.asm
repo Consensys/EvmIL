@@ -1,3 +1,3 @@
-PUSH 0x000000000008
-JUMP
-JUMPDEST
+   push 0x000000000008
+   jump
+   jumpdest

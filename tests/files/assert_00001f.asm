@@ -1,13 +1,13 @@
-PUSH 0x02
-PUSH 0x01
-LT
-PUSHL(0)
-JUMPI
-PUSH 0x03
-PUSH 0x02
-LT
-PUSHL(0)
-JUMPI
-INVALID
-.lab0
-JUMPDEST
+   push 0x02
+   push 0x01
+   lt
+   push lab0
+   jumpi
+   push 0x03
+   push 0x02
+   lt
+   push lab0
+   jumpi
+   invalid
+lab0:
+   jumpdest

@@ -1,3 +1,3 @@
-PUSH 0x00
-PUSH 0x00
-REVERT
+   push 0x00
+   push 0x00
+   revert

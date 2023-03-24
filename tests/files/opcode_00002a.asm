@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x01
-EXTCODEHASH
-POP
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x01
+   extcodehash
+   pop
+   jump
+   jumpdest

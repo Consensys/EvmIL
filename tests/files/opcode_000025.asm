@@ -1,5 +1,5 @@
-PUSH 0x05
-GASPRICE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   gasprice
+   pop
+   jump
+   jumpdest

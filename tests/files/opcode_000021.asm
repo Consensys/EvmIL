@@ -1,5 +1,5 @@
-PUSH 0x05
-CALLDATASIZE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   calldatasize
+   pop
+   jump
+   jumpdest

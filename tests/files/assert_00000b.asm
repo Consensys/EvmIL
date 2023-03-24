@@ -1,6 +1,6 @@
-PUSH 0x01
-PUSHL(0)
-JUMPI
-INVALID
-.lab0
-JUMPDEST
+   push 0x01
+   push lab0
+   jumpi
+   invalid
+lab0:
+   jumpdest

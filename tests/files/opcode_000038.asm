@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x01
-DUP1
-SSTORE
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x01
+   dup1
+   sstore
+   jump
+   jumpdest

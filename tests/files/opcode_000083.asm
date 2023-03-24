@@ -1,10 +1,10 @@
-PUSH 0x0b
-PUSH 0x01
-DUP1
-DUP1
-DUP1
-DUP1
-DUP1
-LOG4
-JUMP
-JUMPDEST
+   push 0x0b
+   push 0x01
+   dup1
+   dup1
+   dup1
+   dup1
+   dup1
+   log4
+   jump
+   jumpdest

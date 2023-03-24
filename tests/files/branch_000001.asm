@@ -1,4 +1,4 @@
-PUSHL(0)
-JUMP
-.lab0
-JUMPDEST
+   push lab0
+   jump
+lab0:
+   jumpdest

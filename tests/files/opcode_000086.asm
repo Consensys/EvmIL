@@ -1,12 +1,12 @@
-PUSH 0x0d
-PUSH 0x01
-DUP1
-DUP1
-DUP1
-DUP1
-DUP1
-DUP1
-CALLCODE
-POP
-JUMP
-JUMPDEST
+   push 0x0d
+   push 0x01
+   dup1
+   dup1
+   dup1
+   dup1
+   dup1
+   dup1
+   callcode
+   pop
+   jump
+   jumpdest

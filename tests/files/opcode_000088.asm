@@ -1,11 +1,11 @@
-PUSH 0x0c
-PUSH 0x01
-DUP1
-DUP1
-DUP1
-DUP1
-DUP1
-DELEGATECALL
-POP
-JUMP
-JUMPDEST
+   push 0x0c
+   push 0x01
+   dup1
+   dup1
+   dup1
+   dup1
+   dup1
+   delegatecall
+   pop
+   jump
+   jumpdest

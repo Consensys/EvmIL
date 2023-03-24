@@ -1,8 +1,8 @@
-PUSH 0x0b
-PUSH 0x00
-PUSH 0x00
-PUSH 0x00
-CALLVALUE
-SWAP4
-JUMP
-JUMPDEST
+   push 0x0b
+   push 0x00
+   push 0x00
+   push 0x00
+   callvalue
+   swap4
+   jump
+   jumpdest

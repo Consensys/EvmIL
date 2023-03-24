@@ -1,5 +1,5 @@
-PUSH 0x05
-TIMESTAMP
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   timestamp
+   pop
+   jump
+   jumpdest

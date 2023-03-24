@@ -1,5 +1,5 @@
-PUSH 0x03
-JUMP
-JUMPDEST
-STOP
-0x61
+   push 0x03
+   jump
+   jumpdest
+   stop
+   0x61

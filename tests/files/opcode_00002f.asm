@@ -1,5 +1,5 @@
-PUSH 0x05
-DIFFICULTY
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   difficulty
+   pop
+   jump
+   jumpdest

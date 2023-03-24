@@ -1,5 +1,5 @@
-PUSH 0x05
-RETURNDATASIZE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   returndatasize
+   pop
+   jump
+   jumpdest

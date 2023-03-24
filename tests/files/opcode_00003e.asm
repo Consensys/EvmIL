@@ -1,4 +1,4 @@
-PUSH 0x04
-JUMPDEST
-JUMP
-JUMPDEST
+   push 0x04
+   jumpdest
+   jump
+   jumpdest

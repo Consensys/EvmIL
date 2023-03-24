@@ -1,8 +1,8 @@
-PUSH 0xff
-PUSH 0x00
-SLOAD
-PUSH 0x09
-JUMPI
-POP
-JUMPDEST
-PUSH 0x00
+   push 0xff
+   push 0x00
+   sload
+   push 0x09
+   jumpi
+   pop
+   jumpdest
+   push 0x00

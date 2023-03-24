@@ -1,3 +1,3 @@
-PUSH 0x01
-PUSH 0x00
-MSTORE
+   push 0x01
+   push 0x00
+   mstore

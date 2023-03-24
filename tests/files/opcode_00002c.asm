@@ -1,5 +1,5 @@
-PUSH 0x05
-COINBASE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   coinbase
+   pop
+   jump
+   jumpdest

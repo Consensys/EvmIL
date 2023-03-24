@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x00
-CALLDATALOAD
-POP
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x00
+   calldataload
+   pop
+   jump
+   jumpdest

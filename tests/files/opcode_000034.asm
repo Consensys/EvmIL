@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x01
-MLOAD
-POP
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x01
+   mload
+   pop
+   jump
+   jumpdest

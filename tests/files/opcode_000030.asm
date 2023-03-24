@@ -1,5 +1,5 @@
-PUSH 0x05
-GASLIMIT
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   gaslimit
+   pop
+   jump
+   jumpdest

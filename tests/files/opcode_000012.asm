@@ -1,7 +1,7 @@
-PUSH 0x08
-PUSH 0x01
-DUP1
-AND
-POP
-JUMP
-JUMPDEST
+   push 0x08
+   push 0x01
+   dup1
+   and
+   pop
+   jump
+   jumpdest

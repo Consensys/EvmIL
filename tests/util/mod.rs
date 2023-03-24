@@ -1,7 +1,7 @@
 use std::io::Write;
 use evmil::ll::{Bytecode,Instruction};
 
-const enable : bool = true;
+const enable : bool = false;
 static mut counter : usize = 0x0;
 static TESTS_DIR: &str = "tests/files";
 

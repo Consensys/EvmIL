@@ -1,9 +1,9 @@
-PUSH 0x0a
-PUSH 0x01
-DUP1
-DUP1
-DUP1
-CREATE2
-POP
-JUMP
-JUMPDEST
+   push 0x0a
+   push 0x01
+   dup1
+   dup1
+   dup1
+   create2
+   pop
+   jump
+   jumpdest

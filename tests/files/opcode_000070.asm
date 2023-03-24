@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x00
-CALLVALUE
-SWAP2
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x00
+   callvalue
+   swap2
+   jump
+   jumpdest

@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x05
-JUMP
-JUMPDEST
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x05
+   jump
+   jumpdest
+   jump
+   jumpdest

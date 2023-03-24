@@ -1,3 +1,3 @@
-PUSH 0x01
-PUSHL(0)
-JUMPI
+   push 0x01
+   push lab0
+   jumpi

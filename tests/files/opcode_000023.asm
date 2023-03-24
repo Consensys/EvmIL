@@ -1,5 +1,5 @@
-PUSH 0x05
-CODESIZE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   codesize
+   pop
+   jump
+   jumpdest

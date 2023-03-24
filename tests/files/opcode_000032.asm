@@ -1,5 +1,5 @@
-PUSH 0x05
-SELFBALANCE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   selfbalance
+   pop
+   jump
+   jumpdest

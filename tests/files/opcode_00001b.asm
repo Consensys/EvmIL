@@ -1,5 +1,5 @@
-PUSH 0x05
-ADDRESS
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   address
+   pop
+   jump
+   jumpdest

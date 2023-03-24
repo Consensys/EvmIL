@@ -54,12 +54,20 @@ impl FromHexString for str {
         } else {
             &self
         };
-        // Parse contents of string
-        for i in (0..slice.len()).step_by(2) {
-            // Pull out the byte
-            let byte = u8::from_str_radix(&slice[i..i + 2], 16)?;
-            // Push it!
-            bytes.push(byte);
+        // Account for an odd number of digits by assuming the leading
+        // digit is zero.
+        if (slice.len() % 2) != 0 {
+            // parse odd digit
+            bytes.push(u8::from_str_radix(&slice[0..1], 16)?);
+            // parse remaining contents
+            for i in (1..slice.len()).step_by(2) {
+                bytes.push(u8::from_str_radix(&slice[i..i + 2], 16)?);
+            }
+        } else {
+            // parse contents
+            for i in (0..slice.len()).step_by(2) {
+                bytes.push(u8::from_str_radix(&slice[i..i + 2], 16)?);
+            }
         }
         //
         Ok(bytes)

@@ -1,6 +1,6 @@
-PUSH 0x07
-PUSH 0x01
-DUP1
-LOG0
-JUMP
-JUMPDEST
+   push 0x07
+   push 0x01
+   dup1
+   log0
+   jump
+   jumpdest

@@ -1,8 +1,8 @@
-PUSH 0x09
-PUSH 0x01
-DUP1
-DUP1
-ADDMOD
-POP
-JUMP
-JUMPDEST
+   push 0x09
+   push 0x01
+   dup1
+   dup1
+   addmod
+   pop
+   jump
+   jumpdest

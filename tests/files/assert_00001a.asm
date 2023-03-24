@@ -1,9 +1,9 @@
-PUSH 0x02
-PUSH 0x01
-GT
-ISZERO
-PUSHL(0)
-JUMPI
-INVALID
-.lab0
-JUMPDEST
+   push 0x02
+   push 0x01
+   gt
+   iszero
+   push lab0
+   jumpi
+   invalid
+lab0:
+   jumpdest

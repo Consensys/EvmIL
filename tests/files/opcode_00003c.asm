@@ -1,5 +1,5 @@
-PUSH 0x05
-MSIZE
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   msize
+   pop
+   jump
+   jumpdest

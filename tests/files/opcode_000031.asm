@@ -1,5 +1,5 @@
-PUSH 0x05
-CHAINID
-POP
-JUMP
-JUMPDEST
+   push 0x05
+   chainid
+   pop
+   jump
+   jumpdest

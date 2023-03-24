@@ -1,4 +1,4 @@
-PUSH 0x05
-JUMP
-0x0102
-JUMPDEST
+   push 0x05
+   jump
+   0x0102
+   jumpdest

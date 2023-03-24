@@ -1,6 +1,6 @@
-PUSH 0xcb
-PUSHL(0)
-JUMPI
-INVALID
-.lab0
-JUMPDEST
+   push 0xcb
+   push lab0
+   jumpi
+   invalid
+lab0:
+   jumpdest

@@ -1,7 +1,7 @@
-PUSH 0x0a
-PUSH 0x00
-PUSH 0x00
-PUSH 0x00
-DUP4
-JUMP
-JUMPDEST
+   push 0x0a
+   push 0x00
+   push 0x00
+   push 0x00
+   dup4
+   jump
+   jumpdest

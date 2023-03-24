@@ -1,8 +1,8 @@
-PUSH 0x01
-PUSHL(0)
-JUMPI
-PUSH 0x00
-PUSHL(0)
-JUMPI
-.lab0
-JUMPDEST
+   push 0x01
+   push lab0
+   jumpi
+   push 0x00
+   push lab0
+   jumpi
+lab0:
+   jumpdest

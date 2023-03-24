@@ -1,9 +1,9 @@
-PUSH 0x0d
-PUSH 0x00
-PUSH 0x00
-PUSH 0x00
-PUSH 0x00
-CALLVALUE
-SWAP5
-JUMP
-JUMPDEST
+   push 0x0d
+   push 0x00
+   push 0x00
+   push 0x00
+   push 0x00
+   callvalue
+   swap5
+   jump
+   jumpdest

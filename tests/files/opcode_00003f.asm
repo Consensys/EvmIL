@@ -1,3 +1,3 @@
-PUSH 0x03
-JUMP
-JUMPDEST
+   push 0x03
+   jump
+   jumpdest

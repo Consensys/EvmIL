@@ -1,2 +1,2 @@
-PUSHL(0)
-JUMP
+   push lab0
+   jump
