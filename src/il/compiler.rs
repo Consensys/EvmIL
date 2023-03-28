@@ -23,7 +23,6 @@
 use crate::il::{BinOp, Region, Term};
 use crate::ll::{Bytecode, Instruction};
 use crate::util::*;
-use std::collections::HashMap;
 
 type Result = std::result::Result<(), CompilerError>;
 
@@ -48,34 +47,22 @@ pub enum CompilerError {
 pub struct Compiler<'a> {
     /// Access to the bytecode stream being constructed.
     bytecode: &'a mut Bytecode,
-    /// Mapping from label names to their allocated labels in the
-    /// underlying bytecode.
-    labels: HashMap<String, usize>,
+    /// Counts the number of labels in use
+    labels: usize
 }
 
 impl<'a> Compiler<'a> {
     pub fn new(bytecode: &'a mut Bytecode) -> Self {
         Self {
             bytecode,
-            labels: HashMap::new(),
+            labels: 0
         }
     }
 
-    /// Get the underlying bytecode label for a given label
-    /// identifier.  If necessary, this allocates that label in the
-    /// `Bytecode` object.
-    pub fn label(&mut self, l: &str) -> usize {
-        match self.labels.get(l) {
-            Some(idx) => *idx,
-            None => {
-                // Allocate underlying index
-                let idx = self.bytecode.fresh_label();
-                // Cache it for later
-                self.labels.insert(l.to_string(), idx);
-                // Done
-                idx
-            }
-        }
+    pub fn fresh_label(&mut self) -> String {
+        let lab = format!("lab{}",self.labels);
+        self.labels += 1;
+        lab
     }
 
     pub fn translate(&mut self, term: &Term) -> Result {
@@ -109,13 +96,13 @@ impl<'a> Compiler<'a> {
 
     fn translate_assert(&mut self, expr: &Term) -> Result {
         // Allocate labels for true/false outcomes
-        let lab = self.bytecode.fresh_label();
+        let lab = self.fresh_label();
         // Translate conditional branch
-        self.translate_conditional(expr, Some(lab), None)?;
+        self.translate_conditional(expr, Some(&lab), None)?;
         // False branch
         self.bytecode.push(Instruction::INVALID);
         // True branch
-        self.bytecode.push(Instruction::LABEL(lab));
+        self.bytecode.label(&lab);
         self.bytecode.push(Instruction::JUMPDEST);
         //
         Ok(())
@@ -160,19 +147,17 @@ impl<'a> Compiler<'a> {
     }
 
     fn translate_call(&mut self, name: &str, exprs: &[Term]) -> Result {
-        let retlab = self.bytecode.fresh_label();
-        // Allocate labels branch target
-        let fnlab = self.label(name);
+        let retlab = self.fresh_label();
         // Translate arguments
         for e in exprs { self.translate(e); }
         // Push return address
-        self.bytecode.push(Instruction::PUSHL(retlab));
+        self.bytecode.push_partial(&retlab,|t| Instruction::PUSH(t.to_bytes()));
         // Push function address
-        self.bytecode.push(Instruction::PUSHL(fnlab));
+        self.bytecode.push_partial(name, |t| Instruction::PUSH(t.to_bytes()));
         // Perform jump
         self.bytecode.push(Instruction::JUMP);
         // Identify return point
-        self.bytecode.push(Instruction::LABEL(retlab));
+        self.bytecode.label(&retlab);
         self.bytecode.push(Instruction::JUMPDEST);
         Ok(())
     }
@@ -183,27 +168,21 @@ impl<'a> Compiler<'a> {
     }
 
     fn translate_goto(&mut self, label: &str) -> Result {
-        // Allocate labels branch target
-        let lab = self.label(label);
         // Translate unconditional branch
-        self.bytecode.push(Instruction::PUSHL(lab));
+        self.bytecode.push_partial(label,|t| Instruction::PUSH(t.to_bytes()));
         self.bytecode.push(Instruction::JUMP);
         //
         Ok(())
     }
 
     fn translate_ifgoto(&mut self, expr: &Term, label: &str) -> Result {
-        // Allocate labels for true/false outcomes
-        let lab = self.label(label);
         // Translate conditional branch
-        self.translate_conditional(expr, Some(lab), None)
+        self.translate_conditional(expr, Some(label), None)
     }
 
     fn translate_label(&mut self, label: &str) -> Result {
-        // Determine underlying index of label
-        let lab = self.label(label);
-        // Construct corresponding JumpDest
-        self.bytecode.push(Instruction::LABEL(lab));
+        // Mark the label
+        self.bytecode.label(label);
         self.bytecode.push(Instruction::JUMPDEST);
         // Done
         Ok(())
@@ -275,12 +254,7 @@ impl<'a> Compiler<'a> {
     /// control is transfered to this target.  Likewise, if the
     /// condition evaluates to `0` (i.e. `false`) the control is
     /// transfered to the `false` target.
-    fn translate_conditional(
-        &mut self,
-        expr: &Term,
-        true_lab: Option<usize>,
-        false_lab: Option<usize>,
-    ) -> Result {
+    fn translate_conditional(&mut self, expr: &Term, true_lab: Option<&str>, false_lab: Option<&str>) -> Result {
         match expr {
             Term::Binary(BinOp::LogicalAnd, l, r) => {
                 self.translate_conditional_conjunct(l, r, true_lab, false_lab)
@@ -295,20 +269,14 @@ impl<'a> Compiler<'a> {
     /// Translate a logical conjunction as a conditional. Since
     /// such connectives require short circuiting, these must be
     /// implementing using branches.
-    fn translate_conditional_conjunct(
-        &mut self,
-        lhs: &Term,
-        rhs: &Term,
-        true_lab: Option<usize>,
-        false_lab: Option<usize>,
-    ) -> Result {
+    fn translate_conditional_conjunct(&mut self, lhs: &Term, rhs: &Term, true_lab: Option<&str>, false_lab: Option<&str>) -> Result {
         match (true_lab, false_lab) {
             (Some(_), None) => {
                 // Harder case
-                let lab = self.bytecode.fresh_label();
-                self.translate_conditional(lhs, None, Some(lab))?;
+                let lab = self.fresh_label();
+                self.translate_conditional(lhs, None, Some(&lab))?;
                 self.translate_conditional(rhs, true_lab, None)?;
-                self.bytecode.push(Instruction::LABEL(lab));
+                self.bytecode.label(&lab);
                 self.bytecode.push(Instruction::JUMPDEST);
             }
             (None, Some(_)) => {
@@ -325,20 +293,14 @@ impl<'a> Compiler<'a> {
     /// Translate a logical disjunction as a conditional. Since
     /// such connectives require short circuiting, these must be
     /// implementing using branches.
-    fn translate_conditional_disjunct(
-        &mut self,
-        lhs: &Term,
-        rhs: &Term,
-        true_lab: Option<usize>,
-        false_lab: Option<usize>,
-    ) -> Result {
+    fn translate_conditional_disjunct(&mut self, lhs: &Term, rhs: &Term, true_lab: Option<&str>, false_lab: Option<&str>) -> Result {
         match (true_lab, false_lab) {
             (None, Some(_)) => {
                 // Harder case
-                let lab = self.bytecode.fresh_label();
-                self.translate_conditional(lhs, Some(lab), None)?;
+                let lab = self.fresh_label();
+                self.translate_conditional(lhs, Some(&lab), None)?;
                 self.translate_conditional(rhs, None, false_lab)?;
-                self.bytecode.push(Instruction::LABEL(lab));
+                self.bytecode.label(&lab);
                 self.bytecode.push(Instruction::JUMPDEST);
             }
             (Some(_), None) => {
@@ -355,23 +317,18 @@ impl<'a> Compiler<'a> {
     /// Translate a conditional expression which cannot be translated
     /// by exploiting branches.  In such case, we have to generate the
     /// boolean value and dispatch based on that.
-    fn translate_conditional_other(
-        &mut self,
-        expr: &Term,
-        true_lab: Option<usize>,
-        false_lab: Option<usize>,
-    ) -> Result {
+    fn translate_conditional_other(&mut self, expr: &Term, true_lab: Option<&str>, false_lab: Option<&str>) -> Result {
         // Translate conditional expression
         self.translate(expr)?;
         //
         match (true_lab, false_lab) {
             (Some(lab), None) => {
-                self.bytecode.push(Instruction::PUSHL(lab));
+                self.bytecode.push_partial(lab,|t| Instruction::PUSH(t.to_bytes()));
                 self.bytecode.push(Instruction::JUMPI);
             }
             (None, Some(lab)) => {
                 self.bytecode.push(Instruction::ISZERO);
-                self.bytecode.push(Instruction::PUSHL(lab));
+                self.bytecode.push_partial(lab,|t| Instruction::PUSH(t.to_bytes()));
                 self.bytecode.push(Instruction::JUMPI);
             }
             (_, _) => {
@@ -407,12 +364,12 @@ impl<'a> Compiler<'a> {
             self.bytecode.push(Instruction::ISZERO);
         }
         // Allocate fresh label
-        let lab = self.bytecode.fresh_label();
-        self.bytecode.push(Instruction::PUSHL(lab));
+        let lab = self.fresh_label();
+        self.bytecode.push_partial(&lab,|t| Instruction::PUSH(t.to_bytes()));
         self.bytecode.push(Instruction::JUMPI);
         self.bytecode.push(Instruction::POP);
         self.translate(rhs)?;
-        self.bytecode.push(Instruction::LABEL(lab));
+        self.bytecode.label(&lab);
         self.bytecode.push(Instruction::JUMPDEST);
         // Done
         Ok(())

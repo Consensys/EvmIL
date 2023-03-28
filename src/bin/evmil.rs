@@ -134,7 +134,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
                 println!("{:#08x}: {}", pc, insn);
             }
         }
-        pc = pc + insn.length(&[]); // broken
+        pc = pc + insn.length();
     }
     // TODO
     Ok(true)

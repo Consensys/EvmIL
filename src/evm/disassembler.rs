@@ -178,7 +178,7 @@ where
             // Decode instruction at the current position
             let insn = Instruction::decode(pc, &self.bytes);
             // Increment PC for next instruction
-            pc = pc + insn.length(&[]);
+            pc = pc + insn.length();
             //
             insns.push(insn);
         }
@@ -198,7 +198,7 @@ where
             // Decode instruction at the current position
             let insn = Instruction::decode(pc, &bytes);
             // Increment PC for next instruction
-            pc = pc + insn.length(&[]);
+            pc = pc + insn.length();
             // Check whether terminating instruction
             match insn {
                 JUMPDEST => {

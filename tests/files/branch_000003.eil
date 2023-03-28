@@ -1,1 +1,2 @@
-if 1 goto lab;
+.lab
+  if 1 goto lab;
