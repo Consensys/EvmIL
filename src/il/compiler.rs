@@ -21,7 +21,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::evm::{Bytecode,Instruction};
+use crate::evm::{Assembly,Instruction};
 use crate::util::*;
 
 type Result = std::result::Result<(), CompilerError>;
@@ -46,13 +46,13 @@ pub enum CompilerError {
 
 pub struct Compiler<'a> {
     /// Access to the bytecode stream being constructed.
-    bytecode: &'a mut Bytecode,
+    bytecode: &'a mut Assembly,
     /// Counts the number of labels in use
     labels: usize
 }
 
 impl<'a> Compiler<'a> {
-    pub fn new(bytecode: &'a mut Bytecode) -> Self {
+    pub fn new(bytecode: &'a mut Assembly) -> Self {
         Self {
             bytecode,
             labels: 0
