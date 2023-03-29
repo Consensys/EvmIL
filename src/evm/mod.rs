@@ -16,6 +16,7 @@ mod abstract_word;
 mod concrete_evm;
 mod concrete_stack;
 mod disassembler;
+mod fork;
 pub mod opcode;
 
 pub use crate::evm::abstract_evm::*;
@@ -24,6 +25,7 @@ pub use crate::evm::abstract_word::*;
 pub use crate::evm::concrete_evm::*;
 pub use crate::evm::concrete_stack::*;
 pub use crate::evm::disassembler::*;
+pub use crate::evm::fork::*;
 
 use crate::util::{w256, Interval};
 
