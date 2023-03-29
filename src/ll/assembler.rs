@@ -54,21 +54,29 @@ impl<'a> Assembler<'a> {
         let lines : Vec<&str> = self.input.lines().collect();
         //
         for l in &lines {
-            let insn = self.parse_line(l)?;
-            self.bytecode.push(insn);
+            self.parse_line(l)?;
         }
         // Done
         Ok(self.bytecode)
     }
 
-    fn parse_line(&mut self, line: &'a str) -> Result<Instruction,AsmError> {
+    fn parse_line(&mut self, line: &'a str) -> Result<(),AsmError> {
         let mut lexer = Lexer::new(line);
         //
-        let insn = match lexer.next()? {
-            Token::Hex(s) => Instruction::DATA(parse_hex(s)?),
-            Token::Identifier("push"|"PUSH") => self.parse_push(lexer.next()?)?,
-            Token::Identifier(id) => parse_opcode(id)?,
-            Token::Label(s) => Instruction::LABEL(self.get_label_index(s)),
+        match lexer.next()? {
+            Token::Hex(s) => {
+                self.bytecode.push(Instruction::DATA(parse_hex(s)?))
+            }
+            Token::Identifier("push"|"PUSH") => {
+                self.parse_push(lexer.next()?)?
+            }
+            Token::Identifier(id) => {
+                self.bytecode.push(parse_opcode(id)?);
+            }
+            Token::Label(s) => {
+                // Mark label in bytecode sequence
+                self.bytecode.label(s);
+            }
             _ => {
                 // Something went wrong
                 return Err(AsmError::UnexpectedToken);
@@ -76,39 +84,27 @@ impl<'a> Assembler<'a> {
         };
         // Sanity check what's left
         match lexer.next()? {
-            Token::EOF => Ok(insn),
+            Token::EOF => Ok(()),
             _ => Err(AsmError::UnexpectedToken)
         }
     }
 
-
     /// Parse a push instruction with a given operand.
-    fn parse_push(&mut self, operand: Token) -> Result<Instruction,AsmError> {
+    fn parse_push(&mut self, operand: Token) -> Result<(),AsmError> {
         // Push always expects an argument, though it could be a
         // label or a hexadecimal operand.
         match operand {
-            Token::Hex(s) => Ok(Instruction::PUSH(parse_hex(s)?)),
+            Token::Hex(s) => {
+                self.bytecode.push(Instruction::PUSH(parse_hex(s)?));
+                Ok(())
+            }
+            Token::Identifier(s) => {
+                self.bytecode.push_partial(s,|target| Instruction::PUSH(target.to_bytes()));
+                Ok(())
+            },
             Token::EOF => Err(AsmError::ExpectedOperand),
-            Token::Identifier(s) => Ok(Instruction::PUSHL(self.get_label_index(s))),
             _ => Err(AsmError::UnexpectedToken)
         }
-    }
-
-    /// Determine the index of a given label.  If the label has not
-    /// been registered yet, then we register a new label.
-    fn get_label_index(&mut self, lab: &str) -> usize {
-        match self.labels.get(lab) {
-            Some(index) => *index,
-            None => {
-                // Register a new label index
-                let index = self.bytecode.fresh_label();
-                // Record index against the label
-                self.labels.insert(lab.to_string(),index);
-                // Done
-                index
-            }
-        }
-
     }
 }
 

@@ -1,2 +1,4 @@
-   push lab0
-   jump
+lab0:
+        jumpdest
+        push lab0
+        jump

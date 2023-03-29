@@ -13,33 +13,6 @@ use crate::util::ToHexString;
 use std::fmt;
 
 // ============================================================================
-// Label Offsets
-// ============================================================================
-
-/// Used to simplify calculation of label offsets.
-#[derive(PartialEq, Copy, Clone)]
-pub struct Offset(pub u16);
-
-impl Offset {
-    /// Determine the width of this offset (in bytes).
-    pub fn width(&self) -> u16 {
-        if self.0 > 255 {
-            2
-        } else {
-            1
-        }
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        if self.0 > 255 {
-            vec![(self.0 / 256) as u8, (self.0 % 256) as u8]
-        } else {
-            vec![self.0 as u8]
-        }
-    }
-}
-
-// ============================================================================
 // Errors
 // ============================================================================
 
@@ -131,7 +104,6 @@ pub enum Instruction {
     JUMPDEST,
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
-    PUSHL(usize), // Push label offset.
     // 80s: Duplicate Operations
     DUP(u8),
     // 90s: Exchange Operations
@@ -149,8 +121,6 @@ pub enum Instruction {
     REVERT,
     INVALID,
     SELFDESTRUCT,
-    // Represents an named location within a bytecode sequence.
-    LABEL(usize),
     // Signals arbitrary data in the contract, rather than bytecode
     // instructions.
     DATA(Vec<u8>),
@@ -184,30 +154,22 @@ impl Instruction {
 
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
-    pub fn encode(&self, offsets: &[Offset], bytes: &mut Vec<u8>) -> Result<(), Error> {
+    pub fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Error> {
         // Push operands (if applicable)
         match self {
             Instruction::DATA(args) => {
                 // Push operands
                 bytes.extend(args);
             }
-            Instruction::LABEL(_) => {
-            }
             Instruction::PUSH(args) => {
                 // Push opcode
-                bytes.push(self.opcode(&offsets)?);
+                bytes.push(self.opcode()?);
                 // Push operands
                 bytes.extend(args);
             }
-            Instruction::PUSHL(idx) => {
-                // Push opcode
-                bytes.push(self.opcode(&offsets)?);
-                // Push operands
-                bytes.extend(offsets[*idx].to_bytes());
-            }
             _ => {
                 // All other instructions have no operands.
-                bytes.push(self.opcode(&offsets)?);
+                bytes.push(self.opcode()?);
             }
         }
         //
@@ -216,25 +178,21 @@ impl Instruction {
 
     /// Determine the length of this instruction (in bytes) assuming a
     /// given set of label offsets.
-    pub fn length(&self, _offsets: &[Offset]) -> usize {
-        let operands = match self {
-            Instruction::DATA(bytes) => bytes.len() - 1,
+    pub fn length(&self) -> usize {
+        match self {
+            Instruction::DATA(bytes) => bytes.len(),
             // Push instructions
-            Instruction::PUSH(bs) => bs.len(),
-            Instruction::PUSHL(_) => {
-                todo!("implement me");
-            }
+            Instruction::PUSH(bs) => 1 + bs.len(),
             // Default case
-            _ => 0,
-        };
-        operands + 1
+            _ => 1,
+        }
     }
 
     /// Determine the opcode for a given instruction.  In many cases,
     /// this is a straightforward mapping.  However, in other cases,
     /// its slightly more involved as a calculation involving the
     /// operands is required.
-    pub fn opcode(&self, offsets: &[Offset]) -> Result<u8, Error> {
+    pub fn opcode(&self) -> Result<u8, Error> {
         let op = match self {
             // 0s: Stop and Arithmetic Operations
             Instruction::STOP => 0x00,
@@ -314,15 +272,6 @@ impl Instruction {
                     (0x5f + bs.len()) as u8
                 }
             }
-            //
-            Instruction::PUSHL(lab) => {
-                let offset = &offsets[*lab];
-                if offset.width() == 2 {
-                    0x61
-                } else {
-                    0x60
-                }
-            }
             // 80s: Duplication Operations
             Instruction::DUP(n) => {
                 if *n == 0 || *n > 32 {
@@ -356,7 +305,7 @@ impl Instruction {
             Instruction::INVALID => 0xfe,
             Instruction::SELFDESTRUCT => 0xff,
             //
-            Instruction::DATA(_)|Instruction::LABEL(_) => {
+            Instruction::DATA(_) => {
                 panic!("Invalid instruction ({:?})", self);
             }
         };
@@ -365,10 +314,6 @@ impl Instruction {
     }
 
     /// Decode the next instruction in a given sequence of bytes.
-    /// Observe that this never returns a `PUSHL` instruction.  This
-    /// is because it cannot determine whether a given operand will be
-    /// used as a jump destination.  A separate analysis is required
-    /// to "lift" `PUSH` instructions to `PUSHL` instructions.
     pub fn decode(pc: usize, bytes: &[u8]) -> Instruction {
         let opcode = if pc < bytes.len() { bytes[pc] } else { 0x00 };
         //
@@ -496,35 +441,29 @@ impl fmt::Display for Instruction {
         match self {
             Instruction::DATA(bytes) => {
                 // Print bytes as hex string
-                write!(f, "   {}", bytes.to_hex_string())
+                write!(f, "{}", bytes.to_hex_string())
             }
             Instruction::DUP(n) => {
-                write!(f, "   dup{}",n)
-            }
-            Instruction::LABEL(i) => {
-                write!(f, "lab{i}:")
+                write!(f, "dup{}",n)
             }
             Instruction::LOG(n) => {
-                write!(f, "   log{n}")
+                write!(f, "log{n}")
             }
             Instruction::JUMPDEST => {
-                write!(f, "   jumpdest")
+                write!(f, "jumpdest")
             }
             Instruction::PUSH(bytes) => {
                 // Convert bytes into hex string
                 let hex = bytes.to_hex_string();
                 // Print!
-                write!(f, "   push {}", hex)
-            }
-            Instruction::PUSHL(idx) => {
-                write!(f, "   push lab{}", idx)
+                write!(f, "push {}", hex)
             }
             Instruction::SWAP(n) => {
-                write!(f, "   swap{n}")
+                write!(f, "swap{n}")
             }
             _ => {
                 let s = format!("{:?}",self).to_lowercase();
-                write!(f, "   {s}")
+                write!(f, "{s}")
             }
         }
     }
