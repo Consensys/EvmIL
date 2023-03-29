@@ -21,7 +21,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::ll::{Bytecode, Instruction};
+use crate::evm::{Bytecode,Instruction};
 use crate::util::*;
 
 type Result = std::result::Result<(), CompilerError>;

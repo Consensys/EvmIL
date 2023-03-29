@@ -19,7 +19,7 @@ use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice};
 // ============================================================================
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct AbstractStack<T: PartialEq> {
+pub struct IntervalStack<T: PartialEq> {
     // The lower segment of an abstract stack represents a variable
     // number of unknown values.  An interval is used for a compact
     // representation.  So, for example, `0..1` represents two
@@ -30,7 +30,7 @@ pub struct AbstractStack<T: PartialEq> {
     upper: Vec<T>,
 }
 
-impl<T> AbstractStack<T>
+impl<T> IntervalStack<T>
 where
     T: PartialEq + Clone + JoinLattice,
 {
@@ -123,7 +123,7 @@ where
     }
 
     /// Join two abstract stacks together.
-    pub fn join(self, other: &AbstractStack<T>) -> Self {
+    pub fn join(self, other: &IntervalStack<T>) -> Self {
         let slen = self.upper.len();
         let olen = other.upper.len();
         // Determine common upper length
@@ -131,7 +131,7 @@ where
         // Normalise lower segments
         let lself = self.lower.add(Interval::from(slen - n));
         let lother = other.lower.add(Interval::from(olen - n));
-        let mut merger = AbstractStack::new(lself.union(&lother), Vec::new());
+        let mut merger = IntervalStack::new(lself.union(&lother), Vec::new());
         // Push merged items from upper segment
         for i in (0..n).rev() {
             let ithself = self.peek(i);
@@ -179,25 +179,25 @@ where
 // Standard Traits
 // ==================================================================
 
-impl<T: PartialEq + Clone + JoinLattice> Default for AbstractStack<T> {
+impl<T: PartialEq + Clone + JoinLattice> Default for IntervalStack<T> {
     fn default() -> Self {
         Self::empty()
     }
 }
 
-impl<T> Clone for AbstractStack<T>
+impl<T> Clone for IntervalStack<T>
 where
     T: PartialEq + Clone,
 {
     fn clone(&self) -> Self {
-        AbstractStack {
+        IntervalStack {
             lower: self.lower.clone(),
             upper: self.upper.clone(),
         }
     }
 }
 
-impl<T> Display for AbstractStack<T>
+impl<T> Display for IntervalStack<T>
 where
     T: Clone + Display + PartialEq + Bottom,
 {
@@ -218,7 +218,7 @@ where
 // Lattice Traits
 // ==================================================================
 
-impl<T> Bottom for AbstractStack<T>
+impl<T> Bottom for IntervalStack<T>
 where
     T: PartialEq + Clone + Bottom,
 {
@@ -228,13 +228,13 @@ where
     };
 }
 
-impl<T> JoinInto for AbstractStack<T>
+impl<T> JoinInto for IntervalStack<T>
 where
     T: PartialEq + Clone + JoinLattice,
 {
     /// Merge an abstract stack into this stack, whilst reporting
     /// whether this stack changed or not.
-    fn join_into(&mut self, other: &AbstractStack<T>) -> bool {
+    fn join_into(&mut self, other: &IntervalStack<T>) -> bool {
         // NOTE: this could be done more efficiently.
         let old = self.clone();
         let mut tmp = Self::empty();
@@ -248,10 +248,10 @@ where
 }
 
 // ===================================================================
-// evm::Word
+// evm::Stack
 // ===================================================================
 
-impl<T: evm::Word+Display> evm::Stack for AbstractStack<T>
+impl<T: evm::Word+Display> evm::Stack for IntervalStack<T>
 where
     T: PartialEq + JoinLattice,
 {

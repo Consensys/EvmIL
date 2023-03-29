@@ -12,6 +12,7 @@
 mod byte_utils;
 mod hex;
 mod interval;
+mod interval_stack;
 mod lattice;
 mod numeric;
 mod word256;
@@ -20,6 +21,7 @@ mod sorted_vec;
 pub use byte_utils::*;
 pub use hex::*;
 pub use interval::*;
+pub use interval_stack::*;
 pub use lattice::*;
 pub use numeric::*;
 pub use word256::*;
