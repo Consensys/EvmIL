@@ -1,7 +1,7 @@
 use std::fmt;
 use std::collections::{HashMap};
 use crate::evm::opcode;
-use crate::ll::{Bytecode,Instruction};
+use crate::evm::{Bytecode,Instruction};
 use crate::util::FromHexString;
 
 // ===================================================================

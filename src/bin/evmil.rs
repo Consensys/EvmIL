@@ -19,9 +19,8 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{AbstractStack, AbstractWord, Disassembly};
+use evmil::evm::{Assembler, Bytecode, Instruction};
 use evmil::il::Parser;
-use evmil::ll::{Assembler, Bytecode, Instruction};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -107,35 +106,35 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct disassembly
-    let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
-    // Disassemble bytes into instructions
-    let instructions = disasm.to_vec();
-    // Print them all out.
-    let mut pc = 0;
-    for insn in instructions {
-        match insn {
-            Instruction::JUMPDEST => {
-                let st = disasm.get_state(pc);
-                println!("");
-                // NOTE: to be restored once the API has settled.
-                //let len = st.evm.stack.len();
-                // if len.is_constant() {
-                //     println!("// Stack +{}", len.unwrap());
-                // } else {
-                //     println!("// Stack +{}", len);
-                // }
-                println!("{:#08x}: {}", pc, insn);
-            }
-            Instruction::JUMP | Instruction::JUMPI => {
-                let st = disasm.get_state(pc);
-                println!("{:#08x}: {} // {}", pc, insn, st.peek(0));
-            }
-            _ => {
-                println!("{:#08x}: {}", pc, insn);
-            }
-        }
-        pc = pc + insn.length();
-    }
+    // let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
+    // // Disassemble bytes into instructions
+    // let instructions = disasm.to_vec();
+    // // Print them all out.
+    // let mut pc = 0;
+    // for insn in instructions {
+    //     match insn {
+    //         Instruction::JUMPDEST => {
+    //             let st = disasm.get_state(pc);
+    //             println!("");
+    //             // NOTE: to be restored once the API has settled.
+    //             //let len = st.evm.stack.len();
+    //             // if len.is_constant() {
+    //             //     println!("// Stack +{}", len.unwrap());
+    //             // } else {
+    //             //     println!("// Stack +{}", len);
+    //             // }
+    //             println!("{:#08x}: {}", pc, insn);
+    //         }
+    //         Instruction::JUMP | Instruction::JUMPI => {
+    //             let st = disasm.get_state(pc);
+    //             println!("{:#08x}: {} // {}", pc, insn, st.peek(0));
+    //         }
+    //         _ => {
+    //             println!("{:#08x}: {}", pc, insn);
+    //         }
+    //     }
+    //     pc = pc + insn.length();
+    // }
     // TODO
     Ok(true)
 }

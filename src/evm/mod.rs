@@ -10,22 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod abstract_evm;
-mod abstract_stack;
-mod abstract_word;
-mod concrete_evm;
-mod concrete_stack;
-mod disassembler;
+mod assembler;
+mod bytecode;
 mod fork;
+mod instruction;
 pub mod opcode;
 
-pub use crate::evm::abstract_evm::*;
-pub use crate::evm::abstract_stack::*;
-pub use crate::evm::abstract_word::*;
-pub use crate::evm::concrete_evm::*;
-pub use crate::evm::concrete_stack::*;
-pub use crate::evm::disassembler::*;
-pub use crate::evm::fork::*;
+pub use assembler::*;
+pub use bytecode::*;
+pub use fork::*;
+pub use instruction::*;
 
 use crate::util::{w256, Interval};
 

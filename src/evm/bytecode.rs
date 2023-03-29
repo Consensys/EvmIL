@@ -11,8 +11,7 @@
 // limitations under the License.
 use crate::il::Term;
 use crate::il::{Compiler, CompilerError};
-use crate::ll::instruction;
-use crate::ll::{Instruction};
+use crate::evm::{Error,Instruction};
 
 // ============================================================================
 // Label Offsets
@@ -193,7 +192,7 @@ impl Bytecode {
     /// ways.  For example, the target for a `PUSHL` does not match
     /// any known `JUMPEST` label; Or, the stack size is exceeded,
     /// etc.
-    pub fn to_bytes(mut self) -> Result<Vec<u8>, instruction::Error> {
+    pub fn to_bytes(mut self) -> Result<Vec<u8>, Error> {
         // Translate all patches into concrete instructions.
         self.resolve_patches();
         // Translate concrete instructions into bytes.
@@ -294,7 +293,7 @@ impl<const N: usize> TryFrom<&[Term; N]> for Bytecode {
 /// can fail for a number of reasons (e.g. dangling branches, stack
 /// depth exceeded, etc).
 impl TryInto<Vec<u8>> for Bytecode {
-    type Error = instruction::Error;
+    type Error = Error;
 
     fn try_into(self) -> Result<Vec<u8>, Self::Error> {
         self.to_bytes()
