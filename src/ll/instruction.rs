@@ -102,6 +102,8 @@ pub enum Instruction {
     MSIZE,
     GAS,
     JUMPDEST,
+    RJUMP(i16),  // EIP4200
+    RJUMPI(i16), // EIP4200
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
     // 80s: Duplicate Operations
@@ -134,6 +136,7 @@ impl Instruction {
             Instruction::DATA(_) => false,
             Instruction::INVALID => false,
             Instruction::JUMP => false,
+            Instruction::RJUMP(_) => false,
             Instruction::STOP => false,
             Instruction::RETURN => false,
             Instruction::REVERT => false,
@@ -148,6 +151,8 @@ impl Instruction {
         match self {
             Instruction::JUMP => true,
             Instruction::JUMPI => true,
+            Instruction::RJUMP(_) => true,
+            Instruction::RJUMPI(_) => true,
             _ => false,
         }
     }
@@ -160,6 +165,18 @@ impl Instruction {
             Instruction::DATA(args) => {
                 // Push operands
                 bytes.extend(args);
+            }
+            Instruction::RJUMP(target) => {
+                // Push opcode
+                bytes.push(self.opcode()?);
+                // Push operands
+                bytes.extend(&target.to_be_bytes());
+            }
+            Instruction::RJUMPI(target) => {
+                // Push opcode
+                bytes.push(self.opcode()?);
+                // Push operands
+                bytes.extend(&target.to_be_bytes());
             }
             Instruction::PUSH(args) => {
                 // Push opcode
@@ -181,6 +198,9 @@ impl Instruction {
     pub fn length(&self) -> usize {
         match self {
             Instruction::DATA(bytes) => bytes.len(),
+            // Static jumps
+            Instruction::RJUMP(_) => 3,
+            Instruction::RJUMPI(_) => 3,
             // Push instructions
             Instruction::PUSH(bs) => 1 + bs.len(),
             // Default case
@@ -263,7 +283,8 @@ impl Instruction {
             Instruction::MSIZE => 0x59,
             Instruction::GAS => 0x5a,
             Instruction::JUMPDEST => 0x5b,
-            //
+            Instruction::RJUMP(_) => 0x5c,
+            Instruction::RJUMPI(_) => 0x5d,
             // 60s & 70s: Push Operations
             Instruction::PUSH(bs) => {
                 if bs.len() == 0 || bs.len() > 32 {
@@ -387,6 +408,14 @@ impl Instruction {
             0x59 => Instruction::MSIZE,
             0x5a => Instruction::GAS,
             0x5b => Instruction::JUMPDEST,
+            0x5c => {
+                let arg = [bytes[pc+1],bytes[pc+2]];
+                Instruction::RJUMP(i16::from_be_bytes(arg))
+            }
+            0x5d => {
+                let arg = [bytes[pc+1],bytes[pc+2]];
+                Instruction::RJUMPI(i16::from_be_bytes(arg))
+            }
             // 60s & 70s: Push Operations
             0x60..=0x7f => {
                 let m = pc + 1;

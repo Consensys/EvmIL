@@ -162,6 +162,22 @@ where
             SSTORE => self.pop(2),
             PC | MSIZE | GAS => self.push(S::Word::TOP),
             JUMPDEST => self, // nop
+            RJUMP(target) => {
+                // advance past this instruction
+                self = self.next(2);
+                // Compute branch target
+                let target = (self.pc as isize) + (target as isize);
+                // Branch!
+                return (AbstractEvm::BOTTOM, vec![self.goto(target as usize)]);
+            },
+            RJUMPI(target) => {
+                // Advance past this instruction, and pop condition
+                self = self.next(2).pop(1);
+                // Compute branch target
+                let target = (self.pc as isize) + (target as isize);
+                // Conditional branch!
+                return (self.clone(), vec![self.goto(target as usize)]);
+            },
             // 60 & 70s: Push Operations
             PUSH(bytes) => {
                 // Extract word from bytes
