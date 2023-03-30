@@ -112,7 +112,12 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     }
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
-    // Construct disassembly
+    // Construct bytecode representation
+    let bytecode = Bytecode::from_bytes(&bytes);
+    // Iterate bytecode sections
+    for section in &bytecode {
+
+    }
     // let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
     // // Disassemble bytes into instructions
     // let instructions = disasm.to_vec();

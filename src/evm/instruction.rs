@@ -503,3 +503,29 @@ impl fmt::Display for Instruction {
         }
     }
 }
+
+// ============================================================================
+// Traits
+// ============================================================================
+
+pub trait ToInstructions {
+    fn to_insns(&self) -> Vec<Instruction>;
+}
+
+impl<'a> ToInstructions for &'a [u8] {
+    fn to_insns(&self) -> Vec<Instruction> {
+        let mut insns = Vec::new();
+        let mut index = 0;
+        //
+        while index < self.len() {
+            let insn = Instruction::decode(index, self);
+            println!("DECODED: {insn:?}");
+            // Shift us along
+            index += insn.length();
+            // Store the instruction!
+            insns.push(insn);
+        }
+        //
+        insns
+    }
+}

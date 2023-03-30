@@ -9,7 +9,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::evm::{Error,Instruction};
+use crate::evm::opcode;
+use crate::evm::{Error,Instruction,ToInstructions};
+
+/// The EOF magic prefix as dictated in EIP3540.
+pub const EOF_MAGIC : [u8;2] = [0xEF,0x00];
 
 // ============================================================================
 // Bytecode Contract
@@ -53,6 +57,35 @@ impl Bytecode {
         // Done
         bytes
     }
+
+    /// Construct a bytecode contract from a given set of bytes.  The
+    /// exact interpretation of these bytes depends on the fork.  For
+    /// example, on some forks, certain instructions are permitted
+    /// whilst on others they are not.  Likewise, EOF containers are
+    /// supported on some forks but not others.
+    pub fn from_bytes(bytes: &[u8]) -> Bytecode {
+        // Check for EOF container
+        if bytes.starts_with(&EOF_MAGIC) {
+            from_eof_bytes(bytes)
+        } else {
+            todo!()
+        }
+    }
+}
+
+// ===================================================================
+// Traits
+// ===================================================================
+
+pub type BytecodeIter<'a,T> = std::slice::Iter<'a,T>;
+
+impl<'a> IntoIterator for &'a Bytecode {
+    type Item = &'a Section;
+    type IntoIter = BytecodeIter<'a,Section>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        todo!();
+    }
 }
 
 // ============================================================================
@@ -95,5 +128,91 @@ impl Section {
                 }
             }
         }
+    }
+}
+
+// ============================================================================
+// Disassembly
+// ============================================================================
+
+/// Construct a bytecode container from an EOF formatted byte
+/// sequence.
+fn from_eof_bytes(bytes: &[u8]) -> Bytecode {
+    let mut iter = EofIterator::new(bytes);
+    iter.match_u8(0xEF,"magic");
+    iter.match_u8(0x00,"magic");
+    // Pull out static information
+    let version = iter.next_u8();
+    iter.match_u8(0x01,"kind_type");
+    let type_size = iter.next_u16();
+    iter.match_u8(0x02,"kind_code");
+    let num_code_sections = iter.next_u16() as usize;
+    let mut code_sizes : Vec<usize> = Vec::new();
+    // Extract code sizes
+    for i in 0..num_code_sections {
+        code_sizes.push(iter.next_u16() as usize);
+    }
+    iter.match_u8(0x03,"kind_data");
+    let data_size = iter.next_u16() as usize;
+    iter.match_u8(0x00,"terminator");
+    // parse types section
+    let mut types = Vec::new();
+    for i in 0..type_size {
+        let inputs = iter.next_u8();
+        let outputs = iter.next_u8();
+        let max_stack = iter.next_u16();
+        types.push((inputs,outputs,max_stack));
+    }
+    let mut code = Bytecode::new();
+    // parse code section(s)
+    for i in 0..num_code_sections {
+        let bytes = iter.next_bytes(code_sizes[i]);
+        // Recall type information
+        let (inputs,outputs,max_stack) = types[i];
+        // Convert byte sequence into an instruction sequence.
+        let insns = bytes.to_insns();
+        // Add code section
+        code.add(Section::Code{insns,inputs,outputs,max_stack})
+    }
+    // parse data sectin (if present)
+    let data = iter.next_bytes(data_size).to_vec();
+    code.add(Section::Data(data));
+    // Done
+    code
+}
+
+/// Helper for pulling information out of an EOF formatted byte
+/// stream.
+struct EofIterator<'a> {
+    bytes: &'a [u8],
+    index: usize
+}
+
+impl<'a> EofIterator<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        Self{bytes,index:0}
+    }
+
+    pub fn match_u8(&mut self, n: u8, _msg: &str) {
+        let m = self.next_u8();
+        if m != n { panic!(); }
+    }
+
+    pub fn next_u8(&mut self) -> u8 {
+        let next = self.bytes[self.index];
+        self.index += 1;
+        next
+    }
+
+    pub fn next_u16(&mut self) -> u16 {
+        let msb = self.next_u8();
+        let lsb = self.next_u8();
+        u16::from_be_bytes([msb,lsb])
+    }
+
+    pub fn next_bytes(&mut self, length: usize) -> &'a [u8] {
+        let start = self.index;
+        self.index += length;
+        &self.bytes[start..self.index]
     }
 }
