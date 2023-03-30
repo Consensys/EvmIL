@@ -1,66 +1,38 @@
-use std::fmt;
-use std::collections::{HashMap};
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+use crate::util::FromHexString;
 use crate::evm::opcode;
 use crate::evm::{Bytecode,Instruction};
-use crate::util::FromHexString;
+use super::lexer::{Lexer,Token};
+use super::{Assembly,AsmError};
 
-// ===================================================================
-// Error
-// ===================================================================
-
-#[derive(Debug)]
-pub enum AsmError {
-    ExpectedOperand,
-    InvalidHexString,
-    InvalidInstruction,
-    UnexpectedCharacter,
-    UnexpectedToken
+pub struct Parser {
+    bytecode: Assembly
 }
 
-impl fmt::Display for AsmError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for AsmError {
-
-}
-
-// ===================================================================
-// Assembler
-// ===================================================================
-
-pub struct Assembler<'a> {
-    input: &'a str,
-    // Maps labels to identifiers
-    labels: HashMap<String,usize>,
-    // Bytecode package being constructed
-    bytecode: Bytecode
-}
-
-impl<'a> Assembler<'a> {
+impl Parser {
     /// Construct a new parser from a given string slice.
-    pub fn new(input: &'a str) -> Self {
-        let labels = HashMap::new();
-        let bytecode = Bytecode::new();
+    pub fn new() -> Self {
+        let bytecode = Assembly::new();
         //
-        Assembler { input, labels, bytecode }
+        Parser { bytecode }
     }
 
-    /// Parse file into a bytecode
-    pub fn parse(mut self) -> Result<Bytecode,AsmError> {
-        // Holds the set of lines being parsed.
-        let lines : Vec<&str> = self.input.lines().collect();
-        //
-        for l in &lines {
-            self.parse_line(l)?;
-        }
-        // Done
-        Ok(self.bytecode)
+    pub fn to_assembly(self) -> Assembly {
+        self.bytecode
     }
 
-    fn parse_line(&mut self, line: &'a str) -> Result<(),AsmError> {
+    /// Parse a single line of assembly language.
+    pub fn parse(&mut self, line: &str) -> Result<(),AsmError> {
         let mut lexer = Lexer::new(line);
         //
         match lexer.next()? {
@@ -108,108 +80,6 @@ impl<'a> Assembler<'a> {
     }
 }
 
-// ===================================================================
-// Lexer
-// ===================================================================
-
-enum Token<'a> {
-    EOF,
-    Hex(&'a str),
-    Identifier(&'a str),
-    Label(&'a str)
-}
-
-impl<'a> Token<'a> {
-    // Return the "length" of a token.  That is, the number of
-    // characters it represents.
-    pub fn len(&self) -> usize {
-        match self {
-            Token::EOF => 0,
-            Token::Hex(s) => s.len(),
-            Token::Identifier(s) => s.len(),
-            Token::Label(s) => s.len() + 1
-        }
-    }
-}
-
-/// A very simple lexer
-struct Lexer<'a> {
-    input: &'a str,
-    chars: Vec<char>,
-    index: usize
-}
-
-impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Self {
-        // FIXME: this could be made more efficient by using an
-        // iterator instead of allocating a new vector.
-        let chars : Vec<char> = input.chars().collect();
-        //
-        Self{input, chars, index: 0}
-    }
-
-    pub fn lookahead(&self) -> Result<Token<'a>,AsmError> {
-        // Skip any whitespace
-        let start = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
-        // Sanity check for end-of-file
-        if start >= self.chars.len() {
-            Ok(Token::EOF)
-        } else {
-            // Determine what kind of token we have.
-            match self.chars[start] {
-                '0'..='9' => self.scan_hex_literal(start),
-                'a'..='z'|'A'..='Z'|'_' => self.scan_id_or_label(start),
-                _ => Err(AsmError::UnexpectedCharacter)
-            }
-        }
-    }
-
-    pub fn next(&mut self) -> Result<Token<'a>,AsmError> {
-        // Skip any whitespace
-        self.index = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
-        // Determine next token
-        let tok = self.lookahead()?;
-        // Account for next token
-        self.index += tok.len();
-        //
-        Ok(tok)
-    }
-
-    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,AsmError> {
-        // Sanity check literal starts with "0x"
-        if self.chars[start..].starts_with(&['0','x']) {
-            // Scan all digits of this hex literal
-            let end = skip(&self.chars,start + 2,|c| c.is_ascii_alphanumeric());
-            // Construct token
-            Ok(Token::Hex(&self.input[start..end]))
-        } else {
-            Err(AsmError::InvalidHexString)
-        }
-    }
-
-    fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,AsmError> {
-        // Scan all characters of this identifier or label
-        let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
-        // Distinguish label versus identifier.
-        if end < self.chars.len() && self.chars[end] == ':' {
-            Ok(Token::Label(&self.input[start..end]))
-        } else {
-            Ok(Token::Identifier(&self.input[start..end]))
-        }
-    }
-}
-
-/// Skip over any characters matching a given predicate.
-fn skip<P>(input: &[char], index: usize, pred: P) -> usize
-where P: Fn(char) -> bool {
-    let mut i = index;
-    // Continue matching
-    while i < input.len() && pred(input[i]) {
-        i = i + 1;
-    }
-    // Done
-    i
-}
 
 // ===================================================================
 // Helpers
@@ -219,7 +89,7 @@ where P: Fn(char) -> bool {
 fn parse_hex(hex: &str) -> Result<Vec<u8>,AsmError> {
     match hex.from_hex_string() {
         Ok(bytes) => { Ok(bytes) }
-        Err(e) => Err(AsmError::InvalidHexString)
+        Err(e) => Err(AsmError::InvalidHexString(0))
     }
 }
 

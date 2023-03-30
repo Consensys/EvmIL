@@ -19,8 +19,8 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembler, Bytecode, Instruction};
-use evmil::il::Parser;
+use evmil::evm::{Assembly, Bytecode, Instruction};
+use evmil::il::{Compiler,Parser};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -78,9 +78,16 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse test file
     let terms = Parser::new(&input).parse()?;
     // Translate statements into bytecode instructions
-    let code = Bytecode::try_from(terms.as_slice()).unwrap();
-    // Translate instructions into bytes
-    let bytes: Vec<u8> = code.try_into().unwrap();
+    let mut compiler = Compiler::new();
+    // Translate statements one-by-one
+    for t in &terms {
+        // FIXME: need better error handling!!
+        compiler.translate(t).unwrap();
+    }
+    // Assemble instructions into a bytecode container
+    let bytecode = compiler.to_bytecode();
+    // Translate container into bytes
+    let bytes: Vec<u8> = bytecode.to_bytes();
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //
@@ -144,12 +151,10 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     let target = args.get_one::<String>("target").unwrap();
     // Read from asm file
     let context = fs::read_to_string(target)?;
-    // Construct assembler
-    let asm = Assembler::new(&context);
-    // Parse assembly into instructions
-    let insns = asm.parse()?;
+    // Construct assembly from input file
+    let assembly = Assembly::from_str(&context)?;
     // Translate instructions into bytes
-    let bytes: Vec<u8> = insns.try_into().unwrap();
+    let bytes: Vec<u8> = assembly.to_bytecode().unwrap().to_bytes();
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //

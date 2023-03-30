@@ -2,7 +2,7 @@ use std::fmt;
 use std::fs;
 use std::path::{Path,PathBuf};
 use std::collections::HashMap;
-use evmil::evm::Bytecode;
+use evmil::evm::{Bytecode};
 use evmil::il::Parser;
 use evmil::util::{FromHexString};
 
@@ -24,9 +24,9 @@ fn check(test: &str) {
         Err(e) => panic!("{test}.eil: {e}")
     };
     // Translate statements into bytecode instructions
-    let code = Bytecode::try_from(terms.as_slice()).unwrap();
+    let bytecode = Bytecode::try_from(terms.as_slice()).unwrap();
     // Translate instructions into bytes
-    let eil_bytes: Vec<u8> = code.try_into().unwrap();
+    let eil_bytes: Vec<u8> = bytecode.to_bytes();
     // Parse hex string into bytes
     let bin_bytes = bin.trim().from_hex_string().unwrap();
     // Check they match
