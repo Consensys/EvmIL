@@ -508,6 +508,8 @@ impl fmt::Display for Instruction {
 // Traits
 // ============================================================================
 
+/// A trait for converting something (e.g. a byte sequence) into a
+/// vector of instructions.
 pub trait ToInstructions {
     fn to_insns(&self) -> Vec<Instruction>;
 }
@@ -519,7 +521,6 @@ impl<'a> ToInstructions for &'a [u8] {
         //
         while index < self.len() {
             let insn = Instruction::decode(index, self);
-            println!("DECODED: {insn:?}");
             // Shift us along
             index += insn.length();
             // Store the instruction!

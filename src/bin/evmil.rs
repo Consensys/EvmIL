@@ -113,7 +113,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let bytecode = Bytecode::from_bytes(&bytes);
+    let bytecode = Bytecode::from_bytes(&bytes)?;
     // Iterate bytecode sections
     for section in &bytecode {
 
