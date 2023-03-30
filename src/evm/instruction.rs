@@ -9,8 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::ToHexString;
 use std::fmt;
+use crate::util::ToHexString;
+use super::opcode;
 
 // ============================================================================
 // Errors
@@ -215,82 +216,83 @@ impl Instruction {
     pub fn opcode(&self) -> Result<u8, Error> {
         let op = match self {
             // 0s: Stop and Arithmetic Operations
-            Instruction::STOP => 0x00,
-            Instruction::ADD => 0x01,
-            Instruction::MUL => 0x02,
-            Instruction::SUB => 0x03,
-            Instruction::DIV => 0x04,
-            Instruction::SDIV => 0x05,
-            Instruction::MOD => 0x06,
-            Instruction::SMOD => 0x07,
-            Instruction::ADDMOD => 0x08,
-            Instruction::MULMOD => 0x09,
-            Instruction::EXP => 0x0a,
-            Instruction::SIGNEXTEND => 0x0b,
+            Instruction::STOP => opcode::STOP,
+            Instruction::ADD => opcode::ADD,
+            Instruction::MUL => opcode::MUL,
+            Instruction::SUB => opcode::SUB,
+            Instruction::DIV => opcode::DIV,
+            Instruction::SDIV => opcode::SDIV,
+            Instruction::MOD => opcode::MOD,
+            Instruction::SMOD => opcode::SMOD,
+            Instruction::ADDMOD => opcode::ADDMOD,
+            Instruction::MULMOD => opcode::MULMOD,
+            Instruction::EXP => opcode::EXP,
+            Instruction::SIGNEXTEND => opcode::SIGNEXTEND,
             // 10s: Comparison & Bitwise Logic Operations
-            Instruction::LT => 0x10,
-            Instruction::GT => 0x11,
-            Instruction::SLT => 0x12,
-            Instruction::SGT => 0x13,
-            Instruction::EQ => 0x14,
-            Instruction::ISZERO => 0x15,
-            Instruction::AND => 0x16,
-            Instruction::OR => 0x17,
-            Instruction::XOR => 0x18,
-            Instruction::NOT => 0x19,
-            Instruction::BYTE => 0x1a,
-            Instruction::SHL => 0x1b,
-            Instruction::SHR => 0x1c,
-            Instruction::SAR => 0x1d,
+            Instruction::LT => opcode::LT,
+            Instruction::GT => opcode::GT,
+            Instruction::SLT => opcode::SLT,
+            Instruction::SGT => opcode::SGT,
+            Instruction::EQ => opcode::EQ,
+            Instruction::ISZERO => opcode::ISZERO,
+            Instruction::AND => opcode::AND,
+            Instruction::OR => opcode::OR,
+            Instruction::XOR => opcode::XOR,
+            Instruction::NOT => opcode::NOT,
+            Instruction::BYTE => opcode::BYTE,
+            Instruction::SHL => opcode::SHL,
+            Instruction::SHR => opcode::SHR,
+            Instruction::SAR => opcode::SAR,
             // 20s: Keccak256
-            Instruction::KECCAK256 => 0x20,
+            Instruction::KECCAK256 => opcode::KECCAK256,
             // 30s: Environmental Information
-            Instruction::ADDRESS => 0x30,
-            Instruction::BALANCE => 0x31,
-            Instruction::ORIGIN => 0x32,
-            Instruction::CALLER => 0x33,
-            Instruction::CALLVALUE => 0x34,
-            Instruction::CALLDATALOAD => 0x35,
-            Instruction::CALLDATASIZE => 0x36,
-            Instruction::CALLDATACOPY => 0x37,
-            Instruction::CODESIZE => 0x38,
-            Instruction::CODECOPY => 0x39,
-            Instruction::GASPRICE => 0x3a,
-            Instruction::EXTCODESIZE => 0x3b,
-            Instruction::EXTCODECOPY => 0x3c,
-            Instruction::RETURNDATASIZE => 0x3d,
-            Instruction::RETURNDATACOPY => 0x3e,
-            Instruction::EXTCODEHASH => 0x3f,
+            Instruction::ADDRESS => opcode::ADDRESS,
+            Instruction::BALANCE => opcode::BALANCE,
+            Instruction::ORIGIN => opcode::ORIGIN,
+            Instruction::CALLER => opcode::CALLER,
+            Instruction::CALLVALUE => opcode::CALLVALUE,
+            Instruction::CALLDATALOAD => opcode::CALLDATALOAD,
+            Instruction::CALLDATASIZE => opcode::CALLDATASIZE,
+            Instruction::CALLDATACOPY => opcode::CALLDATACOPY,
+            Instruction::CODESIZE => opcode::CODESIZE,
+            Instruction::CODECOPY => opcode::CODECOPY,
+            Instruction::GASPRICE => opcode::GASPRICE,
+            Instruction::EXTCODESIZE => opcode::EXTCODESIZE,
+            Instruction::EXTCODECOPY => opcode::EXTCODECOPY,
+            Instruction::RETURNDATASIZE => opcode::RETURNDATASIZE,
+            Instruction::RETURNDATACOPY => opcode::RETURNDATACOPY,
+            Instruction::EXTCODEHASH => opcode::EXTCODEHASH,
             // 40s: Block Information
-            Instruction::BLOCKHASH => 0x40,
-            Instruction::COINBASE => 0x41,
-            Instruction::TIMESTAMP => 0x42,
-            Instruction::NUMBER => 0x43,
-            Instruction::DIFFICULTY => 0x44,
-            Instruction::GASLIMIT => 0x45,
-            Instruction::CHAINID => 0x46,
-            Instruction::SELFBALANCE => 0x47,
+            Instruction::BLOCKHASH => opcode::BLOCKHASH,
+            Instruction::COINBASE => opcode::COINBASE,
+            Instruction::TIMESTAMP => opcode::TIMESTAMP,
+            Instruction::NUMBER => opcode::NUMBER,
+            Instruction::DIFFICULTY => opcode::DIFFICULTY,
+            Instruction::GASLIMIT => opcode::GASLIMIT,
+            Instruction::CHAINID => opcode::CHAINID,
+            Instruction::SELFBALANCE => opcode::SELFBALANCE,
             // 50s: Stack, Memory, Storage and Flow Operations
-            Instruction::POP => 0x50,
-            Instruction::MLOAD => 0x51,
-            Instruction::MSTORE => 0x52,
-            Instruction::MSTORE8 => 0x53,
-            Instruction::SLOAD => 0x54,
-            Instruction::SSTORE => 0x55,
-            Instruction::JUMP => 0x56,
-            Instruction::JUMPI => 0x57,
-            Instruction::PC => 0x58,
-            Instruction::MSIZE => 0x59,
-            Instruction::GAS => 0x5a,
-            Instruction::JUMPDEST => 0x5b,
-            Instruction::RJUMP(_) => 0x5c,
-            Instruction::RJUMPI(_) => 0x5d,
+            Instruction::POP => opcode::POP,
+            Instruction::MLOAD => opcode::MLOAD,
+            Instruction::MSTORE => opcode::MSTORE,
+            Instruction::MSTORE8 => opcode::MSTORE8,
+            Instruction::SLOAD => opcode::SLOAD,
+            Instruction::SSTORE => opcode::SSTORE,
+            Instruction::JUMP => opcode::JUMP,
+            Instruction::JUMPI => opcode::JUMPI,
+            Instruction::PC => opcode::PC,
+            Instruction::MSIZE => opcode::MSIZE,
+            Instruction::GAS => opcode::GAS,
+            Instruction::JUMPDEST => opcode::JUMPDEST,
+            Instruction::RJUMP(_) => opcode::RJUMP,
+            Instruction::RJUMPI(_) => opcode::RJUMPI,
             // 60s & 70s: Push Operations
             Instruction::PUSH(bs) => {
                 if bs.len() == 0 || bs.len() > 32 {
                     return Err(Error::InvalidPush);
                 } else {
-                    (0x5f + bs.len()) as u8
+                    let n = (bs.len() as u8) - 1;
+                    opcode::PUSH1 + n
                 }
             }
             // 80s: Duplication Operations
@@ -298,33 +300,33 @@ impl Instruction {
                 if *n == 0 || *n > 32 {
                     return Err(Error::InvalidDup);
                 }
-                0x7f + n
+                opcode::DUP1 + (n-1)
             }
             // 90s: Swap Operations
             Instruction::SWAP(n) => {
                 if *n == 0 || *n > 32 {
                     return Err(Error::InvalidDup);
                 }
-                0x8f + n
+                opcode::SWAP1 + (n-1)
             }
             // a0s: Log Operations
             Instruction::LOG(n) => {
                 if *n > 4 {
                     return Err(Error::InvalidDup);
                 }
-                0xa0 + n
+                opcode::LOG0 + n
             }
             // f0s: System Operations
-            Instruction::CREATE => 0xf0,
-            Instruction::CALL => 0xf1,
-            Instruction::CALLCODE => 0xf2,
-            Instruction::RETURN => 0xf3,
-            Instruction::DELEGATECALL => 0xf4,
-            Instruction::CREATE2 => 0xf5,
-            Instruction::STATICCALL => 0xfa,
-            Instruction::REVERT => 0xfd,
-            Instruction::INVALID => 0xfe,
-            Instruction::SELFDESTRUCT => 0xff,
+            Instruction::CREATE => opcode::CREATE,
+            Instruction::CALL => opcode::CALL,
+            Instruction::CALLCODE => opcode::CALLCODE,
+            Instruction::RETURN => opcode::RETURN,
+            Instruction::DELEGATECALL => opcode::DELEGATECALL,
+            Instruction::CREATE2 => opcode::CREATE2,
+            Instruction::STATICCALL => opcode::STATICCALL,
+            Instruction::REVERT => opcode::REVERT,
+            Instruction::INVALID => opcode::INVALID,
+            Instruction::SELFDESTRUCT => opcode::SELFDESTRUCT,
             //
             Instruction::DATA(_) => {
                 panic!("Invalid instruction ({:?})", self);
@@ -340,86 +342,90 @@ impl Instruction {
         //
         let insn = match opcode {
             // 0s: Stop and Arithmetic Operations
-            0x00 => Instruction::STOP,
-            0x01 => Instruction::ADD,
-            0x02 => Instruction::MUL,
-            0x03 => Instruction::SUB,
-            0x04 => Instruction::DIV,
-            0x05 => Instruction::SDIV,
-            0x06 => Instruction::MOD,
-            0x07 => Instruction::SMOD,
-            0x08 => Instruction::ADDMOD,
-            0x09 => Instruction::MULMOD,
-            0x0a => Instruction::EXP,
-            0x0b => Instruction::SIGNEXTEND,
+            opcode::STOP => Instruction::STOP,
+            opcode::ADD => Instruction::ADD,
+            opcode::MUL => Instruction::MUL,
+            opcode::SUB => Instruction::SUB,
+            opcode::DIV => Instruction::DIV,
+            opcode::SDIV => Instruction::SDIV,
+            opcode::MOD => Instruction::MOD,
+            opcode::SMOD => Instruction::SMOD,
+            opcode::ADDMOD => Instruction::ADDMOD,
+            opcode::MULMOD => Instruction::MULMOD,
+            opcode::EXP => Instruction::EXP,
+            opcode::SIGNEXTEND => Instruction::SIGNEXTEND,
             // 10s: Comparison & Bitwise Logic Operations
-            0x10 => Instruction::LT,
-            0x11 => Instruction::GT,
-            0x12 => Instruction::SLT,
-            0x13 => Instruction::SGT,
-            0x14 => Instruction::EQ,
-            0x15 => Instruction::ISZERO,
-            0x16 => Instruction::AND,
-            0x17 => Instruction::OR,
-            0x18 => Instruction::XOR,
-            0x19 => Instruction::NOT,
-            0x1a => Instruction::BYTE,
-            0x1b => Instruction::SHL,
-            0x1c => Instruction::SHR,
-            0x1d => Instruction::SAR,
+            opcode::LT => Instruction::LT,
+            opcode::GT => Instruction::GT,
+            opcode::SLT => Instruction::SLT,
+            opcode::SGT => Instruction::SGT,
+            opcode::EQ => Instruction::EQ,
+            opcode::ISZERO => Instruction::ISZERO,
+            opcode::AND => Instruction::AND,
+            opcode::OR => Instruction::OR,
+            opcode::XOR => Instruction::XOR,
+            opcode::NOT => Instruction::NOT,
+            opcode::BYTE => Instruction::BYTE,
+            opcode::SHL => Instruction::SHL,
+            opcode::SHR => Instruction::SHR,
+            opcode::SAR => Instruction::SAR,
             // 20s: SHA3
-            0x20 => Instruction::KECCAK256,
+            opcode::KECCAK256 => Instruction::KECCAK256,
             // 30s: Environmental Information
-            0x30 => Instruction::ADDRESS,
-            0x31 => Instruction::BALANCE,
-            0x32 => Instruction::ORIGIN,
-            0x33 => Instruction::CALLER,
-            0x34 => Instruction::CALLVALUE,
-            0x35 => Instruction::CALLDATALOAD,
-            0x36 => Instruction::CALLDATASIZE,
-            0x37 => Instruction::CALLDATACOPY,
-            0x38 => Instruction::CODESIZE,
-            0x39 => Instruction::CODECOPY,
-            0x3a => Instruction::GASPRICE,
-            0x3b => Instruction::EXTCODESIZE,
-            0x3c => Instruction::EXTCODECOPY,
-            0x3d => Instruction::RETURNDATASIZE,
-            0x3e => Instruction::RETURNDATACOPY,
-            0x3f => Instruction::EXTCODEHASH,
+            opcode::ADDRESS => Instruction::ADDRESS,
+            opcode::BALANCE => Instruction::BALANCE,
+            opcode::ORIGIN => Instruction::ORIGIN,
+            opcode::CALLER => Instruction::CALLER,
+            opcode::CALLVALUE => Instruction::CALLVALUE,
+            opcode::CALLDATALOAD => Instruction::CALLDATALOAD,
+            opcode::CALLDATASIZE => Instruction::CALLDATASIZE,
+            opcode::CALLDATACOPY => Instruction::CALLDATACOPY,
+            opcode::CODESIZE => Instruction::CODESIZE,
+            opcode::CODECOPY => Instruction::CODECOPY,
+            opcode::GASPRICE => Instruction::GASPRICE,
+            opcode::EXTCODESIZE => Instruction::EXTCODESIZE,
+            opcode::EXTCODECOPY => Instruction::EXTCODECOPY,
+            opcode::RETURNDATASIZE => Instruction::RETURNDATASIZE,
+            opcode::RETURNDATACOPY => Instruction::RETURNDATACOPY,
+            opcode::EXTCODEHASH => Instruction::EXTCODEHASH,
             // 40s: Block Information
-            0x40 => Instruction::BLOCKHASH,
-            0x41 => Instruction::COINBASE,
-            0x42 => Instruction::TIMESTAMP,
-            0x43 => Instruction::NUMBER,
-            0x44 => Instruction::DIFFICULTY,
-            0x45 => Instruction::GASLIMIT,
-            0x46 => Instruction::CHAINID,
-            0x47 => Instruction::SELFBALANCE,
+            opcode::BLOCKHASH => Instruction::BLOCKHASH,
+            opcode::COINBASE => Instruction::COINBASE,
+            opcode::TIMESTAMP => Instruction::TIMESTAMP,
+            opcode::NUMBER => Instruction::NUMBER,
+            opcode::DIFFICULTY => Instruction::DIFFICULTY,
+            opcode::GASLIMIT => Instruction::GASLIMIT,
+            opcode::CHAINID => Instruction::CHAINID,
+            opcode::SELFBALANCE => Instruction::SELFBALANCE,
             // 50s: Stack, Memory, Storage and Flow Operations
-            0x50 => Instruction::POP,
-            0x51 => Instruction::MLOAD,
-            0x52 => Instruction::MSTORE,
-            0x53 => Instruction::MSTORE8,
-            0x54 => Instruction::SLOAD,
-            0x55 => Instruction::SSTORE,
-            0x56 => Instruction::JUMP,
-            0x57 => Instruction::JUMPI,
-            0x58 => Instruction::PC,
-            0x59 => Instruction::MSIZE,
-            0x5a => Instruction::GAS,
-            0x5b => Instruction::JUMPDEST,
-            0x5c => {
+            opcode::POP => Instruction::POP,
+            opcode::MLOAD => Instruction::MLOAD,
+            opcode::MSTORE => Instruction::MSTORE,
+            opcode::MSTORE8 => Instruction::MSTORE8,
+            opcode::SLOAD => Instruction::SLOAD,
+            opcode::SSTORE => Instruction::SSTORE,
+            opcode::JUMP => Instruction::JUMP,
+            opcode::JUMPI => Instruction::JUMPI,
+            opcode::PC => Instruction::PC,
+            opcode::MSIZE => Instruction::MSIZE,
+            opcode::GAS => Instruction::GAS,
+            opcode::JUMPDEST => Instruction::JUMPDEST,
+            opcode::RJUMP => {
+                // NOTE: these instructions are not permitted to
+                // overflow, and therefore don't require padding.
                 let arg = [bytes[pc+1],bytes[pc+2]];
                 Instruction::RJUMP(i16::from_be_bytes(arg))
             }
-            0x5d => {
+            opcode::RJUMPI => {
+                // NOTE: these instructions are not permitted to
+                // overflow, and therefore don't require padding.
                 let arg = [bytes[pc+1],bytes[pc+2]];
                 Instruction::RJUMPI(i16::from_be_bytes(arg))
             }
             // 60s & 70s: Push Operations
-            0x60..=0x7f => {
+            opcode::PUSH1..=opcode::PUSH32 => {
                 let m = pc + 1;
-                let n = pc + ((opcode - 0x5e) as usize);
+                let n = pc + 2 + ((opcode - opcode::PUSH1) as usize);
                 if n <= bytes.len() {
                     // Simple case: does not overflow
                     Instruction::PUSH(bytes[m..n].to_vec())
@@ -435,22 +441,22 @@ impl Instruction {
                 }
             }
             // 80s: Duplicate Operations
-            0x80..=0x8f => Instruction::DUP(opcode - 0x7f),
+            opcode::DUP1..=opcode::DUP16 => Instruction::DUP(opcode - 0x7f),
             // 90s: Swap Operations
-            0x90..=0x9f => Instruction::SWAP(opcode - 0x8f),
+            opcode::SWAP1..=opcode::SWAP16 => Instruction::SWAP(opcode - 0x8f),
             // a0s: Log Operations
-            0xa0..=0xa4 => Instruction::LOG(opcode - 0xa0),
+            opcode::LOG0..=opcode::LOG4 => Instruction::LOG(opcode - 0xa0),
             // f0s: System Operations
-            0xf0 => Instruction::CREATE,
-            0xf1 => Instruction::CALL,
-            0xf2 => Instruction::CALLCODE,
-            0xf3 => Instruction::RETURN,
-            0xf4 => Instruction::DELEGATECALL,
-            0xf5 => Instruction::CREATE2,
-            0xfa => Instruction::STATICCALL,
-            0xfd => Instruction::REVERT,
-            0xfe => Instruction::INVALID,
-            0xff => Instruction::SELFDESTRUCT,
+            opcode::CREATE => Instruction::CREATE,
+            opcode::CALL => Instruction::CALL,
+            opcode::CALLCODE => Instruction::CALLCODE,
+            opcode::RETURN => Instruction::RETURN,
+            opcode::DELEGATECALL => Instruction::DELEGATECALL,
+            opcode::CREATE2 => Instruction::CREATE2,
+            opcode::STATICCALL => Instruction::STATICCALL,
+            opcode::REVERT => Instruction::REVERT,
+            opcode::INVALID => Instruction::INVALID,
+            opcode::SELFDESTRUCT => Instruction::SELFDESTRUCT,
             // Unknown
             _ => Instruction::DATA(vec![opcode]),
         };
