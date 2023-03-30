@@ -78,15 +78,16 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse test file
     let terms = Parser::new(&input).parse()?;
     // Translate statements into bytecode instructions
-    let mut bytecode = Assembly::new();
-    let mut compiler = Compiler::new(&mut bytecode);
+    let mut compiler = Compiler::new();
     // Translate statements one-by-one
     for t in &terms {
         // FIXME: need better error handling!!
         compiler.translate(t).unwrap();
     }
-    // Translate instructions into bytes
-    let bytes: Vec<u8> = bytecode.to_bytes().unwrap();
+    // Assemble instructions into a bytecode container
+    let bytecode = compiler.to_bytecode();
+    // Translate container into bytes
+    let bytes: Vec<u8> = bytecode.to_bytes();
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //
@@ -153,7 +154,7 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Construct assembly from input file
     let assembly = Assembly::from_str(&context)?;
     // Translate instructions into bytes
-    let bytes: Vec<u8> = assembly.to_bytes().unwrap();
+    let bytes: Vec<u8> = assembly.to_bytecode().unwrap().to_bytes();
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //

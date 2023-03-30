@@ -4,7 +4,7 @@ mod parser; // private (for now)
 use std::fmt;
 use std::collections::{HashMap};
 use crate::evm::opcode;
-use crate::evm::{Instruction};
+use crate::evm::{Bytecode,Instruction,Section};
 use crate::util::FromHexString;
 
 use parser::Parser;
@@ -88,28 +88,27 @@ impl Assembly {
         self.labels.push(lab);
     }
 
-    /// Get access to the raw sequence of instructions.
-    pub fn instructions(&self) -> &[Instruction] {
-        todo!("eliminate me");
-    }
-
     /// Translate this sequence of bytecode instructions into a
     /// sequence of raw bytes.  This can still fail in a number of
     /// ways.  For example, the target for a `PUSHL` does not match
     /// any known `JUMPEST` label; Or, the stack size is exceeded,
     /// etc.
-    pub fn to_bytes(mut self) -> Result<Vec<u8>, AsmError> {
+    pub fn to_bytecode(mut self) -> Result<Bytecode, AsmError> {
         // Translate all patches into concrete instructions.
         self.resolve_patches();
         // Translate concrete instructions into bytes.
-        let mut bytes = Vec::new();
+        let mut insns = Vec::new();
         //
-        for b in &self.bytecodes {
+        for b in self.bytecodes {
             // Encode instruction
-            b.unwrap().encode(&mut bytes).unwrap();
+            insns.push(b.unwrap());
         }
+        // FIXME: this fundamentally broken
+        let mut bytecode = Bytecode::new();
+        // Add code section
+        bytecode.add(Section::Code{insns,inputs:0,outputs:0,max_stack:0});
         // Done
-        Ok(bytes)
+        Ok(bytecode)
     }
 
     /// Determine the offsets of all labels within the instruction
@@ -185,7 +184,7 @@ enum PartialInstruction {
 impl PartialInstruction {
     /// Extract a reference to the completed instruction.  This will
     /// panic if this partial instruction is not in the `Done` state.
-    pub fn unwrap(&self) -> &Instruction {
+    pub fn unwrap(self) -> Instruction {
         match self {
             PartialInstruction::Done(insn) => insn,
             _ => { unreachable!(); }

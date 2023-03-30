@@ -2,7 +2,7 @@ use std::fmt;
 use std::fs;
 use std::path::{Path,PathBuf};
 use std::collections::HashMap;
-use evmil::evm::{Assembler};
+use evmil::evm::{Assembly};
 use evmil::util::{FromHexString};
 
 pub static TESTS_DIR: &str = "tests/files";
@@ -18,12 +18,12 @@ fn check(test: &str) {
     let asm = fs::read_to_string(asmfile).unwrap();
     let bin = fs::read_to_string(binfile).unwrap();
     // Parse assembly into instructions
-    let insns = match Assembler::new(&asm).parse() {
+    let insns = match Assembly::from_str(&asm) {
         Ok(insns) => insns,
         Err(e) => panic!("{test}.asm: {e}")
     };
     // Translate instructions into bytes
-    let asm_bytes: Vec<u8> = insns.try_into().unwrap();
+    let asm_bytes: Vec<u8> = insns.to_bytecode().unwrap().to_bytes();
     // Parse hex string into bytes
     let bin_bytes = bin.trim().from_hex_string().unwrap();
     // Check they match

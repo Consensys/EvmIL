@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path,PathBuf};
 use std::collections::HashMap;
 //use evmil::evm::{AbstractWord,AbstractStack,Disassembly};
-use evmil::evm::{Assembler};
+//use evmil::evm::{Assembler};
 use evmil::util::{FromHexString};
 
 pub static TESTS_DIR: &str = "tests/files";

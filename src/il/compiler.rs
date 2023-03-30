@@ -21,7 +21,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::evm::{Assembly,Instruction};
+use crate::evm::{Assembly,Bytecode,Instruction};
 use crate::util::*;
 
 type Result = std::result::Result<(), CompilerError>;
@@ -44,25 +44,27 @@ pub enum CompilerError {
 // Compiler
 // ============================================================================
 
-pub struct Compiler<'a> {
-    /// Access to the bytecode stream being constructed.
-    bytecode: &'a mut Assembly,
+pub struct Compiler {
+    /// The assembly being constructed by this compiler.
+    bytecode: Assembly,
     /// Counts the number of labels in use
     labels: usize
 }
 
-impl<'a> Compiler<'a> {
-    pub fn new(bytecode: &'a mut Assembly) -> Self {
+impl Compiler {
+    pub fn new() -> Self {
         Self {
-            bytecode,
+            bytecode: Assembly::new(),
             labels: 0
         }
     }
 
-    pub fn fresh_label(&mut self) -> String {
-        let lab = format!("lab{}",self.labels);
-        self.labels += 1;
-        lab
+    /// Extract the bytecode for the compiled terms.
+    pub fn to_bytecode(self) -> Bytecode {
+        // NOTE: following is safe since the assembly was constructed
+        // by this compiler, and therefore is assumed to be well
+        // formed.
+        self.bytecode.to_bytecode().unwrap()
     }
 
     pub fn translate(&mut self, term: &Term) -> Result {
@@ -88,6 +90,12 @@ impl<'a> Compiler<'a> {
             Term::Hex(bytes) => self.translate_literal(bytes, 16),
             //
         }
+    }
+
+    fn fresh_label(&mut self) -> String {
+        let lab = format!("lab{}",self.labels);
+        self.labels += 1;
+        lab
     }
 
     // ============================================================================
@@ -457,6 +465,44 @@ impl<'a> Compiler<'a> {
         self.bytecode.push(make_push(val)?);
         Ok(())
     }
+}
+
+// ===================================================================
+// Traits
+// ===================================================================
+
+/// Translate a sequence of IL statements into EVM bytecode, or fail
+/// with an error.
+impl TryFrom<&[Term]> for Bytecode {
+    type Error = CompilerError;
+
+    fn try_from(terms: &[Term]) -> std::result::Result<Bytecode, Self::Error> {
+        try_from(terms)
+    }
+}
+
+/// Translate a sequence of IL statements into EVM bytecode, or fail
+/// with an error.
+impl<const N: usize> TryFrom<&[Term; N]> for Bytecode {
+    type Error = crate::il::CompilerError;
+
+    fn try_from(terms: &[Term; N]) -> std::result::Result<Bytecode, Self::Error> {
+        try_from(terms)
+    }
+}
+
+// ===================================================================
+// Helpers
+// ===================================================================
+
+fn try_from(terms: &[Term]) -> std::result::Result<Bytecode, CompilerError> {
+    let mut compiler = Compiler::new();
+    // Translate statements one-by-one
+    for t in terms {
+        compiler.translate(t)?;
+    }
+    // Done
+    Ok(compiler.to_bytecode())
 }
 
 /// Construct a push instruction from a value.
