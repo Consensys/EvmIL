@@ -84,7 +84,7 @@ impl<'a> IntoIterator for &'a Bytecode {
     type IntoIter = BytecodeIter<'a,Section>;
 
     fn into_iter(self) -> Self::IntoIter {
-        todo!();
+        self.sections.iter()
     }
 }
 
@@ -144,9 +144,13 @@ fn from_eof_bytes(bytes: &[u8]) -> Bytecode {
     // Pull out static information
     let version = iter.next_u8();
     iter.match_u8(0x01,"kind_type");
-    let type_size = iter.next_u16();
+    let type_len = iter.next_u16() as usize;
+    assert!(type_len % 4 == 0);
+    println!("TYPE SIZE={type_len}");
     iter.match_u8(0x02,"kind_code");
     let num_code_sections = iter.next_u16() as usize;
+    assert!(type_len == (num_code_sections * 4));
+    println!("CODE SECTIONS={num_code_sections}");
     let mut code_sizes : Vec<usize> = Vec::new();
     // Extract code sizes
     for i in 0..num_code_sections {
@@ -157,7 +161,7 @@ fn from_eof_bytes(bytes: &[u8]) -> Bytecode {
     iter.match_u8(0x00,"terminator");
     // parse types section
     let mut types = Vec::new();
-    for i in 0..type_size {
+    for i in 0..num_code_sections {
         let inputs = iter.next_u8();
         let outputs = iter.next_u8();
         let max_stack = iter.next_u16();
@@ -177,6 +181,8 @@ fn from_eof_bytes(bytes: &[u8]) -> Bytecode {
     // parse data sectin (if present)
     let data = iter.next_bytes(data_size).to_vec();
     code.add(Section::Data(data));
+    //
+    iter.match_eof();
     // Done
     code
 }
@@ -196,6 +202,12 @@ impl<'a> EofIterator<'a> {
     pub fn match_u8(&mut self, n: u8, _msg: &str) {
         let m = self.next_u8();
         if m != n { panic!(); }
+    }
+
+    pub fn match_eof(&mut self) {
+        if self.index != self.bytes.len() {
+            panic!("expected end-of-file");
+        }
     }
 
     pub fn next_u8(&mut self) -> u8 {
