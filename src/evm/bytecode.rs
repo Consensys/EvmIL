@@ -97,11 +97,15 @@ pub struct Bytecode {
 }
 
 impl Bytecode {
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Bytecode {
 	    version: BytecodeVersion::Legacy,
             sections: Vec::new()
         }
+    }
+
+    pub fn new(version: BytecodeVersion, sections: Vec<Section>) -> Self {
+        Bytecode { version, sections }
     }
 
     /// Add a new section to this bytecode container
@@ -239,7 +243,7 @@ fn from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
         let max_stack = iter.next_u16()?;
         types.push((inputs,outputs,max_stack));
     }
-    let mut code = Bytecode::new();
+    let mut code = Bytecode::new(BytecodeVersion::EOF(version), Vec::new());
     // parse code section(s)
     for i in 0..num_code_sections {
         let bytes = iter.next_bytes(code_sizes[i])?;

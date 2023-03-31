@@ -11,9 +11,9 @@
 // limitations under the License.
 use crate::util::FromHexString;
 use crate::evm::opcode;
-use crate::evm::{Bytecode,Instruction};
+use crate::evm::{Bytecode,BytecodeVersion,Instruction};
 use super::lexer::{Lexer,Token};
-use super::{Assembly,AssemblyInstruction,AsmError};
+use super::{Assembly,AssemblyInstruction,AssemblyLanguageError};
 
 pub struct Parser {
     bytecode: Assembly
@@ -21,8 +21,8 @@ pub struct Parser {
 
 impl Parser {
     /// Construct a new parser from a given string slice.
-    pub fn new() -> Self {
-        let bytecode = Assembly::new();
+    pub fn new(version: BytecodeVersion) -> Self {
+        let bytecode = Assembly::new(version);
         //
         Parser { bytecode }
     }
@@ -32,12 +32,18 @@ impl Parser {
     }
 
     /// Parse a single line of assembly language.
-    pub fn parse(&mut self, line: &str) -> Result<(),AsmError> {
+    pub fn parse(&mut self, line: &str) -> Result<(),AssemblyLanguageError> {
         let mut lexer = Lexer::new(line);
         //
         match lexer.next()? {
+            Token::Section("code") => {
+                self.bytecode.push(AssemblyInstruction::CodeSection);
+            }
+            Token::Section("data") => {
+                self.bytecode.push(AssemblyInstruction::DataSection);
+            }
             Token::Hex(s) => {
-                self.bytecode.push(Instruction::DATA(parse_hex(s)?))
+                self.bytecode.push(AssemblyInstruction::DataBytes(parse_hex(s)?))
             }
             Token::Identifier("push"|"PUSH") => {
                 self.parse_push(lexer.next()?)?
@@ -51,18 +57,18 @@ impl Parser {
             }
             _ => {
                 // Something went wrong
-                return Err(AsmError::UnexpectedToken);
+                return Err(AssemblyLanguageError::UnexpectedToken);
             }
         };
         // Sanity check what's left
         match lexer.next()? {
             Token::EOF => Ok(()),
-            _ => Err(AsmError::UnexpectedToken)
+            _ => Err(AssemblyLanguageError::UnexpectedToken)
         }
     }
 
     /// Parse a push instruction with a given operand.
-    fn parse_push(&mut self, operand: Token) -> Result<(),AsmError> {
+    fn parse_push(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
         // Push always expects an argument, though it could be a
         // label or a hexadecimal operand.
         match operand {
@@ -78,8 +84,8 @@ impl Parser {
                 self.bytecode.push(insn);
                 Ok(())
             },
-            Token::EOF => Err(AsmError::ExpectedOperand),
-            _ => Err(AsmError::UnexpectedToken)
+            Token::EOF => Err(AssemblyLanguageError::ExpectedOperand),
+            _ => Err(AssemblyLanguageError::UnexpectedToken)
         }
     }
 }
@@ -90,16 +96,16 @@ impl Parser {
 // ===================================================================
 
 /// Parse a hexadecimal string
-fn parse_hex(hex: &str) -> Result<Vec<u8>,AsmError> {
+fn parse_hex(hex: &str) -> Result<Vec<u8>,AssemblyLanguageError> {
     match hex.from_hex_string() {
         Ok(bytes) => { Ok(bytes) }
-        Err(e) => Err(AsmError::InvalidHexString(0))
+        Err(e) => Err(AssemblyLanguageError::InvalidHexString(0))
     }
 }
 
 /// Parse a given opcode from a string, and a given number of operand
 /// bytes.
-fn parse_opcode(insn: &str) -> Result<Instruction,AsmError> {
+fn parse_opcode(insn: &str) -> Result<Instruction,AssemblyLanguageError> {
     let opcode = match insn {
         // 0s: Stop and Arithmetic Operations
         "stop"|"STOP" => opcode::STOP,
@@ -228,7 +234,7 @@ fn parse_opcode(insn: &str) -> Result<Instruction,AsmError> {
         "selfdestruct"|"SELFDESTRUCT" => opcode::SELFDESTRUCT,
         //
         _ => {
-            return Err(AsmError::InvalidInstruction);
+            return Err(AssemblyLanguageError::InvalidInstruction);
         }
     };
     //

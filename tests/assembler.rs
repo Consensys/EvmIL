@@ -2,7 +2,7 @@ use std::fmt;
 use std::fs;
 use std::path::{Path,PathBuf};
 use std::collections::HashMap;
-use evmil::evm::{Assembly};
+use evmil::evm::{Assembly,BytecodeVersion};
 use evmil::util::{FromHexString};
 
 pub static TESTS_DIR: &str = "tests/files";
@@ -18,7 +18,7 @@ fn check(test: &str) {
     let asm = fs::read_to_string(asmfile).unwrap();
     let bin = fs::read_to_string(binfile).unwrap();
     // Parse assembly into instructions
-    let insns = match Assembly::from_str(&asm) {
+    let insns = match Assembly::from_str(BytecodeVersion::Legacy,&asm) {
         Ok(insns) => insns,
         Err(e) => panic!("{test}.asm: {e}")
     };

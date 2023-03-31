@@ -4,18 +4,46 @@ mod parser; // private (for now)
 use std::fmt;
 use std::collections::{HashMap};
 use crate::evm::opcode;
-use crate::evm::{Bytecode,Instruction,Section};
+use crate::evm::{Bytecode,BytecodeVersion,Instruction,Section};
 use crate::util::FromHexString;
 
 use parser::Parser;
 use lexer::{Token,Lexer};
 
 // ===================================================================
-// Error
+// Assembly Error
 // ===================================================================
 
 #[derive(Debug)]
-pub enum AsmError {
+pub enum AssemblyError {
+    /// Indicates an instruction is given inside a data section.
+    InvalidCodeSection,
+    /// Indicates data is given inside a code section.
+    InvalidDataSection,
+    /// Indicates a partial instruction was encountered that targets a
+    /// non-existent label.
+    UnknownLabel(String)
+}
+
+impl fmt::Display for AssemblyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for AssemblyError {
+
+}
+
+// ===================================================================
+// Parse Error
+// ===================================================================
+
+/// Indicates an error occurred whilst parsing some assembly language
+/// into an assembly (i.e. an error originating from the lexer or
+/// parser).
+#[derive(Debug)]
+pub enum AssemblyLanguageError {
     ExpectedOperand,
     InvalidHexString(usize),
     InvalidInstruction,
@@ -23,13 +51,13 @@ pub enum AsmError {
     UnexpectedToken
 }
 
-impl fmt::Display for AsmError {
+impl fmt::Display for AssemblyLanguageError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl std::error::Error for AsmError {
+impl std::error::Error for AssemblyLanguageError {
 
 }
 
@@ -41,23 +69,25 @@ impl std::error::Error for AsmError {
 /// turned, for example, into a hex string.  Likewise, they can be
 /// decompiled or further optimised.
 pub struct Assembly {
+    version: BytecodeVersion,
     /// The underlying bytecode sequence.
     bytecodes: Vec<AssemblyInstruction>
 }
 
 impl Assembly {
     /// Create an empty assembly
-    pub fn new() -> Self {
+    pub fn new(version: BytecodeVersion) -> Self {
         Assembly {
+            version,
             bytecodes: Vec::new()
         }
     }
 
     /// Parse assembly language to form an assembly
-    pub fn from_str(input: &str) -> Result<Assembly,AsmError> {
+    pub fn from_str(version: BytecodeVersion, input: &str) -> Result<Assembly,AssemblyLanguageError> {
         // Holds the set of lines being parsed.
         let lines : Vec<&str> = input.lines().collect();
-        let mut parser = Parser::new();
+        let mut parser = Parser::new(version);
         //
         for l in &lines {
             parser.parse(l)?;
@@ -76,11 +106,11 @@ impl Assembly {
     /// ways.  For example, the target for a `PUSHL` does not match
     /// any known `JUMPEST` label; Or, the stack size is exceeded,
     /// etc.
-    pub fn to_bytecode(mut self) -> Result<Bytecode, AsmError> {
+    pub fn to_bytecode(mut self) -> Result<Bytecode, AssemblyError> {
         // Resolve all partial instructions into concrete instructions.
         resolve_labels(&mut self.bytecodes)?;
         // Translate concrete instructions into bytes.
-        let mut insns = Vec::new();
+        let mut sections = Vec::new();
         //
         for b in self.bytecodes {
             match b {
@@ -88,10 +118,28 @@ impl Assembly {
                     // Since all labels have been resolved, we simply
                     // discard this as it has no semantic meaning.
                 }
-                AssemblyInstruction::CodeSection(_) => { todo!(); }
-                AssemblyInstruction::DataSection(_) => { todo!(); }
+                AssemblyInstruction::CodeSection => {
+                    // FIXME: need to figure out how to determine the inputs/outputs, etc.
+                    sections.push(Section::Code{insns: Vec::new(), inputs: 0, outputs: 0, max_stack: 0});
+                }
+                AssemblyInstruction::DataSection => {
+                    sections.push(Section::Data(Vec::new()));
+                }
                 AssemblyInstruction::Concrete(insn) => {
-                    insns.push(insn);
+                    match sections.last_mut() {
+                        Some(Section::Code{insns,inputs,outputs,max_stack}) => {
+                            insns.push(insn);
+                        }
+                        _ => {
+                            // For now, we cannot add an instruction
+                            // into a data section, or when no initial
+                            // code section was defined.  At some
+                            // point, however, we will presumably want
+                            // to support data sections which contain
+                            // initcode.
+                            return Err(AssemblyError::InvalidCodeSection);
+                        }
+                    }
                 }
                 AssemblyInstruction::Partial(_,_,_) => {
                     // This case is prevented by `resolve_labels()`
@@ -99,14 +147,20 @@ impl Assembly {
                     // exist in the sequence.
                     unreachable!();
                 }
+                AssemblyInstruction::DataBytes(bytes) => {
+                    match sections.last_mut() {
+                        Some(Section::Data(section_bytes)) => {
+                            section_bytes.extend(bytes);
+                        }
+                        _ => {
+                            return Err(AssemblyError::InvalidDataSection);
+                        }
+                    }
+                }
             }
         }
-        // FIXME: this fundamentally broken
-        let mut bytecode = Bytecode::new();
-        // Add code section
-        bytecode.add(Section::Code{insns,inputs:0,outputs:0,max_stack:0});
-        // Done
-        Ok(bytecode)
+        //
+        Ok(Bytecode::new(self.version,sections))
     }
 }
 
@@ -122,10 +176,10 @@ impl Assembly {
 pub enum AssemblyInstruction {
     /// Marks a position within the instruction sequence.
     Label(String),
-    /// Indicates the start of a code section with an optional label.
-    CodeSection(Option<String>),
-    /// Indicates the start of a data section with an optional label.
-    DataSection(Option<String>),
+    /// Indicates the start of a code section.
+    CodeSection,
+    /// Indicates the start of a data section.
+    DataSection,
     /// Indicates a concrete instruction.
     Concrete(Instruction),
     /// Indicates an instruction parameterised by a given label.  The
@@ -133,7 +187,9 @@ pub enum AssemblyInstruction {
     /// once the concrete byteoffset of the label is known.  A partial
     /// instruction also requires a _minimum length_ to aid the offset
     /// resolution algorithm.
-    Partial(usize,String,fn(ByteOffset)->Instruction)
+    Partial(usize,String,fn(ByteOffset)->Instruction),
+    /// Indicates a sequence of zero or more _data bytes_.
+    DataBytes(Vec<u8>)
 }
 
 impl From<Instruction> for AssemblyInstruction {
@@ -197,10 +253,10 @@ impl ByteOffset {
 /// operand to determine an initial set of offsets.  Based on this, we
 /// then refine our choices of `PUSH` instruction (always increasing
 /// monotonically in size) until we have a solution.
-fn resolve_labels(instructions: &mut [AssemblyInstruction]) -> Result<(),AsmError> {
+fn resolve_labels(instructions: &mut [AssemblyInstruction]) -> Result<(),AssemblyError> {
     // Identify all labels contained within the sequence of assembly
     // instructions.  For each, we record their _instruction offset_.
-    let mut labels = init_labels(instructions);
+    let mut labels = init_labels(instructions)?;
     // Construct initial set of empty offsets based on the minimum
     // length of each partial instruction;
     let mut offsets = init_offsets(instructions);
@@ -218,9 +274,11 @@ fn resolve_labels(instructions: &mut [AssemblyInstruction]) -> Result<(),AsmErro
 /// Initialise the labels map which maps each label to its
 /// _instruction offset_.  Note that this may differ from an
 /// instruction's _byte offset_ (i.e. since not all instructions are
-/// one byte long).
-fn init_labels(instructions: &[AssemblyInstruction]) -> HashMap<String,usize> {
+/// one byte long).  Finally, this also checks that every partial
+/// instruction targets a known label.
+fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,usize>,AssemblyError> {
     let mut labels : HashMap<String, usize> = HashMap::new();
+    // Compute labels
     for (i,b) in instructions.iter().enumerate() {
         match b {
             AssemblyInstruction::Label(lab) => {
@@ -232,8 +290,19 @@ fn init_labels(instructions: &[AssemblyInstruction]) -> HashMap<String,usize> {
             _ => {} // ignore
         }
     }
-    //
-    labels
+    // Sanity check partial instructions target known labels.
+    for (i,b) in instructions.iter().enumerate() {
+        match b {
+            AssemblyInstruction::Partial(_,lab,_) => {
+                if !labels.contains_key(lab) {
+                    return Err(AssemblyError::UnknownLabel(lab.to_string()))
+                }
+            }
+            _ => {} // ignore
+        }
+    }
+    // Done
+    Ok(labels)
 }
 
 /// Compute the initial set of instruction offsets based on the
@@ -288,8 +357,12 @@ fn insn_min_length(insn: &AssemblyInstruction) -> usize {
         // Minimum length of a partial instruction is the provided
         // minimum length.
         AssemblyInstruction::Partial(min_length,_,_) => *min_length,
+        // Length of data bytes given by the bytes!
+        AssemblyInstruction::DataBytes(bytes) => bytes.len(),
         // Everything else (e.g. labels) as no length
-        _ => 0
+        AssemblyInstruction::CodeSection => 0,
+        AssemblyInstruction::DataSection => 0,
+        AssemblyInstruction::Label(_) => 0
     }
 }
 
@@ -317,8 +390,12 @@ fn insn_length(insn: &AssemblyInstruction, labels: &HashMap<String,usize>, offse
             // length
             insn.length()
         }
+        // Length of data bytes given by the bytes!
+        AssemblyInstruction::DataBytes(bytes) => bytes.len(),
         // Everything else (e.g. labels) as no length
-        _ => 0
+        AssemblyInstruction::CodeSection => 0,
+        AssemblyInstruction::DataSection => 0,
+        AssemblyInstruction::Label(_) => 0
     }
 }
 

@@ -1,3 +1,4 @@
-   push 0x000005
-   jump
-   jumpdest
+.code
+        push 0x000005
+        jump
+        jumpdest

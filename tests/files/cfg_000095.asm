@@ -1,4 +1,7 @@
-   push 0x05
-   jump
-   0x0102
-   jumpdest
+.code
+        push 0x05
+        jump
+.data
+        0x0102
+.code
+        jumpdest

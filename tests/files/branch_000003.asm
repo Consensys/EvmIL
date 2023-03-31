@@ -1,3 +1,4 @@
+.code
 lab0:
         jumpdest
         push 0x01

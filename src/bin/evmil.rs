@@ -19,7 +19,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly, Bytecode, Instruction};
+use evmil::evm::{Assembly, Bytecode, BytecodeVersion, Instruction};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
 
@@ -157,9 +157,9 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Read from asm file
     let context = fs::read_to_string(target)?;
     // Construct assembly from input file
-    let assembly = Assembly::from_str(&context)?;
+    let assembly = Assembly::from_str(BytecodeVersion::Legacy,&context)?;
     // Translate instructions into bytes
-    let bytes: Vec<u8> = assembly.to_bytecode().unwrap().to_bytes();
+    let bytes: Vec<u8> = assembly.to_bytecode()?.to_bytes();
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //

@@ -1,5 +1,6 @@
-   push 0x05
-   pc
-   pop
-   jump
-   jumpdest
+.code
+        push 0x05
+        pc
+        pop
+        jump
+        jumpdest

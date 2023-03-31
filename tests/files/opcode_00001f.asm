@@ -1,5 +1,6 @@
-   push 0x05
-   callvalue
-   pop
-   jump
-   jumpdest
+.code
+        push 0x05
+        callvalue
+        pop
+        jump
+        jumpdest
