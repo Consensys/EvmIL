@@ -493,6 +493,20 @@ impl fmt::Display for Instruction {
                 // Print!
                 write!(f, "push {}", hex)
             }
+            Instruction::RJUMP(offset) => {
+                if offset < &0 {
+                    write!(f, "rjump -{:#x}", offset)
+                } else {
+                    write!(f, "rjump {:#x}", offset)
+                }
+            }
+            Instruction::RJUMPI(offset) => {
+                if offset < &0 {
+                    write!(f, "rjumpi -{:#x}", offset)
+                } else {
+                    write!(f, "rjumpi {:#x}", offset)
+                }
+            }
             Instruction::SWAP(n) => {
                 write!(f, "swap{n}")
             }
