@@ -13,7 +13,7 @@ use crate::util::FromHexString;
 use crate::evm::opcode;
 use crate::evm::{Bytecode,Instruction};
 use super::lexer::{Lexer,Token};
-use super::{Assembly,AsmError};
+use super::{Assembly,AssemblyInstruction,AsmError};
 
 pub struct Parser {
     bytecode: Assembly
@@ -47,7 +47,7 @@ impl Parser {
             }
             Token::Label(s) => {
                 // Mark label in bytecode sequence
-                self.bytecode.label(s);
+                self.bytecode.push(AssemblyInstruction::Label(s.to_string()));
             }
             _ => {
                 // Something went wrong
@@ -71,7 +71,11 @@ impl Parser {
                 Ok(())
             }
             Token::Identifier(s) => {
-                self.bytecode.push_partial(s,|target| Instruction::PUSH(target.to_bytes()));
+                // This indicates we have an incomplete push
+                // instruction which requires a label to be resolved
+                // before it can be fully instantiated.
+                let insn = AssemblyInstruction::Partial(2,s.to_string(),|t| Instruction::PUSH(t.to_bytes()));
+                self.bytecode.push(insn);
                 Ok(())
             },
             Token::EOF => Err(AsmError::ExpectedOperand),
