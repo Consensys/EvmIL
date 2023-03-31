@@ -32,7 +32,7 @@ pub enum Error {
 // Bytecode Instructions
 // ============================================================================
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
     // 0s: Stop and Arithmetic Operations
     STOP,

@@ -19,7 +19,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly, Bytecode, BytecodeVersion, Instruction};
+use evmil::evm::{Assembly, AssemblyInstruction, Bytecode, BytecodeVersion, Instruction};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{w256, FromHexString, Interval, ToHexString};
 
@@ -114,40 +114,18 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
     let bytecode = Bytecode::from_bytes(&bytes)?;
+    // Convert it into assembly language
+    let asm = Assembly::from(bytecode);
     // Iterate bytecode sections
-    for section in &bytecode {
-
+    for insn in &asm {
+        match insn {
+            AssemblyInstruction::CodeSection => {}
+            AssemblyInstruction::DataSection => {}
+            AssemblyInstruction::Label(_) => {}
+            _ => { print!("        "); }
+        }
+        println!("{}",insn);
     }
-    // let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bytes).build();
-    // // Disassemble bytes into instructions
-    // let instructions = disasm.to_vec();
-    // // Print them all out.
-    // let mut pc = 0;
-    // for insn in instructions {
-    //     match insn {
-    //         Instruction::JUMPDEST => {
-    //             let st = disasm.get_state(pc);
-    //             println!("");
-    //             // NOTE: to be restored once the API has settled.
-    //             //let len = st.evm.stack.len();
-    //             // if len.is_constant() {
-    //             //     println!("// Stack +{}", len.unwrap());
-    //             // } else {
-    //             //     println!("// Stack +{}", len);
-    //             // }
-    //             println!("{:#08x}: {}", pc, insn);
-    //         }
-    //         Instruction::JUMP | Instruction::JUMPI => {
-    //             let st = disasm.get_state(pc);
-    //             println!("{:#08x}: {} // {}", pc, insn, st.peek(0));
-    //         }
-    //         _ => {
-    //             println!("{:#08x}: {}", pc, insn);
-    //         }
-    //     }
-    //     pc = pc + insn.length();
-    // }
-    // TODO
     Ok(true)
 }
 
