@@ -1,1 +1,2 @@
-   invalid
+.code
+        invalid

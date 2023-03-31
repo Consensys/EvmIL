@@ -1,6 +1,7 @@
-   push 0x8451
-   push lab0
-   jumpi
-   invalid
+.code
+        push 0x8451
+        push lab0
+        jumpi
+        invalid
 lab0:
-   jumpdest
+        jumpdest

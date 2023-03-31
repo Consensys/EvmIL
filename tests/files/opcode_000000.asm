@@ -1,1 +1,2 @@
-   stop
+.code
+        stop

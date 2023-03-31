@@ -21,7 +21,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::evm::{Assembly,Bytecode,Instruction};
+use crate::evm::{Assembly,AssemblyInstruction,Bytecode,BytecodeVersion,Instruction};
 use crate::util::*;
 
 type Result = std::result::Result<(), CompilerError>;
@@ -53,10 +53,9 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new() -> Self {
-        Self {
-            bytecode: Assembly::new(),
-            labels: 0
-        }
+        let mut bytecode = Assembly::new(BytecodeVersion::Legacy);
+        bytecode.push(AssemblyInstruction::CodeSection);
+        Self { bytecode,labels: 0 }
     }
 
     /// Extract the bytecode for the compiled terms.
@@ -110,7 +109,7 @@ impl Compiler {
         // False branch
         self.bytecode.push(Instruction::INVALID);
         // True branch
-        self.bytecode.label(&lab);
+        self.bytecode.push(AssemblyInstruction::Label(lab));
         self.bytecode.push(Instruction::JUMPDEST);
         //
         Ok(())
@@ -159,13 +158,13 @@ impl Compiler {
         // Translate arguments
         for e in exprs { self.translate(e); }
         // Push return address
-        self.bytecode.push_partial(&retlab,|t| Instruction::PUSH(t.to_bytes()));
+        self.bytecode.push(make_partial_push(&retlab));
         // Push function address
-        self.bytecode.push_partial(name, |t| Instruction::PUSH(t.to_bytes()));
+        self.bytecode.push(make_partial_push(name));
         // Perform jump
         self.bytecode.push(Instruction::JUMP);
         // Identify return point
-        self.bytecode.label(&retlab);
+        self.bytecode.push(AssemblyInstruction::Label(retlab));
         self.bytecode.push(Instruction::JUMPDEST);
         Ok(())
     }
@@ -177,7 +176,7 @@ impl Compiler {
 
     fn translate_goto(&mut self, label: &str) -> Result {
         // Translate unconditional branch
-        self.bytecode.push_partial(label,|t| Instruction::PUSH(t.to_bytes()));
+        self.bytecode.push(make_partial_push(label));
         self.bytecode.push(Instruction::JUMP);
         //
         Ok(())
@@ -190,7 +189,7 @@ impl Compiler {
 
     fn translate_label(&mut self, label: &str) -> Result {
         // Mark the label
-        self.bytecode.label(label);
+        self.bytecode.push(AssemblyInstruction::Label(label.to_string()));
         self.bytecode.push(Instruction::JUMPDEST);
         // Done
         Ok(())
@@ -284,7 +283,7 @@ impl Compiler {
                 let lab = self.fresh_label();
                 self.translate_conditional(lhs, None, Some(&lab))?;
                 self.translate_conditional(rhs, true_lab, None)?;
-                self.bytecode.label(&lab);
+                self.bytecode.push(AssemblyInstruction::Label(lab));
                 self.bytecode.push(Instruction::JUMPDEST);
             }
             (None, Some(_)) => {
@@ -308,7 +307,7 @@ impl Compiler {
                 let lab = self.fresh_label();
                 self.translate_conditional(lhs, Some(&lab), None)?;
                 self.translate_conditional(rhs, None, false_lab)?;
-                self.bytecode.label(&lab);
+                self.bytecode.push(AssemblyInstruction::Label(lab));
                 self.bytecode.push(Instruction::JUMPDEST);
             }
             (Some(_), None) => {
@@ -331,12 +330,12 @@ impl Compiler {
         //
         match (true_lab, false_lab) {
             (Some(lab), None) => {
-                self.bytecode.push_partial(lab,|t| Instruction::PUSH(t.to_bytes()));
+                self.bytecode.push(make_partial_push(lab));
                 self.bytecode.push(Instruction::JUMPI);
             }
             (None, Some(lab)) => {
                 self.bytecode.push(Instruction::ISZERO);
-                self.bytecode.push_partial(lab,|t| Instruction::PUSH(t.to_bytes()));
+                self.bytecode.push(make_partial_push(lab));
                 self.bytecode.push(Instruction::JUMPI);
             }
             (_, _) => {
@@ -373,11 +372,11 @@ impl Compiler {
         }
         // Allocate fresh label
         let lab = self.fresh_label();
-        self.bytecode.push_partial(&lab,|t| Instruction::PUSH(t.to_bytes()));
+        self.bytecode.push(make_partial_push(&lab));
         self.bytecode.push(Instruction::JUMPI);
         self.bytecode.push(Instruction::POP);
         self.translate(rhs)?;
-        self.bytecode.label(&lab);
+        self.bytecode.push(AssemblyInstruction::Label(lab));
         self.bytecode.push(Instruction::JUMPDEST);
         // Done
         Ok(())
@@ -503,6 +502,10 @@ fn try_from(terms: &[Term]) -> std::result::Result<Bytecode, CompilerError> {
     }
     // Done
     Ok(compiler.to_bytecode())
+}
+
+fn make_partial_push(label: &str) -> AssemblyInstruction {
+    AssemblyInstruction::Partial(2,label.to_string(),|t| Instruction::PUSH(t.to_bytes()))
 }
 
 /// Construct a push instruction from a value.

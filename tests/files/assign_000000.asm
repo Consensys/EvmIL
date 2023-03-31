@@ -1,3 +1,4 @@
-   push 0x01
-   push 0x00
-   mstore
+.code
+        push 0x01
+        push 0x00
+        mstore

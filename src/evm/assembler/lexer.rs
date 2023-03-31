@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::evm::{AsmError};
+use crate::evm::{AssemblyLanguageError};
 
 // ===================================================================
 // Token
@@ -18,6 +18,7 @@ use crate::evm::{AsmError};
 
 pub enum Token<'a> {
     EOF,
+    Section(&'a str),
     Hex(&'a str),
     Identifier(&'a str),
     Label(&'a str)
@@ -29,6 +30,7 @@ impl<'a> Token<'a> {
     pub fn len(&self) -> usize {
         match self {
             Token::EOF => 0,
+            Token::Section(s) => s.len() + 1,
             Token::Hex(s) => s.len(),
             Token::Identifier(s) => s.len(),
             Token::Label(s) => s.len() + 1
@@ -56,7 +58,7 @@ impl<'a> Lexer<'a> {
         Self{input, chars, index: 0}
     }
 
-    pub fn lookahead(&self) -> Result<Token<'a>,AsmError> {
+    pub fn lookahead(&self) -> Result<Token<'a>,AssemblyLanguageError> {
         // Skip any whitespace
         let start = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
         // Sanity check for end-of-file
@@ -65,14 +67,15 @@ impl<'a> Lexer<'a> {
         } else {
             // Determine what kind of token we have.
             match self.chars[start] {
+                '.' => self.scan_section_header(start),
                 '0'..='9' => self.scan_hex_literal(start),
                 'a'..='z'|'A'..='Z'|'_' => self.scan_id_or_label(start),
-                _ => Err(AsmError::UnexpectedCharacter(start))
+                _ => Err(AssemblyLanguageError::UnexpectedCharacter(start))
             }
         }
     }
 
-    pub fn next(&mut self) -> Result<Token<'a>,AsmError> {
+    pub fn next(&mut self) -> Result<Token<'a>,AssemblyLanguageError> {
         // Skip any whitespace
         self.index = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
         // Determine next token
@@ -83,7 +86,7 @@ impl<'a> Lexer<'a> {
         Ok(tok)
     }
 
-    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,AsmError> {
+    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,AssemblyLanguageError> {
         // Sanity check literal starts with "0x"
         if self.chars[start..].starts_with(&['0','x']) {
             // Scan all digits of this hex literal
@@ -91,11 +94,11 @@ impl<'a> Lexer<'a> {
             // Construct token
             Ok(Token::Hex(&self.input[start..end]))
         } else {
-            Err(AsmError::InvalidHexString(start))
+            Err(AssemblyLanguageError::InvalidHexString(start))
         }
     }
 
-    fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,AsmError> {
+    fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,AssemblyLanguageError> {
         // Scan all characters of this identifier or label
         let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
         // Distinguish label versus identifier.
@@ -104,6 +107,15 @@ impl<'a> Lexer<'a> {
         } else {
             Ok(Token::Identifier(&self.input[start..end]))
         }
+    }
+
+    fn scan_section_header(&self, mut start: usize) -> Result<Token<'a>,AssemblyLanguageError> {
+        // Move passed "."
+        start = start + 1;
+        // Scan all characters of this identifier or label
+        let end = skip(&self.chars,start,|c| c.is_ascii_alphabetic());
+        // Done
+        Ok(Token::Section(&self.input[start..end]))
     }
 }
 

@@ -1,3 +1,4 @@
+.code
         push 0x01
         dup1
         iszero
