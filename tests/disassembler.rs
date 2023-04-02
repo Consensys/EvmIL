@@ -1,10 +1,5 @@
-use std::fmt;
 use std::fs;
-use std::path::{Path,PathBuf};
-use std::collections::HashMap;
-//use evmil::evm::{AbstractWord,AbstractStack,Disassembly};
-//use evmil::evm::{Assembler};
-use evmil::util::{FromHexString};
+use std::path::{PathBuf};
 
 pub static TESTS_DIR: &str = "tests/files";
 
@@ -12,12 +7,12 @@ pub static TESTS_DIR: &str = "tests/files";
 include!(concat!(env!("OUT_DIR"), "/bin_tests.rs"));
 
 fn check(test: &str) {
-    // // Construct input files
-    // let asmfile = to_asmfile(test);
-    // let binfile = to_binfile(test);
-    // // Read the test file
-    // let asm = fs::read_to_string(asmfile).unwrap();
-    // let bin = fs::read_to_string(binfile).unwrap();
+    // Construct input files
+    let asmfile = to_asmfile(test);
+    let binfile = to_binfile(test);
+    // Read the test file
+    let _asm = fs::read_to_string(asmfile).unwrap();
+    let _bin = fs::read_to_string(binfile).unwrap();
     // // Parse assembly into instructions
     // let asm_code = match Assembler::new(&asm).parse() {
     //     Ok(insns) => insns,

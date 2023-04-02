@@ -289,7 +289,7 @@ where
             if d <= self.lower.start {
                 let l = self.len();
                 // Pad out with unknown elements as necessary
-                for i in 1..d { self.upper.insert(0,T::TOP); }
+                for _i in 1..d { self.upper.insert(0,T::TOP); }
                 // Insert the actual element
                 self.upper.insert(0,item);
                 // Remove elements from lower portion

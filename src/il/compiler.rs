@@ -156,7 +156,7 @@ impl Compiler {
     fn translate_call(&mut self, name: &str, exprs: &[Term]) -> Result {
         let retlab = self.fresh_label();
         // Translate arguments
-        for e in exprs { self.translate(e); }
+        for e in exprs { self.translate(e)?; }
         // Push return address
         self.bytecode.push(make_partial_push(&retlab));
         // Push function address
@@ -200,7 +200,7 @@ impl Compiler {
             // Translate each expression (except first)
             for i in 1..exprs.len() { self.translate(&exprs[i])?; }
             // Translate first expression
-            self.translate(&exprs[0]);
+            self.translate(&exprs[0])?;
             // Swap with returna address
             self.bytecode.push(Instruction::SWAP(exprs.len() as u8));
         }

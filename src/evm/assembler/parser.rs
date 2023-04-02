@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::util::FromHexString;
 use crate::evm::opcode;
-use crate::evm::{Bytecode,BytecodeVersion,Instruction};
+use crate::evm::{BytecodeVersion,Instruction};
 use super::lexer::{Lexer,Token};
 use super::{Assembly,AssemblyInstruction,AssemblyLanguageError};
 
@@ -99,7 +99,7 @@ impl Parser {
 fn parse_hex(hex: &str) -> Result<Vec<u8>,AssemblyLanguageError> {
     match hex.from_hex_string() {
         Ok(bytes) => { Ok(bytes) }
-        Err(e) => Err(AssemblyLanguageError::InvalidHexString(0))
+        Err(_e) => Err(AssemblyLanguageError::InvalidHexString(0))
     }
 }
 

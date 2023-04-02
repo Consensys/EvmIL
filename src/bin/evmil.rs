@@ -9,7 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::convert::TryFrom;
 use std::error::Error;
 use std::fs;
 
@@ -19,9 +18,9 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly, AssemblyInstruction, Bytecode, BytecodeVersion, Instruction};
+use evmil::evm::{Assembly, AssemblyInstruction, Bytecode, BytecodeVersion};
 use evmil::il::{Compiler,Parser};
-use evmil::util::{w256, FromHexString, Interval, ToHexString};
+use evmil::util::{FromHexString, ToHexString};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse command-line arguments

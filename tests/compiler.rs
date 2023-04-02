@@ -1,7 +1,5 @@
-use std::fmt;
 use std::fs;
-use std::path::{Path,PathBuf};
-use std::collections::HashMap;
+use std::path::{PathBuf};
 use evmil::evm::{Bytecode};
 use evmil::il::Parser;
 use evmil::util::{FromHexString};

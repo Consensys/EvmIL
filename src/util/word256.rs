@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::util;
-use crate::util::{OverflowingAdd, OverflowingSub};
+use crate::util::{OverflowingAdd};
 use std::{cmp, fmt};
 
 /// Represents a `256` bit word.  This is very similar what a `u256`
@@ -204,7 +204,7 @@ impl fmt::Display for w256 {
 
 impl fmt::LowerHex for w256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = if self.high == 0 {
+        let s = if self.high == 0 {
             format!("{:x}",self.low)
         } else {
             format!("{:x}{:x}",self.high,self.low)
@@ -212,7 +212,7 @@ impl fmt::LowerHex for w256 {
         //
         let mut len = s.len();
         //
-        if f.alternate() { write!(f,"0x"); len += 2; }
+        if f.alternate() { write!(f,"0x")?; len += 2; }
         //
         match f.width() {
             Some(w) => {

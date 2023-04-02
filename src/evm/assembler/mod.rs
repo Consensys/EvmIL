@@ -3,12 +3,10 @@ mod parser; // private (for now)
 
 use std::fmt;
 use std::collections::{HashMap};
-use crate::evm::opcode;
 use crate::evm::{Bytecode,BytecodeVersion,Instruction,Section};
-use crate::util::{ToHexString,FromHexString};
+use crate::util::{ToHexString};
 
 use parser::Parser;
-use lexer::{Token,Lexer};
 
 // ===================================================================
 // Assembly Error
@@ -127,7 +125,7 @@ impl Assembly {
                 }
                 AssemblyInstruction::Concrete(insn) => {
                     match sections.last_mut() {
-                        Some(Section::Code{insns,inputs,outputs,max_stack}) => {
+                        Some(Section::Code{insns,inputs:_,outputs:_,max_stack:_}) => {
                             insns.push(insn);
                         }
                         _ => {
@@ -190,7 +188,7 @@ impl From<Bytecode> for Assembly {
         //
         for section in &bytecode {
             match section {
-                Section::Code{insns,inputs,outputs,max_stack} => {
+                Section::Code{insns,inputs:_,outputs:_,max_stack:_} => {
                     // Mark start of code section
                     asm.push(AssemblyInstruction::CodeSection);
                     // Push all instructions
@@ -319,7 +317,7 @@ impl ByteOffset {
 fn resolve_labels(instructions: &mut [AssemblyInstruction]) -> Result<(),AssemblyError> {
     // Identify all labels contained within the sequence of assembly
     // instructions.  For each, we record their _instruction offset_.
-    let mut labels = init_labels(instructions)?;
+    let labels = init_labels(instructions)?;
     // Construct initial set of empty offsets based on the minimum
     // length of each partial instruction;
     let mut offsets = init_offsets(instructions);
@@ -354,7 +352,7 @@ fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,us
         }
     }
     // Sanity check partial instructions target known labels.
-    for (i,b) in instructions.iter().enumerate() {
+    for (_,b) in instructions.iter().enumerate() {
         match b {
             AssemblyInstruction::Partial(_,lab,_) => {
                 if !labels.contains_key(lab) {
@@ -378,7 +376,7 @@ fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,us
 fn init_offsets(instructions: &[AssemblyInstruction]) -> Vec<ByteOffset> {
     let mut offsets = Vec::new();
     let mut offset = 0;
-    for (i,b) in instructions.iter().enumerate() {
+    for (_,b) in instructions.iter().enumerate() {
         // Update instruction offset
         offsets.push(ByteOffset(offset as u16));
         // Calculate next offset
@@ -400,7 +398,7 @@ fn update_offsets(instructions: &[AssemblyInstruction], labels: &HashMap<String,
         // Update instruction offset
         offsets[i] = ByteOffset(offset as u16);
         // Determine whether this changed (or not)
-        changed |= (offset != old);
+        changed |= offset != old;
         // Calculate next offset
         offset = offset + insn_length(b,labels,offsets);
     }

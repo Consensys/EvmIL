@@ -11,7 +11,7 @@
 // limitations under the License.
 use std::fmt;
 use crate::evm::opcode;
-use crate::evm::{Error,Instruction,ToInstructions};
+use crate::evm::{Instruction,ToInstructions};
 
 /// The EOF magic prefix as dictated in EIP3540.
 pub const EOF_MAGIC : u16 = 0xEF00;
@@ -195,7 +195,7 @@ impl Section {
             Section::Data(bs) => {
                 bytes.extend(bs);
             }
-            Section::Code{insns, inputs, outputs, max_stack} => {
+            Section::Code{insns, inputs: _, outputs: _, max_stack: _} => {
                 for b in insns {
                     // NOTE: unwrap safe as instructions validated on
                     // entry to the container.
@@ -233,7 +233,7 @@ fn from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
     }
     let mut code_sizes : Vec<usize> = Vec::new();
     // Extract code sizes
-    for i in 0..num_code_sections {
+    for _i in 0..num_code_sections {
         code_sizes.push(iter.next_u16()? as usize);
     }
     iter.match_u8(0x03,|w| DecodingError::InvalidKindData(w))?;
@@ -241,7 +241,7 @@ fn from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
     iter.match_u8(0x00,|w| DecodingError::InvalidTerminator(w))?;
     // parse types section
     let mut types = Vec::new();
-    for i in 0..num_code_sections {
+    for _i in 0..num_code_sections {
         let inputs = iter.next_u8()?;
         let outputs = iter.next_u8()?;
         let max_stack = iter.next_u16()?;

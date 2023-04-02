@@ -1,4 +1,3 @@
-use evmil::evm;
 use evmil::util::{w256, Interval, IntervalStack, Top};
 
 type Word = Interval<w256>;
