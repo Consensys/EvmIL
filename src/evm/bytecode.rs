@@ -108,6 +108,10 @@ impl Bytecode {
         Bytecode { version, sections }
     }
 
+    pub fn version(&self) -> BytecodeVersion {
+        self.version
+    }
+
     /// Add a new section to this bytecode container
     pub fn add(&mut self, section: Section) {
         self.sections.push(section)
@@ -163,7 +167,7 @@ impl<'a> IntoIterator for &'a Bytecode {
 // Versioning
 // ============================================================================
 
-#[derive(Debug,PartialEq)]
+#[derive(Clone,Copy,Debug,PartialEq)]
 pub enum BytecodeVersion {
     /// Indicates a legacy (i.e. pre-EOF) contract.
     Legacy,

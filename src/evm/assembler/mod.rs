@@ -5,7 +5,7 @@ use std::fmt;
 use std::collections::{HashMap};
 use crate::evm::opcode;
 use crate::evm::{Bytecode,BytecodeVersion,Instruction,Section};
-use crate::util::FromHexString;
+use crate::util::{ToHexString,FromHexString};
 
 use parser::Parser;
 use lexer::{Token,Lexer};
@@ -165,6 +165,55 @@ impl Assembly {
 }
 
 // ============================================================================
+// Traits
+// ============================================================================
+
+/// An iterator over the instructions making up an assembly.
+pub type AssemblyIter<'a> = std::slice::Iter<'a,AssemblyInstruction>;
+
+impl<'a> IntoIterator for &'a Assembly {
+    type Item = &'a AssemblyInstruction;
+    type IntoIter = AssemblyIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.bytecodes.iter()
+    }
+}
+
+impl From<Bytecode> for Assembly {
+    /// Construct an assembly from a bytecode structure.  The key
+    /// challenge here lies in identifying labels, and converting full
+    /// instructions into partial instructions.
+    fn from(bytecode: Bytecode) -> Self {
+        //
+        let mut asm = Assembly::new(bytecode.version());
+        //
+        for section in &bytecode {
+            match section {
+                Section::Code{insns,inputs,outputs,max_stack} => {
+                    // Mark start of code section
+                    asm.push(AssemblyInstruction::CodeSection);
+                    // Push all instructions
+                    for insn in insns {
+                        // FIXME: should be possible to drop this clone!
+                        asm.push((*insn).clone());
+                    }
+                }
+                Section::Data(bytes) => {
+                    // Mark start of data section
+                    asm.push(AssemblyInstruction::DataSection);
+                    // Push data bytes
+                    // FIXME: should be possible to drop this clone!
+                    asm.push(AssemblyInstruction::DataBytes(bytes.clone()));
+                }
+            }
+        }
+        //
+        asm
+    }
+}
+
+// ============================================================================
 // Assembly Instructions
 // ============================================================================
 
@@ -173,6 +222,7 @@ impl Assembly {
 /// it can be fully instantiated).  Furthermore, it may also be a
 /// label to mark a given point in the sequence, or the start of a
 /// section (code or data).
+#[derive(Clone,Debug,PartialEq)]
 pub enum AssemblyInstruction {
     /// Marks a position within the instruction sequence.
     Label(String),
@@ -195,6 +245,19 @@ pub enum AssemblyInstruction {
 impl From<Instruction> for AssemblyInstruction {
     fn from(insn: Instruction) -> Self {
         AssemblyInstruction::Concrete(insn)
+    }
+}
+
+impl fmt::Display for AssemblyInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AssemblyInstruction::Label(s) => write!(f,"{s}"),
+            AssemblyInstruction::CodeSection => write!(f,".code"),
+            AssemblyInstruction::DataSection => write!(f,".data"),
+            AssemblyInstruction::Concrete(insn) => write!(f,"{insn}"),
+            AssemblyInstruction::Partial(_,_,_) => write!(f,"???"),
+            AssemblyInstruction::DataBytes(bytes) => write!(f,"{}",bytes.to_hex_string())
+        }
     }
 }
 
