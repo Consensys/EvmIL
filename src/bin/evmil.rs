@@ -18,7 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly, AssemblyInstruction, Bytecode, BytecodeVersion};
+use evmil::evm::{Assembly, AssemblyInstruction, Bytecode};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subcommand(
             Command::new("assemble")
                 .about("Assemble EVM bytecode into a raw hex string")
+                .arg(Arg::new("eof").long("eof"))
                 .arg(Arg::new("target").required(true))
                 .visible_alias("a")
         )
@@ -86,7 +87,7 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Assemble instructions into a bytecode container
     let bytecode = compiler.to_bytecode();
     // Translate container into bytes
-    let bytes: Vec<u8> = bytecode.to_bytes();
+    let bytes: Vec<u8> = bytecode.to_legacy_bytes();
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //
@@ -134,9 +135,15 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Read from asm file
     let context = fs::read_to_string(target)?;
     // Construct assembly from input file
-    let assembly = Assembly::from_str(BytecodeVersion::Legacy,&context)?;
-    // Translate instructions into bytes
-    let bytes: Vec<u8> = assembly.to_bytecode()?.to_bytes();
+    let assembly = Assembly::from_str(&context)?;
+    // Check whether EOF or legacy code generation
+    let bytes = if args.contains_id("eof") {
+        // EVM Object Format
+        todo!();
+    } else {
+        // Legacy
+        assembly.to_bytecode()?.to_legacy_bytes()
+    };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //

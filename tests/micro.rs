@@ -46,7 +46,7 @@ fn check(terms: &[Term], hex: &str) {
     // Translate statements into bytecode instructions
     let bytecode = Bytecode::try_from(terms).unwrap();
     // Translate instructions into bytes
-    let bytes: Vec<u8> = bytecode.to_bytes();
+    let bytes: Vec<u8> = bytecode.to_legacy_bytes();
     // Check against expected hex string
     assert_eq!(hex, bytes.to_hex_string());
 }

@@ -92,24 +92,18 @@ impl std::error::Error for DecodingError {}
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 pub struct Bytecode {
-    version: BytecodeVersion,
     sections: Vec<Section>
 }
 
 impl Bytecode {
     pub fn empty() -> Self {
         Bytecode {
-	    version: BytecodeVersion::Legacy,
             sections: Vec::new()
         }
     }
 
-    pub fn new(version: BytecodeVersion, sections: Vec<Section>) -> Self {
-        Bytecode { version, sections }
-    }
-
-    pub fn version(&self) -> BytecodeVersion {
-        self.version
+    pub fn new(sections: Vec<Section>) -> Self {
+        Bytecode { sections }
     }
 
     /// Add a new section to this bytecode container
@@ -120,10 +114,7 @@ impl Bytecode {
     /// Convert this bytecode contract into a byte sequence correctly
     /// formatted according to the container version (e.g. legacy or
     /// EOF).
-    pub fn to_bytes(self) -> Vec<u8> {
-        // Assumption for now
-        assert!(self.version == BytecodeVersion::Legacy);
-        //
+    pub fn to_legacy_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
         //
         for s in self.sections { s.encode(&mut bytes); }
@@ -161,18 +152,6 @@ impl<'a> IntoIterator for &'a Bytecode {
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
     }
-}
-
-// ============================================================================
-// Versioning
-// ============================================================================
-
-#[derive(Clone,Copy,Debug,PartialEq)]
-pub enum BytecodeVersion {
-    /// Indicates a legacy (i.e. pre-EOF) contract.
-    Legacy,
-    /// Represents an EOF contract with a given versioning byte.
-    EOF(u8)
 }
 
 // ============================================================================
@@ -247,7 +226,7 @@ fn from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
         let max_stack = iter.next_u16()?;
         types.push((inputs,outputs,max_stack));
     }
-    let mut code = Bytecode::new(BytecodeVersion::EOF(version), Vec::new());
+    let mut code = Bytecode::new(Vec::new());
     // parse code section(s)
     for i in 0..num_code_sections {
         let bytes = iter.next_bytes(code_sizes[i])?;

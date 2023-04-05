@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::util::FromHexString;
 use crate::evm::opcode;
-use crate::evm::{BytecodeVersion,Instruction};
+use crate::evm::{Instruction};
 use super::lexer::{Lexer,Token};
 use super::{Assembly,AssemblyInstruction,AssemblyLanguageError};
 
@@ -21,8 +21,8 @@ pub struct Parser {
 
 impl Parser {
     /// Construct a new parser from a given string slice.
-    pub fn new(version: BytecodeVersion) -> Self {
-        let bytecode = Assembly::new(version);
+    pub fn new() -> Self {
+        let bytecode = Assembly::new();
         //
         Parser { bytecode }
     }
