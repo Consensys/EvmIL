@@ -86,7 +86,7 @@ impl Parser {
                 // This indicates we have an incomplete push
                 // instruction which requires a label to be resolved
                 // before it can be fully instantiated.
-                let insn = AssemblyInstruction::Partial(2,s.to_string(),|t| Instruction::PUSH(t.to_bytes()));
+                let insn = AssemblyInstruction::Partial(2,s.to_string(),|_,lab| Instruction::PUSH(lab.to_bytes()));
                 self.bytecode.push(insn);
                 Ok(())
             },
@@ -99,7 +99,7 @@ impl Parser {
     fn parse_rjump(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
         match operand {
             Token::Identifier(s) => {
-                let insn = AssemblyInstruction::Partial(3,s.to_string(),|t| Instruction::RJUMP(todo!()));
+                let insn = AssemblyInstruction::Partial(3,s.to_string(),|pc,lab| Instruction::RJUMP(lab.relative_to(pc+3)));
                 self.bytecode.push(insn);
                 Ok(())
             },
@@ -112,7 +112,7 @@ impl Parser {
     fn parse_rjumpi(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
         match operand {
             Token::Identifier(s) => {
-                let insn = AssemblyInstruction::Partial(3,s.to_string(),|t| Instruction::RJUMPI(todo!()));
+                let insn = AssemblyInstruction::Partial(3,s.to_string(),|pc,lab| Instruction::RJUMPI(lab.relative_to(pc+3)));
                 self.bytecode.push(insn);
                 Ok(())
             },
