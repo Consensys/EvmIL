@@ -231,7 +231,7 @@ pub enum AssemblyInstruction {
     /// once the concrete byteoffset of the label is known.  A partial
     /// instruction also requires a _minimum length_ to aid the offset
     /// resolution algorithm.
-    Partial(usize,String,fn(ByteOffset)->Instruction),
+    Partial(usize,String,fn(ByteOffset,ByteOffset)->Instruction),
     /// Indicates a sequence of zero or more _data bytes_.
     DataBytes(Vec<u8>)
 }
@@ -273,6 +273,16 @@ impl ByteOffset {
         }
     }
 
+    /// Determine a _relative address_ from a given reference point.
+    pub fn relative_to(&self, other: ByteOffset) -> i16 {
+        let mut n = self.0 as isize;
+        n -= other.0 as isize;
+        // Following should always be true!
+        n as i16
+    }
+
+    /// Return this offset as an absolute address.  A vector of one or
+    /// two bytes is returned, depending on the size of the address.
     pub fn to_bytes(&self) -> Vec<u8> {
         if self.0 > 255 {
             vec![(self.0 / 256) as u8, (self.0 % 256) as u8]
@@ -281,6 +291,16 @@ impl ByteOffset {
         }
     }
 }
+
+
+impl std::ops::Add<u16> for ByteOffset {
+    type Output = Self;
+
+    fn add(self, rhs: u16) -> Self {
+        Self(self.0 + rhs)
+    }
+}
+
 
 // ===================================================================
 // Label Resolution
@@ -322,8 +342,8 @@ fn resolve_labels(instructions: &mut [AssemblyInstruction]) -> Result<(),Assembl
         // Keep going until no more changes!
     }
     // Instantiate any partial instructions
-    for mut insn in instructions {
-        insn_instantiate(&mut insn, &labels, &offsets);
+    for (i,b) in instructions.iter_mut().enumerate() {
+        insn_instantiate(i,b, &labels, &offsets);
     }
     Ok(())
 }
@@ -396,7 +416,7 @@ fn update_offsets(instructions: &[AssemblyInstruction], labels: &HashMap<String,
         // Determine whether this changed (or not)
         changed |= offset != old;
         // Calculate next offset
-        offset = offset + insn_length(b,labels,offsets);
+        offset = offset + insn_length(i,b,labels,offsets);
     }
     //
     changed
@@ -425,7 +445,7 @@ fn insn_min_length(insn: &AssemblyInstruction) -> usize {
 
 /// Determine the _actual length_ of an assembly instruction based on
 /// the current estimate of all bytecode offsets.
-fn insn_length(insn: &AssemblyInstruction, labels: &HashMap<String,usize>, offsets: &[ByteOffset]) -> usize {
+fn insn_length(index: usize, insn: &AssemblyInstruction, labels: &HashMap<String,usize>, offsets: &[ByteOffset]) -> usize {
     match insn {
         // Minimum length of concrete instruction is its actual
         // length!
@@ -438,11 +458,14 @@ fn insn_length(insn: &AssemblyInstruction, labels: &HashMap<String,usize>, offse
             // Convert the instruction offset into an (estimated) byte
             // offset for the given label.
             let lab_byte_offset = offsets[*lab_insn_offset];
+            // Calculate byte offset of instruction, which is needed
+            // to compute relative addresses.
+            let insn_byte_offset = offsets[index];
             // NOTE: we are determining the length of the instruction
             // here by instantiating it based on available
             // information.  That's actually suboptimal since it may
             // force memory allocation which is unnecessary.
-            let insn = insn_fn(lab_byte_offset);
+            let insn = insn_fn(insn_byte_offset, lab_byte_offset);
             // Finally, just return the instantiated instructions
             // length
             insn.length()
@@ -459,7 +482,7 @@ fn insn_length(insn: &AssemblyInstruction, labels: &HashMap<String,usize>, offse
 /// Instantiate an assembly instruction using the computed byte offset
 /// for each label.  This only has an effect in the case of a partial
 /// instruction.
-fn insn_instantiate(insn: &mut AssemblyInstruction, labels: &HashMap<String,usize>, offsets: &[ByteOffset]) {
+fn insn_instantiate(index: usize, insn: &mut AssemblyInstruction, labels: &HashMap<String,usize>, offsets: &[ByteOffset]) {
    match insn {
         // Minimum length of a partial instruction is the provided
         // minimum length.
@@ -469,8 +492,11 @@ fn insn_instantiate(insn: &mut AssemblyInstruction, labels: &HashMap<String,usiz
             // Convert the instruction offset into its computed byte
             // offset for the given label.
             let lab_byte_offset = offsets[*lab_insn_offset];
+            // Calculate byte offset of instruction, which is needed
+            // to compute relative addresses.
+            let insn_byte_offset = offsets[index];
             // Finally, instantiate the instruction
-            *insn = AssemblyInstruction::Concrete(insn_fn(lab_byte_offset));
+            *insn = AssemblyInstruction::Concrete(insn_fn(insn_byte_offset,lab_byte_offset));
         }
         // No need to do anything for other instruction types
        _ => {}

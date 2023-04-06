@@ -505,7 +505,7 @@ fn try_from(terms: &[Term]) -> std::result::Result<Bytecode, CompilerError> {
 }
 
 fn make_partial_push(label: &str) -> AssemblyInstruction {
-    AssemblyInstruction::Partial(2,label.to_string(),|t| Instruction::PUSH(t.to_bytes()))
+    AssemblyInstruction::Partial(2,label.to_string(),|_,t| Instruction::PUSH(t.to_bytes()))
 }
 
 /// Construct a push instruction from a value.
