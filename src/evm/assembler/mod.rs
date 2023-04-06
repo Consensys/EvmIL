@@ -114,14 +114,14 @@ impl Assembly {
                 }
                 AssemblyInstruction::CodeSection => {
                     // FIXME: need to figure out how to determine the inputs/outputs, etc.
-                    sections.push(Section::Code{insns: Vec::new(), inputs: 0, outputs: 0, max_stack: 0});
+                    sections.push(Section::Code(Vec::new(), 0, 0, 0));
                 }
                 AssemblyInstruction::DataSection => {
                     sections.push(Section::Data(Vec::new()));
                 }
                 AssemblyInstruction::Concrete(insn) => {
                     match sections.last_mut() {
-                        Some(Section::Code{insns,inputs:_,outputs:_,max_stack:_}) => {
+                        Some(Section::Code(insns,_,_,_)) => {
                             insns.push(insn);
                         }
                         _ => {
@@ -184,7 +184,7 @@ impl From<Bytecode> for Assembly {
         //
         for section in &bytecode {
             match section {
-                Section::Code{insns,inputs:_,outputs:_,max_stack:_} => {
+                Section::Code(insns,_,_,_) => {
                     // Mark start of code section
                     asm.push(AssemblyInstruction::CodeSection);
                     // Push all instructions

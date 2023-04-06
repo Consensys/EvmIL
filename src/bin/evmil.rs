@@ -139,7 +139,7 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Check whether EOF or legacy code generation
     let bytes = if args.contains_id("eof") {
         // EVM Object Format
-        todo!();
+        assembly.to_bytecode()?.to_eof_bytes()
     } else {
         // Legacy
         assembly.to_bytecode()?.to_legacy_bytes()

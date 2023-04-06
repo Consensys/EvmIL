@@ -48,6 +48,12 @@ impl Parser {
             Token::Identifier("push"|"PUSH") => {
                 self.parse_push(lexer.next()?)?
             }
+            Token::Identifier("rjump"|"RJUMP") => {
+                self.parse_rjump(lexer.next()?)?
+            }
+            Token::Identifier("rjumpi"|"RJUMPI") => {
+                self.parse_rjumpi(lexer.next()?)?
+            }
             Token::Identifier(id) => {
                 self.bytecode.push(parse_opcode(id)?);
             }
@@ -81,6 +87,32 @@ impl Parser {
                 // instruction which requires a label to be resolved
                 // before it can be fully instantiated.
                 let insn = AssemblyInstruction::Partial(2,s.to_string(),|t| Instruction::PUSH(t.to_bytes()));
+                self.bytecode.push(insn);
+                Ok(())
+            },
+            Token::EOF => Err(AssemblyLanguageError::ExpectedOperand),
+            _ => Err(AssemblyLanguageError::UnexpectedToken)
+        }
+    }
+
+    /// Parse a rjump instruction with a given operand label.
+    fn parse_rjump(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
+        match operand {
+            Token::Identifier(s) => {
+                let insn = AssemblyInstruction::Partial(3,s.to_string(),|t| Instruction::RJUMP(todo!()));
+                self.bytecode.push(insn);
+                Ok(())
+            },
+            Token::EOF => Err(AssemblyLanguageError::ExpectedOperand),
+            _ => Err(AssemblyLanguageError::UnexpectedToken)
+        }
+    }
+
+    /// Parse a rjumpi instruction with a given operand label.
+    fn parse_rjumpi(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
+        match operand {
+            Token::Identifier(s) => {
+                let insn = AssemblyInstruction::Partial(3,s.to_string(),|t| Instruction::RJUMPI(todo!()));
                 self.bytecode.push(insn);
                 Ok(())
             },
