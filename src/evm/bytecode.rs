@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
+use crate::util::{ByteEncoder,ByteDecoder};
 use crate::evm::opcode;
 use crate::evm::{Instruction,ToInstructions};
 
@@ -17,7 +18,49 @@ use crate::evm::{Instruction,ToInstructions};
 pub const EOF_MAGIC : u16 = 0xEF00;
 
 // ============================================================================
-// Error
+// Encoding Error
+// ============================================================================
+
+/// An error which arises when attempting to encode an EOF bytecode
+/// structure.  This indicates the bytecode structure is malformed in
+/// some way.
+pub enum EncodingError {
+    /// Indicates there are too many code sections than can be encoded
+    /// in the EOF format.
+    TooManyCodeSections(usize),
+    /// Indiciates a code section is too long
+    CodeSectionTooLong(usize),
+    /// Indicates the data section is too long
+    DataSectionTooLong(usize),
+    /// Indicates the data section is not last (which it is required
+    /// to be for EOF)
+    DataSectionNotLast,
+    /// Indicates more than one data section
+    MultipleDataSections
+}
+
+
+impl fmt::Debug for EncodingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EncodingError::TooManyCodeSections(w) => write!(f,"too many code sections ({:#x})",w),
+            EncodingError::CodeSectionTooLong(w) => write!(f,"code section too long ({:#x})",w),
+            EncodingError::DataSectionTooLong(w) => write!(f,"data section too long ({:#x})",w),
+            EncodingError::DataSectionNotLast => write!(f,"data section is not last"),
+            EncodingError::MultipleDataSections => write!(f,"multiple data sections")
+        }
+    }
+}
+
+impl fmt::Display for EncodingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Just reuse debug formatting.
+        write!(f,"{:?}",self)
+    }
+}
+
+// ============================================================================
+// Decoding Error
 // ============================================================================
 
 /// An error which arises when attempting to decode a sequence of
@@ -53,6 +96,12 @@ pub enum DecodingError {
     /// Indicates, having read the EOF container entirely, there are
     /// some unexpected trailing bytes.
     ExpectedEndOfFile
+}
+
+impl Default for DecodingError {
+    fn default() -> Self {
+        DecodingError::UnexpectedEndOfFile
+    }
 }
 
 impl fmt::Debug for DecodingError {
@@ -92,24 +141,27 @@ impl std::error::Error for DecodingError {}
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 pub struct Bytecode {
-    version: BytecodeVersion,
     sections: Vec<Section>
 }
 
 impl Bytecode {
     pub fn empty() -> Self {
         Bytecode {
-	    version: BytecodeVersion::Legacy,
             sections: Vec::new()
         }
     }
 
-    pub fn new(version: BytecodeVersion, sections: Vec<Section>) -> Self {
-        Bytecode { version, sections }
+    pub fn new(sections: Vec<Section>) -> Self {
+        Bytecode { sections }
     }
 
-    pub fn version(&self) -> BytecodeVersion {
-        self.version
+    /// Return the number of sections in the code.
+    pub fn len(&self) -> usize {
+        self.sections.len()
+    }
+
+    pub fn iter<'a>(&'a self) -> BytecodeIter<'a,Section> {
+        self.sections.iter()
     }
 
     /// Add a new section to this bytecode container
@@ -118,17 +170,19 @@ impl Bytecode {
     }
 
     /// Convert this bytecode contract into a byte sequence correctly
-    /// formatted according to the container version (e.g. legacy or
-    /// EOF).
-    pub fn to_bytes(self) -> Vec<u8> {
-        // Assumption for now
-        assert!(self.version == BytecodeVersion::Legacy);
-        //
+    /// formatted for legacy code.
+    pub fn to_legacy_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
         //
         for s in self.sections { s.encode(&mut bytes); }
         // Done
         bytes
+    }
+
+    /// Convert this bytecode contract into a byte sequence correctly
+    /// formatted according to the EOF format.
+    pub fn to_eof_bytes(self) -> Vec<u8> {
+        internal_to_eof_bytes(self).unwrap()
     }
 
     /// Construct a bytecode contract from a given set of bytes.  The
@@ -139,7 +193,7 @@ impl Bytecode {
     pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
         // Check for EOF container
         if bytes.starts_with(&[opcode::EOF]) {
-            from_eof_bytes(bytes)
+            internal_from_eof_bytes(bytes)
         } else {
             todo!()
         }
@@ -164,18 +218,6 @@ impl<'a> IntoIterator for &'a Bytecode {
 }
 
 // ============================================================================
-// Versioning
-// ============================================================================
-
-#[derive(Clone,Copy,Debug,PartialEq)]
-pub enum BytecodeVersion {
-    /// Indicates a legacy (i.e. pre-EOF) contract.
-    Legacy,
-    /// Represents an EOF contract with a given versioning byte.
-    EOF(u8)
-}
-
-// ============================================================================
 // Section
 // ============================================================================
 
@@ -184,7 +226,7 @@ pub enum Section {
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
     /// along with appropriate _metadata_.
-    Code{insns: Vec<Instruction>, inputs: u8, outputs: u8, max_stack: u16}
+    Code(Vec<Instruction>, u8, u8, u16)
 }
 
 impl Section {
@@ -195,7 +237,7 @@ impl Section {
             Section::Data(bs) => {
                 bytes.extend(bs);
             }
-            Section::Code{insns, inputs: _, outputs: _, max_stack: _} => {
+            Section::Code(insns, _, _, _) => {
                 for b in insns {
                     // NOTE: unwrap safe as instructions validated on
                     // entry to the container.
@@ -216,17 +258,17 @@ impl Section {
 /// quite prescriptive, its possible that the incoming bytes are
 /// malformed in some way --- in which case an error will be
 /// generated.
-fn from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
-    let mut iter = EofIterator::new(bytes);
+fn internal_from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
+    let mut iter = ByteDecoder::new(bytes);
     iter.match_u16(EOF_MAGIC,|w| DecodingError::InvalidMagicNumber(w))?;
     // Pull out static information
-    let version = iter.next_u8()?;
+    let version = iter.decode_u8()?;
     // Sanity check version information
     if version != 1 { return Err(DecodingError::UnsupportedEofVersion(version)); }
     iter.match_u8(0x01,|w| DecodingError::InvalidKindType(w))?;
-    let type_len = iter.next_u16()?;
+    let type_len = iter.decode_u16()?;
     iter.match_u8(0x02,|w| DecodingError::InvalidKindCode(w))?;
-    let num_code_sections = iter.next_u16()? as usize;
+    let num_code_sections = iter.decode_u16()? as usize;
     // Sanity check length of type section
     if (type_len as usize) != (num_code_sections * 4) {
         return Err(DecodingError::InvalidTypeSize(type_len));
@@ -234,123 +276,113 @@ fn from_eof_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
     let mut code_sizes : Vec<usize> = Vec::new();
     // Extract code sizes
     for _i in 0..num_code_sections {
-        code_sizes.push(iter.next_u16()? as usize);
+        code_sizes.push(iter.decode_u16()? as usize);
     }
     iter.match_u8(0x03,|w| DecodingError::InvalidKindData(w))?;
-    let data_size = iter.next_u16()? as usize;
+    let data_size = iter.decode_u16()? as usize;
     iter.match_u8(0x00,|w| DecodingError::InvalidTerminator(w))?;
     // parse types section
     let mut types = Vec::new();
     for _i in 0..num_code_sections {
-        let inputs = iter.next_u8()?;
-        let outputs = iter.next_u8()?;
-        let max_stack = iter.next_u16()?;
+        let inputs = iter.decode_u8()?;
+        let outputs = iter.decode_u8()?;
+        let max_stack = iter.decode_u16()?;
         types.push((inputs,outputs,max_stack));
     }
-    let mut code = Bytecode::new(BytecodeVersion::EOF(version), Vec::new());
+    let mut code = Bytecode::new(Vec::new());
     // parse code section(s)
     for i in 0..num_code_sections {
-        let bytes = iter.next_bytes(code_sizes[i])?;
+        let bytes = iter.decode_bytes(code_sizes[i])?;
         // Recall type information
         let (inputs,outputs,max_stack) = types[i];
         // Convert byte sequence into an instruction sequence.
         let insns = bytes.to_insns();
         // Add code section
-        code.add(Section::Code{insns,inputs,outputs,max_stack})
+        code.add(Section::Code(insns,inputs,outputs,max_stack))
     }
     // parse data sectin (if present)
-    let data = iter.next_bytes(data_size)?.to_vec();
+    let data = iter.decode_bytes(data_size)?.to_vec();
     code.add(Section::Data(data));
     //
-    iter.match_eof()?;
+    iter.match_eof(DecodingError::ExpectedEndOfFile)?;
     // Done
     Ok(code)
 }
 
-/// A simple alias to make things a bit clearer.  In essence, this
-/// generates a decoding error from a given byte or word in the stream
-/// (depending on the kind of error being generated).
-type DecodingErrorFn<T> = fn(T)->DecodingError;
+// ============================================================================
+// Encoding (EOF)
+// ============================================================================
 
-/// Helper for pulling information out of an EOF formatted byte
-/// stream.
-struct EofIterator<'a> {
-    bytes: &'a [u8],
-    index: usize
-}
-
-impl<'a> EofIterator<'a> {
-    pub fn new(bytes: &'a [u8]) -> Self {
-        Self{bytes,index:0}
-    }
-
-    /// Attempt to match a given `u8` byte in the bytestream at the
-    /// present position.  If the match fails, an error is generating
-    /// using the provided decoding error generator.
-    pub fn match_u8(&mut self, n: u8, ef: DecodingErrorFn<u8>) -> Result<(),DecodingError> {
-        let m = self.next_u8()?;
-        if m == n { Ok(()) }
-        else { Err(ef(m)) }
-    }
-
-    /// Attempt to match a given `u16` word in the bytestream at the
-    /// present position assuming a _big endian_ representation.  If
-    /// the match fails, an error is generating using the provided
-    /// decoding error generator.
-    pub fn match_u16(&mut self, n: u16, ef: DecodingErrorFn<u16>) -> Result<(),DecodingError> {
-        let m = self.next_u16()?;
-        if m == n { Ok(()) }
-        else { Err(ef(m)) }
-    }
-
-    /// Attempt to match the _end of file_.  That is, we are expected
-    /// at this point that all bytes in original stream have been
-    /// consumed.  If not, then we have some trailing garbage in the
-    /// original stream and, if so, an error is generating using the
-    /// provided decoding error generator.
-    pub fn match_eof(&mut self) -> Result<(),DecodingError> {
-        if self.index == self.bytes.len() {
-            Ok(())
-        } else {
-            Err(DecodingError::ExpectedEndOfFile)
+fn internal_to_eof_bytes(bytecode: Bytecode) -> Result<Vec<u8>,EncodingError> {
+    let mut code_sections = Vec::new();
+    let mut data_section : Option<Vec<u8>> = None;
+    // Count number of code contracts (to be deprecated?)
+    for section in &bytecode {
+        match section {
+            Section::Code(_,_,_,_) => {
+                if data_section != None {
+                    return Err(EncodingError::DataSectionNotLast)
+                }
+                let mut code_bytes = Vec::new();
+                section.encode(&mut code_bytes);
+                code_sections.push(code_bytes);
+            }
+            Section::Data(data_bytes) => {
+                if data_section != None {
+                    return Err(EncodingError::MultipleDataSections)
+                } else {
+                    data_section = Some(data_bytes.clone())
+                }
+            }
         }
     }
-
-    /// Read the next byte from the sequence, and move our position to
-    /// the next byte in the sequence.  If no such byte is available
-    /// (i.e. we have reached the end of the byte sequence), then an
-    /// error is reported.
-    pub fn next_u8(&mut self) -> Result<u8,DecodingError> {
-        if self.index < self.bytes.len() {
-            let next = self.bytes[self.index];
-            self.index += 1;
-            Ok(next)
-        } else {
-            Err(DecodingError::UnexpectedEndOfFile)
+    let data_len :usize = data_section.as_ref().map_or(0,|s| s.len());
+    let mut bytes = ByteEncoder::new();
+    // Magic
+    bytes.encode_u16(EOF_MAGIC);
+    // Version
+    bytes.encode_u8(1);
+    // Kind type
+    bytes.encode_u8(0x1);
+    // Type length
+    bytes.encode_checked_u16(code_sections.len() * 4, |c| {
+        EncodingError::TooManyCodeSections(c/4)
+    })?;
+    // Kind code
+    bytes.encode_u8(0x2);
+    // Num code sections
+    bytes.encode_checked_u16(code_sections.len(), |_| unreachable!())?;
+    // Code section lengths
+    for code_bytes in &code_sections {
+        bytes.encode_checked_u16(code_bytes.len(), |n| {
+            EncodingError::CodeSectionTooLong(n)
+        })?;
+    }
+    // Kind data
+    bytes.encode_u8(0x3);
+    // Data length
+    bytes.encode_checked_u16(data_len, |n| {
+        EncodingError::DataSectionTooLong(n)
+    })?;
+    // Header terminator
+    bytes.encode_u8(0x00);
+    // Write types data
+    for section in &bytecode {
+        match section {
+            Section::Code(_,inputs,outputs,max_stack) => {
+                bytes.encode_u8(*inputs);
+                bytes.encode_u8(*outputs);
+                bytes.encode_u16(*max_stack);
+            }
+            _ => {}
         }
     }
-
-    /// Read the next word from the sequence assuming a _big endian_
-    /// representation, whilst moving our position to the next byte in
-    /// the sequence.  If no such word is available (i.e. we have
-    /// reached the end of the byte sequence), then an error is
-    /// reported.
-    pub fn next_u16(&mut self) -> Result<u16,DecodingError> {
-        let msb = self.next_u8()?;
-        let lsb = self.next_u8()?;
-        Ok(u16::from_be_bytes([msb,lsb]))
+    // Write code bytes
+    for code_bytes in code_sections {
+        bytes.encode_bytes(code_bytes);
     }
-
-    /// Read the next `n` bytes from the sequence, whilst moving our
-    /// position to the following byte.  If there are insufficient
-    /// bytes remaining, then an error is reported.
-    pub fn next_bytes(&mut self, length: usize) -> Result<&'a [u8],DecodingError> {
-        let start = self.index;
-        self.index += length;
-        if self.index <= self.bytes.len() {
-            Ok(&self.bytes[start..self.index])
-        } else {
-            Err(DecodingError::UnexpectedEndOfFile)
-        }
-    }
+    // Write data bytes
+    bytes.encode_bytes(data_section.unwrap_or(Vec::new()));
+    // Done
+    Ok(bytes.to_vec())
 }

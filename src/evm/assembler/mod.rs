@@ -3,7 +3,7 @@ mod parser; // private (for now)
 
 use std::fmt;
 use std::collections::{HashMap};
-use crate::evm::{Bytecode,BytecodeVersion,Instruction,Section};
+use crate::evm::{Bytecode,Instruction,Section};
 use crate::util::{ToHexString};
 
 use parser::Parser;
@@ -67,25 +67,21 @@ impl std::error::Error for AssemblyLanguageError {
 /// turned, for example, into a hex string.  Likewise, they can be
 /// decompiled or further optimised.
 pub struct Assembly {
-    version: BytecodeVersion,
     /// The underlying bytecode sequence.
     bytecodes: Vec<AssemblyInstruction>
 }
 
 impl Assembly {
     /// Create an empty assembly
-    pub fn new(version: BytecodeVersion) -> Self {
-        Assembly {
-            version,
-            bytecodes: Vec::new()
-        }
+    pub fn new() -> Self {
+        Assembly { bytecodes: Vec::new() }
     }
 
     /// Parse assembly language to form an assembly
-    pub fn from_str(version: BytecodeVersion, input: &str) -> Result<Assembly,AssemblyLanguageError> {
+    pub fn from_str(input: &str) -> Result<Assembly,AssemblyLanguageError> {
         // Holds the set of lines being parsed.
         let lines : Vec<&str> = input.lines().collect();
-        let mut parser = Parser::new(version);
+        let mut parser = Parser::new();
         //
         for l in &lines {
             parser.parse(l)?;
@@ -118,14 +114,14 @@ impl Assembly {
                 }
                 AssemblyInstruction::CodeSection => {
                     // FIXME: need to figure out how to determine the inputs/outputs, etc.
-                    sections.push(Section::Code{insns: Vec::new(), inputs: 0, outputs: 0, max_stack: 0});
+                    sections.push(Section::Code(Vec::new(), 0, 0, 0));
                 }
                 AssemblyInstruction::DataSection => {
                     sections.push(Section::Data(Vec::new()));
                 }
                 AssemblyInstruction::Concrete(insn) => {
                     match sections.last_mut() {
-                        Some(Section::Code{insns,inputs:_,outputs:_,max_stack:_}) => {
+                        Some(Section::Code(insns,_,_,_)) => {
                             insns.push(insn);
                         }
                         _ => {
@@ -158,7 +154,7 @@ impl Assembly {
             }
         }
         //
-        Ok(Bytecode::new(self.version,sections))
+        Ok(Bytecode::new(sections))
     }
 }
 
@@ -184,11 +180,11 @@ impl From<Bytecode> for Assembly {
     /// instructions into partial instructions.
     fn from(bytecode: Bytecode) -> Self {
         //
-        let mut asm = Assembly::new(bytecode.version());
+        let mut asm = Assembly::new();
         //
         for section in &bytecode {
             match section {
-                Section::Code{insns,inputs:_,outputs:_,max_stack:_} => {
+                Section::Code(insns,_,_,_) => {
                     // Mark start of code section
                     asm.push(AssemblyInstruction::CodeSection);
                     // Push all instructions

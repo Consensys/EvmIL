@@ -24,7 +24,7 @@ fn check(test: &str) {
     // Translate statements into bytecode instructions
     let bytecode = Bytecode::try_from(terms.as_slice()).unwrap();
     // Translate instructions into bytes
-    let eil_bytes: Vec<u8> = bytecode.to_bytes();
+    let eil_bytes: Vec<u8> = bytecode.to_legacy_bytes();
     // Parse hex string into bytes
     let bin_bytes = bin.trim().from_hex_string().unwrap();
     // Check they match

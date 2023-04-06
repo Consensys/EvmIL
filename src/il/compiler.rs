@@ -21,7 +21,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::evm::{Assembly,AssemblyInstruction,Bytecode,BytecodeVersion,Instruction};
+use crate::evm::{Assembly,AssemblyInstruction,Bytecode,Instruction};
 use crate::util::*;
 
 type Result = std::result::Result<(), CompilerError>;
@@ -53,7 +53,7 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new() -> Self {
-        let mut bytecode = Assembly::new(BytecodeVersion::Legacy);
+        let mut bytecode = Assembly::new();
         bytecode.push(AssemblyInstruction::CodeSection);
         Self { bytecode,labels: 0 }
     }

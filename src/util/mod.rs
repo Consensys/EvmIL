@@ -9,6 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+mod byte_decoder;
+mod byte_encoder;
 mod byte_utils;
 mod hex;
 mod interval;
@@ -18,6 +20,8 @@ mod numeric;
 mod word256;
 mod sorted_vec;
 
+pub use byte_decoder::*;
+pub use byte_encoder::*;
 pub use byte_utils::*;
 pub use hex::*;
 pub use interval::*;
