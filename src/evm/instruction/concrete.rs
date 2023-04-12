@@ -9,9 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt;
-use crate::util::ToHexString;
-use super::opcode;
+use crate::evm::{AbstractInstruction,InstructionOperands,VoidOperand};
+use crate::evm::opcode;
 
 // ============================================================================
 // Errors
@@ -29,134 +28,23 @@ pub enum Error {
 }
 
 // ============================================================================
-// Bytecode Instructions
+// Concrete Instructions
 // ============================================================================
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Instruction {
-    // 0s: Stop and Arithmetic Operations
-    STOP,
-    ADD,
-    MUL,
-    SUB,
-    DIV,
-    SDIV,
-    MOD,
-    SMOD,
-    ADDMOD,
-    MULMOD,
-    EXP,
-    SIGNEXTEND,
-    // 10s: Comparison & Bitwise Logic Operations
-    LT,
-    GT,
-    SLT,
-    SGT,
-    EQ,
-    ISZERO,
-    AND,
-    OR,
-    XOR,
-    NOT,
-    BYTE,
-    SHL,
-    SHR,
-    SAR,
-    // 20s: Keccak256
-    KECCAK256,
-    // 30s: Environmental Information
-    ADDRESS,
-    BALANCE,
-    ORIGIN,
-    CALLER,
-    CALLVALUE,
-    CALLDATALOAD,
-    CALLDATASIZE,
-    CALLDATACOPY,
-    CODESIZE,
-    CODECOPY,
-    GASPRICE,
-    EXTCODESIZE,
-    EXTCODECOPY,
-    RETURNDATASIZE,
-    RETURNDATACOPY,
-    EXTCODEHASH,
-    // 40s: Block Information
-    BLOCKHASH,
-    COINBASE,
-    TIMESTAMP,
-    NUMBER,
-    DIFFICULTY,
-    GASLIMIT,
-    CHAINID,
-    SELFBALANCE,
-    // 50s: Stack, Memory, Storage and Flow Operations
-    POP,
-    MLOAD,
-    MSTORE,
-    MSTORE8,
-    SLOAD,
-    SSTORE,
-    JUMP,
-    JUMPI,
-    PC,
-    MSIZE,
-    GAS,
-    JUMPDEST,
-    RJUMP(i16),  // EIP4200
-    RJUMPI(i16), // EIP4200
-    // 60 & 70s: Push Operations
-    PUSH(Vec<u8>),
-    // 80s: Duplicate Operations
-    DUP(u8),
-    // 90s: Exchange Operations
-    SWAP(u8),
-    // a0s: Logging Operations
-    LOG(u8),
-    // f0s: System Operations
-    CREATE,
-    CALL,
-    CALLCODE,
-    RETURN,
-    DELEGATECALL,
-    CREATE2,
-    STATICCALL,
-    REVERT,
-    INVALID,
-    SELFDESTRUCT,
-    // Signals arbitrary data in the contract, rather than bytecode
-    // instructions.
-    DATA(Vec<u8>),
+#[derive(Clone,Debug,PartialEq)]
+pub struct ConcreteOperands();
+
+impl InstructionOperands for ConcreteOperands {
+    type RelOffset16 = i16;
+    /// We do not permit the `PUSHL` instruction here, since it is
+    /// already represented by `PUSH`.
+    type PushLabel = VoidOperand;
 }
 
-impl Instruction {
-    /// Determine whether or not control can continue to the next
-    /// instruction.
-    pub fn fallthru(&self) -> bool {
-        match self {
-            Instruction::DATA(_) => false,
-            Instruction::INVALID => false,
-            Instruction::JUMP => false,
-            Instruction::RJUMP(_) => false,
-            Instruction::STOP => false,
-            Instruction::RETURN => false,
-            Instruction::REVERT => false,
-            Instruction::SELFDESTRUCT => false,
-            _ => true,
-        }
-    }
+/// An EVM instruction is an abstract instruction with concrete operands.
+pub type Instruction = AbstractInstruction<ConcreteOperands>;
 
-    /// Determine whether or not this instruction can branch.  That
-    /// is, whether or not it is a `JUMP` or `JUMPI` instruction.
-    pub fn can_branch(&self) -> bool {
-        match self {
-            Instruction::JUMP => true,
-            Instruction::JUMPI => true,
-            Instruction::RJUMP(_) => true,
-            Instruction::RJUMPI(_) => true,
-            _ => false,
-        }
-    }
+impl Instruction {
 
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
@@ -328,6 +216,11 @@ impl Instruction {
             Instruction::INVALID => opcode::INVALID,
             Instruction::SELFDESTRUCT => opcode::SELFDESTRUCT,
             //
+            Instruction::PUSHL(_) => {
+                // Unreachable because `PushBytes` is marked as
+                // `Void`.
+                unreachable!();
+            }
             Instruction::DATA(_) => {
                 panic!("Invalid instruction ({:?})", self);
             }
@@ -462,59 +355,6 @@ impl Instruction {
         };
         //
         insn
-    }
-}
-
-// ============================================================================
-// Display
-// ============================================================================
-
-impl fmt::Display for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Use the default (debug) formatter.  Its only for certain
-        // instructions that we need to do anything different.
-        match self {
-            Instruction::DATA(bytes) => {
-                // Print bytes as hex string
-                write!(f, "{}", bytes.to_hex_string())
-            }
-            Instruction::DUP(n) => {
-                write!(f, "dup{}",n)
-            }
-            Instruction::LOG(n) => {
-                write!(f, "log{n}")
-            }
-            Instruction::JUMPDEST => {
-                write!(f, "jumpdest")
-            }
-            Instruction::PUSH(bytes) => {
-                // Convert bytes into hex string
-                let hex = bytes.to_hex_string();
-                // Print!
-                write!(f, "push {}", hex)
-            }
-            Instruction::RJUMP(offset) => {
-                if offset < &0 {
-                    write!(f, "rjump -{:#x}", offset)
-                } else {
-                    write!(f, "rjump {:#x}", offset)
-                }
-            }
-            Instruction::RJUMPI(offset) => {
-                if offset < &0 {
-                    write!(f, "rjumpi -{:#x}", offset)
-                } else {
-                    write!(f, "rjumpi {:#x}", offset)
-                }
-            }
-            Instruction::SWAP(n) => {
-                write!(f, "swap{n}")
-            }
-            _ => {
-                let s = format!("{:?}",self).to_lowercase();
-                write!(f, "{s}")
-            }
-        }
     }
 }
 
