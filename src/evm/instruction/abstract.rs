@@ -5,8 +5,12 @@ use crate::util::{ToHexString};
 /// Provides a mechanism by which an instruction can be parameterised
 /// to support different forms of control flow.
 pub trait InstructionOperands {
+    /// Identifies the type of 16bit relative offsets.
     type RelOffset16 : Debug;
+    /// Identifies the type for _push label_ instructions.
     type PushLabel : Debug;
+    /// Identifies the type for _label_ instructions.
+    type Label : Debug;
 }
 
 /// A void operand is used to signal that something is impossible
@@ -101,6 +105,7 @@ pub enum AbstractInstruction<T:InstructionOperands> {
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
     PUSHL(T::PushLabel),
+    LABEL(T::Label),
     // 80s: Duplicate Operations
     DUP(u8),
     // 90s: Exchange Operations

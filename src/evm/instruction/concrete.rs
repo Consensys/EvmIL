@@ -27,6 +27,8 @@ pub enum Error {
     InvalidLabelOffset,
 }
 
+use AbstractInstruction::*;
+
 // ============================================================================
 // Concrete Instructions
 // ============================================================================
@@ -39,35 +41,37 @@ impl InstructionOperands for ConcreteOperands {
     /// We do not permit the `PUSHL` instruction here, since it is
     /// already represented by `PUSH`.
     type PushLabel = VoidOperand;
+    /// Likewise, we do not permit the `LABEL` instruction here, since
+    /// it has no concrete meaning.
+    type Label = VoidOperand;
 }
 
 /// An EVM instruction is an abstract instruction with concrete operands.
 pub type Instruction = AbstractInstruction<ConcreteOperands>;
 
 impl Instruction {
-
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
     pub fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Error> {
         // Push operands (if applicable)
         match self {
-            Instruction::DATA(args) => {
+            DATA(args) => {
                 // Push operands
                 bytes.extend(args);
             }
-            Instruction::RJUMP(target) => {
+            RJUMP(target) => {
                 // Push opcode
                 bytes.push(self.opcode()?);
                 // Push operands
                 bytes.extend(&target.to_be_bytes());
             }
-            Instruction::RJUMPI(target) => {
+            RJUMPI(target) => {
                 // Push opcode
                 bytes.push(self.opcode()?);
                 // Push operands
                 bytes.extend(&target.to_be_bytes());
             }
-            Instruction::PUSH(args) => {
+            PUSH(args) => {
                 // Push opcode
                 bytes.push(self.opcode()?);
                 // Push operands
@@ -86,12 +90,12 @@ impl Instruction {
     /// given set of label offsets.
     pub fn length(&self) -> usize {
         match self {
-            Instruction::DATA(bytes) => bytes.len(),
+            DATA(bytes) => bytes.len(),
             // Static jumps
-            Instruction::RJUMP(_) => 3,
-            Instruction::RJUMPI(_) => 3,
+            RJUMP(_) => 3,
+            RJUMPI(_) => 3,
             // Push instructions
-            Instruction::PUSH(bs) => 1 + bs.len(),
+            PUSH(bs) => 1 + bs.len(),
             // Default case
             _ => 1,
         }
@@ -104,78 +108,78 @@ impl Instruction {
     pub fn opcode(&self) -> Result<u8, Error> {
         let op = match self {
             // 0s: Stop and Arithmetic Operations
-            Instruction::STOP => opcode::STOP,
-            Instruction::ADD => opcode::ADD,
-            Instruction::MUL => opcode::MUL,
-            Instruction::SUB => opcode::SUB,
-            Instruction::DIV => opcode::DIV,
-            Instruction::SDIV => opcode::SDIV,
-            Instruction::MOD => opcode::MOD,
-            Instruction::SMOD => opcode::SMOD,
-            Instruction::ADDMOD => opcode::ADDMOD,
-            Instruction::MULMOD => opcode::MULMOD,
-            Instruction::EXP => opcode::EXP,
-            Instruction::SIGNEXTEND => opcode::SIGNEXTEND,
+            STOP => opcode::STOP,
+            ADD => opcode::ADD,
+            MUL => opcode::MUL,
+            SUB => opcode::SUB,
+            DIV => opcode::DIV,
+            SDIV => opcode::SDIV,
+            MOD => opcode::MOD,
+            SMOD => opcode::SMOD,
+            ADDMOD => opcode::ADDMOD,
+            MULMOD => opcode::MULMOD,
+            EXP => opcode::EXP,
+            SIGNEXTEND => opcode::SIGNEXTEND,
             // 10s: Comparison & Bitwise Logic Operations
-            Instruction::LT => opcode::LT,
-            Instruction::GT => opcode::GT,
-            Instruction::SLT => opcode::SLT,
-            Instruction::SGT => opcode::SGT,
-            Instruction::EQ => opcode::EQ,
-            Instruction::ISZERO => opcode::ISZERO,
-            Instruction::AND => opcode::AND,
-            Instruction::OR => opcode::OR,
-            Instruction::XOR => opcode::XOR,
-            Instruction::NOT => opcode::NOT,
-            Instruction::BYTE => opcode::BYTE,
-            Instruction::SHL => opcode::SHL,
-            Instruction::SHR => opcode::SHR,
-            Instruction::SAR => opcode::SAR,
+            LT => opcode::LT,
+            GT => opcode::GT,
+            SLT => opcode::SLT,
+            SGT => opcode::SGT,
+            EQ => opcode::EQ,
+            ISZERO => opcode::ISZERO,
+            AND => opcode::AND,
+            OR => opcode::OR,
+            XOR => opcode::XOR,
+            NOT => opcode::NOT,
+            BYTE => opcode::BYTE,
+            SHL => opcode::SHL,
+            SHR => opcode::SHR,
+            SAR => opcode::SAR,
             // 20s: Keccak256
-            Instruction::KECCAK256 => opcode::KECCAK256,
+            KECCAK256 => opcode::KECCAK256,
             // 30s: Environmental Information
-            Instruction::ADDRESS => opcode::ADDRESS,
-            Instruction::BALANCE => opcode::BALANCE,
-            Instruction::ORIGIN => opcode::ORIGIN,
-            Instruction::CALLER => opcode::CALLER,
-            Instruction::CALLVALUE => opcode::CALLVALUE,
-            Instruction::CALLDATALOAD => opcode::CALLDATALOAD,
-            Instruction::CALLDATASIZE => opcode::CALLDATASIZE,
-            Instruction::CALLDATACOPY => opcode::CALLDATACOPY,
-            Instruction::CODESIZE => opcode::CODESIZE,
-            Instruction::CODECOPY => opcode::CODECOPY,
-            Instruction::GASPRICE => opcode::GASPRICE,
-            Instruction::EXTCODESIZE => opcode::EXTCODESIZE,
-            Instruction::EXTCODECOPY => opcode::EXTCODECOPY,
-            Instruction::RETURNDATASIZE => opcode::RETURNDATASIZE,
-            Instruction::RETURNDATACOPY => opcode::RETURNDATACOPY,
-            Instruction::EXTCODEHASH => opcode::EXTCODEHASH,
+            ADDRESS => opcode::ADDRESS,
+            BALANCE => opcode::BALANCE,
+            ORIGIN => opcode::ORIGIN,
+            CALLER => opcode::CALLER,
+            CALLVALUE => opcode::CALLVALUE,
+            CALLDATALOAD => opcode::CALLDATALOAD,
+            CALLDATASIZE => opcode::CALLDATASIZE,
+            CALLDATACOPY => opcode::CALLDATACOPY,
+            CODESIZE => opcode::CODESIZE,
+            CODECOPY => opcode::CODECOPY,
+            GASPRICE => opcode::GASPRICE,
+            EXTCODESIZE => opcode::EXTCODESIZE,
+            EXTCODECOPY => opcode::EXTCODECOPY,
+            RETURNDATASIZE => opcode::RETURNDATASIZE,
+            RETURNDATACOPY => opcode::RETURNDATACOPY,
+            EXTCODEHASH => opcode::EXTCODEHASH,
             // 40s: Block Information
-            Instruction::BLOCKHASH => opcode::BLOCKHASH,
-            Instruction::COINBASE => opcode::COINBASE,
-            Instruction::TIMESTAMP => opcode::TIMESTAMP,
-            Instruction::NUMBER => opcode::NUMBER,
-            Instruction::DIFFICULTY => opcode::DIFFICULTY,
-            Instruction::GASLIMIT => opcode::GASLIMIT,
-            Instruction::CHAINID => opcode::CHAINID,
-            Instruction::SELFBALANCE => opcode::SELFBALANCE,
+            BLOCKHASH => opcode::BLOCKHASH,
+            COINBASE => opcode::COINBASE,
+            TIMESTAMP => opcode::TIMESTAMP,
+            NUMBER => opcode::NUMBER,
+            DIFFICULTY => opcode::DIFFICULTY,
+            GASLIMIT => opcode::GASLIMIT,
+            CHAINID => opcode::CHAINID,
+            SELFBALANCE => opcode::SELFBALANCE,
             // 50s: Stack, Memory, Storage and Flow Operations
-            Instruction::POP => opcode::POP,
-            Instruction::MLOAD => opcode::MLOAD,
-            Instruction::MSTORE => opcode::MSTORE,
-            Instruction::MSTORE8 => opcode::MSTORE8,
-            Instruction::SLOAD => opcode::SLOAD,
-            Instruction::SSTORE => opcode::SSTORE,
-            Instruction::JUMP => opcode::JUMP,
-            Instruction::JUMPI => opcode::JUMPI,
-            Instruction::PC => opcode::PC,
-            Instruction::MSIZE => opcode::MSIZE,
-            Instruction::GAS => opcode::GAS,
-            Instruction::JUMPDEST => opcode::JUMPDEST,
-            Instruction::RJUMP(_) => opcode::RJUMP,
-            Instruction::RJUMPI(_) => opcode::RJUMPI,
+            POP => opcode::POP,
+            MLOAD => opcode::MLOAD,
+            MSTORE => opcode::MSTORE,
+            MSTORE8 => opcode::MSTORE8,
+            SLOAD => opcode::SLOAD,
+            SSTORE => opcode::SSTORE,
+            JUMP => opcode::JUMP,
+            JUMPI => opcode::JUMPI,
+            PC => opcode::PC,
+            MSIZE => opcode::MSIZE,
+            GAS => opcode::GAS,
+            JUMPDEST => opcode::JUMPDEST,
+            RJUMP(_) => opcode::RJUMP,
+            RJUMPI(_) => opcode::RJUMPI,
             // 60s & 70s: Push Operations
-            Instruction::PUSH(bs) => {
+            PUSH(bs) => {
                 if bs.len() == 0 || bs.len() > 32 {
                     return Err(Error::InvalidPush);
                 } else {
@@ -184,44 +188,44 @@ impl Instruction {
                 }
             }
             // 80s: Duplication Operations
-            Instruction::DUP(n) => {
+            DUP(n) => {
                 if *n == 0 || *n > 32 {
                     return Err(Error::InvalidDup);
                 }
                 opcode::DUP1 + (n-1)
             }
             // 90s: Swap Operations
-            Instruction::SWAP(n) => {
+            SWAP(n) => {
                 if *n == 0 || *n > 32 {
                     return Err(Error::InvalidDup);
                 }
                 opcode::SWAP1 + (n-1)
             }
             // a0s: Log Operations
-            Instruction::LOG(n) => {
+            LOG(n) => {
                 if *n > 4 {
                     return Err(Error::InvalidDup);
                 }
                 opcode::LOG0 + n
             }
             // f0s: System Operations
-            Instruction::CREATE => opcode::CREATE,
-            Instruction::CALL => opcode::CALL,
-            Instruction::CALLCODE => opcode::CALLCODE,
-            Instruction::RETURN => opcode::RETURN,
-            Instruction::DELEGATECALL => opcode::DELEGATECALL,
-            Instruction::CREATE2 => opcode::CREATE2,
-            Instruction::STATICCALL => opcode::STATICCALL,
-            Instruction::REVERT => opcode::REVERT,
-            Instruction::INVALID => opcode::INVALID,
-            Instruction::SELFDESTRUCT => opcode::SELFDESTRUCT,
+            CREATE => opcode::CREATE,
+            CALL => opcode::CALL,
+            CALLCODE => opcode::CALLCODE,
+            RETURN => opcode::RETURN,
+            DELEGATECALL => opcode::DELEGATECALL,
+            CREATE2 => opcode::CREATE2,
+            STATICCALL => opcode::STATICCALL,
+            REVERT => opcode::REVERT,
+            INVALID => opcode::INVALID,
+            SELFDESTRUCT => opcode::SELFDESTRUCT,
             //
-            Instruction::PUSHL(_) => {
-                // Unreachable because `PushBytes` is marked as
-                // `Void`.
+            PUSHL(_)|LABEL(_) => {
+                // Unreachable because these instructions are not
+                // concrete.
                 unreachable!();
             }
-            Instruction::DATA(_) => {
+            DATA(_) => {
                 panic!("Invalid instruction ({:?})", self);
             }
         };
@@ -235,85 +239,85 @@ impl Instruction {
         //
         let insn = match opcode {
             // 0s: Stop and Arithmetic Operations
-            opcode::STOP => Instruction::STOP,
-            opcode::ADD => Instruction::ADD,
-            opcode::MUL => Instruction::MUL,
-            opcode::SUB => Instruction::SUB,
-            opcode::DIV => Instruction::DIV,
-            opcode::SDIV => Instruction::SDIV,
-            opcode::MOD => Instruction::MOD,
-            opcode::SMOD => Instruction::SMOD,
-            opcode::ADDMOD => Instruction::ADDMOD,
-            opcode::MULMOD => Instruction::MULMOD,
-            opcode::EXP => Instruction::EXP,
-            opcode::SIGNEXTEND => Instruction::SIGNEXTEND,
+            opcode::STOP => STOP,
+            opcode::ADD => ADD,
+            opcode::MUL => MUL,
+            opcode::SUB => SUB,
+            opcode::DIV => DIV,
+            opcode::SDIV => SDIV,
+            opcode::MOD => MOD,
+            opcode::SMOD => SMOD,
+            opcode::ADDMOD => ADDMOD,
+            opcode::MULMOD => MULMOD,
+            opcode::EXP => EXP,
+            opcode::SIGNEXTEND => SIGNEXTEND,
             // 10s: Comparison & Bitwise Logic Operations
-            opcode::LT => Instruction::LT,
-            opcode::GT => Instruction::GT,
-            opcode::SLT => Instruction::SLT,
-            opcode::SGT => Instruction::SGT,
-            opcode::EQ => Instruction::EQ,
-            opcode::ISZERO => Instruction::ISZERO,
-            opcode::AND => Instruction::AND,
-            opcode::OR => Instruction::OR,
-            opcode::XOR => Instruction::XOR,
-            opcode::NOT => Instruction::NOT,
-            opcode::BYTE => Instruction::BYTE,
-            opcode::SHL => Instruction::SHL,
-            opcode::SHR => Instruction::SHR,
-            opcode::SAR => Instruction::SAR,
+            opcode::LT => LT,
+            opcode::GT => GT,
+            opcode::SLT => SLT,
+            opcode::SGT => SGT,
+            opcode::EQ => EQ,
+            opcode::ISZERO => ISZERO,
+            opcode::AND => AND,
+            opcode::OR => OR,
+            opcode::XOR => XOR,
+            opcode::NOT => NOT,
+            opcode::BYTE => BYTE,
+            opcode::SHL => SHL,
+            opcode::SHR => SHR,
+            opcode::SAR => SAR,
             // 20s: SHA3
-            opcode::KECCAK256 => Instruction::KECCAK256,
+            opcode::KECCAK256 => KECCAK256,
             // 30s: Environmental Information
-            opcode::ADDRESS => Instruction::ADDRESS,
-            opcode::BALANCE => Instruction::BALANCE,
-            opcode::ORIGIN => Instruction::ORIGIN,
-            opcode::CALLER => Instruction::CALLER,
-            opcode::CALLVALUE => Instruction::CALLVALUE,
-            opcode::CALLDATALOAD => Instruction::CALLDATALOAD,
-            opcode::CALLDATASIZE => Instruction::CALLDATASIZE,
-            opcode::CALLDATACOPY => Instruction::CALLDATACOPY,
-            opcode::CODESIZE => Instruction::CODESIZE,
-            opcode::CODECOPY => Instruction::CODECOPY,
-            opcode::GASPRICE => Instruction::GASPRICE,
-            opcode::EXTCODESIZE => Instruction::EXTCODESIZE,
-            opcode::EXTCODECOPY => Instruction::EXTCODECOPY,
-            opcode::RETURNDATASIZE => Instruction::RETURNDATASIZE,
-            opcode::RETURNDATACOPY => Instruction::RETURNDATACOPY,
-            opcode::EXTCODEHASH => Instruction::EXTCODEHASH,
+            opcode::ADDRESS => ADDRESS,
+            opcode::BALANCE => BALANCE,
+            opcode::ORIGIN => ORIGIN,
+            opcode::CALLER => CALLER,
+            opcode::CALLVALUE => CALLVALUE,
+            opcode::CALLDATALOAD => CALLDATALOAD,
+            opcode::CALLDATASIZE => CALLDATASIZE,
+            opcode::CALLDATACOPY => CALLDATACOPY,
+            opcode::CODESIZE => CODESIZE,
+            opcode::CODECOPY => CODECOPY,
+            opcode::GASPRICE => GASPRICE,
+            opcode::EXTCODESIZE => EXTCODESIZE,
+            opcode::EXTCODECOPY => EXTCODECOPY,
+            opcode::RETURNDATASIZE => RETURNDATASIZE,
+            opcode::RETURNDATACOPY => RETURNDATACOPY,
+            opcode::EXTCODEHASH => EXTCODEHASH,
             // 40s: Block Information
-            opcode::BLOCKHASH => Instruction::BLOCKHASH,
-            opcode::COINBASE => Instruction::COINBASE,
-            opcode::TIMESTAMP => Instruction::TIMESTAMP,
-            opcode::NUMBER => Instruction::NUMBER,
-            opcode::DIFFICULTY => Instruction::DIFFICULTY,
-            opcode::GASLIMIT => Instruction::GASLIMIT,
-            opcode::CHAINID => Instruction::CHAINID,
-            opcode::SELFBALANCE => Instruction::SELFBALANCE,
+            opcode::BLOCKHASH => BLOCKHASH,
+            opcode::COINBASE => COINBASE,
+            opcode::TIMESTAMP => TIMESTAMP,
+            opcode::NUMBER => NUMBER,
+            opcode::DIFFICULTY => DIFFICULTY,
+            opcode::GASLIMIT => GASLIMIT,
+            opcode::CHAINID => CHAINID,
+            opcode::SELFBALANCE => SELFBALANCE,
             // 50s: Stack, Memory, Storage and Flow Operations
-            opcode::POP => Instruction::POP,
-            opcode::MLOAD => Instruction::MLOAD,
-            opcode::MSTORE => Instruction::MSTORE,
-            opcode::MSTORE8 => Instruction::MSTORE8,
-            opcode::SLOAD => Instruction::SLOAD,
-            opcode::SSTORE => Instruction::SSTORE,
-            opcode::JUMP => Instruction::JUMP,
-            opcode::JUMPI => Instruction::JUMPI,
-            opcode::PC => Instruction::PC,
-            opcode::MSIZE => Instruction::MSIZE,
-            opcode::GAS => Instruction::GAS,
-            opcode::JUMPDEST => Instruction::JUMPDEST,
+            opcode::POP => POP,
+            opcode::MLOAD => MLOAD,
+            opcode::MSTORE => MSTORE,
+            opcode::MSTORE8 => MSTORE8,
+            opcode::SLOAD => SLOAD,
+            opcode::SSTORE => SSTORE,
+            opcode::JUMP => JUMP,
+            opcode::JUMPI => JUMPI,
+            opcode::PC => PC,
+            opcode::MSIZE => MSIZE,
+            opcode::GAS => GAS,
+            opcode::JUMPDEST => JUMPDEST,
             opcode::RJUMP => {
                 // NOTE: these instructions are not permitted to
                 // overflow, and therefore don't require padding.
                 let arg = [bytes[pc+1],bytes[pc+2]];
-                Instruction::RJUMP(i16::from_be_bytes(arg))
+                RJUMP(i16::from_be_bytes(arg))
             }
             opcode::RJUMPI => {
                 // NOTE: these instructions are not permitted to
                 // overflow, and therefore don't require padding.
                 let arg = [bytes[pc+1],bytes[pc+2]];
-                Instruction::RJUMPI(i16::from_be_bytes(arg))
+                RJUMPI(i16::from_be_bytes(arg))
             }
             // 60s & 70s: Push Operations
             opcode::PUSH1..=opcode::PUSH32 => {
@@ -321,7 +325,7 @@ impl Instruction {
                 let n = pc + 2 + ((opcode - opcode::PUSH1) as usize);
                 if n <= bytes.len() {
                     // Simple case: does not overflow
-                    Instruction::PUSH(bytes[m..n].to_vec())
+                    PUSH(bytes[m..n].to_vec())
                 } else {
                     // Harder case: does overflow code.
                     let mut bs = bytes[m..].to_vec();
@@ -330,28 +334,28 @@ impl Instruction {
                         bs.push(0);
                     }
                     // Done
-                    Instruction::PUSH(bs)
+                    PUSH(bs)
                 }
             }
             // 80s: Duplicate Operations
-            opcode::DUP1..=opcode::DUP16 => Instruction::DUP(opcode - 0x7f),
+            opcode::DUP1..=opcode::DUP16 => DUP(opcode - 0x7f),
             // 90s: Swap Operations
-            opcode::SWAP1..=opcode::SWAP16 => Instruction::SWAP(opcode - 0x8f),
+            opcode::SWAP1..=opcode::SWAP16 => SWAP(opcode - 0x8f),
             // a0s: Log Operations
-            opcode::LOG0..=opcode::LOG4 => Instruction::LOG(opcode - 0xa0),
+            opcode::LOG0..=opcode::LOG4 => LOG(opcode - 0xa0),
             // f0s: System Operations
-            opcode::CREATE => Instruction::CREATE,
-            opcode::CALL => Instruction::CALL,
-            opcode::CALLCODE => Instruction::CALLCODE,
-            opcode::RETURN => Instruction::RETURN,
-            opcode::DELEGATECALL => Instruction::DELEGATECALL,
-            opcode::CREATE2 => Instruction::CREATE2,
-            opcode::STATICCALL => Instruction::STATICCALL,
-            opcode::REVERT => Instruction::REVERT,
-            opcode::INVALID => Instruction::INVALID,
-            opcode::SELFDESTRUCT => Instruction::SELFDESTRUCT,
+            opcode::CREATE => CREATE,
+            opcode::CALL => CALL,
+            opcode::CALLCODE => CALLCODE,
+            opcode::RETURN => RETURN,
+            opcode::DELEGATECALL => DELEGATECALL,
+            opcode::CREATE2 => CREATE2,
+            opcode::STATICCALL => STATICCALL,
+            opcode::REVERT => REVERT,
+            opcode::INVALID => INVALID,
+            opcode::SELFDESTRUCT => SELFDESTRUCT,
             // Unknown
-            _ => Instruction::DATA(vec![opcode]),
+            _ => DATA(vec![opcode]),
         };
         //
         insn
