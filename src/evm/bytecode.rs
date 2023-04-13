@@ -12,7 +12,7 @@
 use std::fmt;
 use crate::evm::opcode;
 use crate::evm::eof;
-use crate::evm::{Instruction};
+use crate::evm::{LabelledInstruction,Instruction};
 
 // ============================================================================
 // Bytecode Contract
@@ -55,6 +55,17 @@ impl<T> Bytecode<T> {
     }
 }
 
+// ============================================================================
+// Assemble
+// ============================================================================
+
+impl Bytecode<LabelledInstruction> {
+    /// Convert assembly instructions into concrete EVM instructions.
+    pub fn assemble(&self) -> Bytecode<Instruction> {
+        todo!()
+    }
+}
+
 // ===================================================================
 // Traits
 // ===================================================================
@@ -71,6 +82,7 @@ impl<'a,T> IntoIterator for &'a Bytecode<T> {
         self.sections.iter()
     }
 }
+
 
 // ============================================================================
 // Section

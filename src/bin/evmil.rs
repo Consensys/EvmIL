@@ -18,7 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly, AssemblyInstruction, Bytecode};
+use evmil::evm::{Assembly, Bytecode};
 use evmil::evm::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -128,18 +128,19 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         legacy::from_bytes(&bytes)
     };
     // Convert it into assembly language
-    let asm = Assembly::from(bytecode);
-    // Iterate bytecode sections
-    for insn in &asm {
-        match insn {
-            AssemblyInstruction::CodeSection => {}
-            AssemblyInstruction::DataSection => {}
-            AssemblyInstruction::Label(_) => {}
-            _ => { print!("        "); }
-        }
-        println!("{}",insn);
-    }
-    Ok(true)
+    // let asm = Assembly::from(bytecode);
+    // // Iterate bytecode sections
+    // for insn in &asm {
+    //     match insn {
+    //         AssemblyInstruction::CodeSection => {}
+    //         AssemblyInstruction::DataSection => {}
+    //         AssemblyInstruction::Label(_) => {}
+    //         _ => { print!("        "); }
+    //     }
+    //     println!("{}",insn);
+    // }
+    // Ok(true)
+    todo!()
 }
 
 /// Assemble a given bytecode sequence.
@@ -149,13 +150,15 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     let context = fs::read_to_string(target)?;
     // Construct assembly from input file
     let assembly = Assembly::from_str(&context)?;
+    // Convert assembly language into concrete instructions.
+    let compiled = assembly.assemble();
     // Check whether EOF or legacy code generation
     let bytes = if args.contains_id("eof") {
         // EVM Object Format
-        eof::to_bytes(assembly.to_bytecode()?).unwrap()
+        eof::to_bytes(compiled).unwrap()
     } else {
         // Legacy
-        legacy::to_bytes(&assembly.to_bytecode()?)
+        legacy::to_bytes(&compiled)
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
