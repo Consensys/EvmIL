@@ -18,7 +18,7 @@ pub mod legacy;
 pub mod eof;
 pub mod opcode;
 
-pub use assembler::*;
+pub use assembler::{AssembleError,AssemblyError};
 pub use bytecode::*;
 pub use fork::*;
 pub use instruction::*;

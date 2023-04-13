@@ -16,9 +16,9 @@ use crate::evm::{AbstractInstruction,Instruction,InstructionOperands};
 // ============================================================================
 
 #[derive(Clone,Debug,PartialEq)]
-pub struct LabelOperands();
+pub struct AssemblyOperands();
 
-impl InstructionOperands for LabelOperands {
+impl InstructionOperands for AssemblyOperands {
     type RelOffset16 = String;
     type PushLabel = String;
     type Label = String;
@@ -29,9 +29,9 @@ use AbstractInstruction::*;
 /// A labelled instruction does not have concrete information
 /// regarding branch targets.  Rather, branch target information is
 /// represented using _labels_.
-pub type LabelledInstruction = AbstractInstruction<LabelOperands>;
+pub type AssemblyInstruction = AbstractInstruction<AssemblyOperands>;
 
-impl LabelledInstruction {
+impl AssemblyInstruction {
     /// Get the branch target label associated with this instruction
     /// (if there is one).
     pub fn target(&self) -> Option<&str> {

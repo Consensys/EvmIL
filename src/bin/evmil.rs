@@ -18,7 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly, Bytecode};
+use evmil::evm::{Assembly,Bytecode};
 use evmil::evm::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -151,7 +151,7 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Construct assembly from input file
     let assembly = Assembly::from_str(&context)?;
     // Convert assembly language into concrete instructions.
-    let compiled = assembly.assemble();
+    let compiled = assembly.assemble().unwrap();
     // Check whether EOF or legacy code generation
     let bytes = if args.contains_id("eof") {
         // EVM Object Format

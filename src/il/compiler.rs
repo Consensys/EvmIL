@@ -22,7 +22,7 @@
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
 use crate::evm::AbstractInstruction::*;
-use crate::evm::{Assembly,LabelledInstruction,Bytecode,Instruction};
+use crate::evm::{AssemblyInstruction,Bytecode,Instruction};
 use crate::util::*;
 
 
@@ -48,7 +48,7 @@ pub enum CompilerError {
 
 pub struct Compiler {
     /// The assembly being constructed by this compiler.
-    bytecode: Vec<LabelledInstruction>,
+    bytecode: Vec<AssemblyInstruction>,
     /// Counts the number of labels in use
     labels: usize
 }
@@ -224,7 +224,7 @@ impl Compiler {
         }
     }
 
-    fn translate_succeed_revert(&mut self, insn: LabelledInstruction, exprs: &[Term]) -> Result {
+    fn translate_succeed_revert(&mut self, insn: AssemblyInstruction, exprs: &[Term]) -> Result {
         if exprs.len() == 0 {
             self.bytecode.push(PUSH(vec![0]));
             self.bytecode.push(PUSH(vec![0]));
@@ -506,7 +506,7 @@ fn try_from(terms: &[Term]) -> std::result::Result<Bytecode<Instruction>, Compil
 }
 
 /// Construct a push instruction from a value.
-fn make_push(val: u128) -> std::result::Result<LabelledInstruction, CompilerError> {
+fn make_push(val: u128) -> std::result::Result<AssemblyInstruction, CompilerError> {
     let bytes = to_be_bytes(val);
     // Sanity check size of literal
     if bytes.len() > 32 {

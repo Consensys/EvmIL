@@ -1,6 +1,6 @@
 use std::fmt;
 use std::collections::{HashMap};
-use crate::evm::{Instruction,LabelledInstruction};
+use crate::evm::{AssemblyInstruction,Instruction};
 
 // =============================================================================
 // Assemble Error
@@ -29,82 +29,62 @@ impl std::error::Error for AssembleError {
 
 }
 
-// =============================================================================
-// Assemble Trait
-// =============================================================================
-
-pub trait Assemble {
-    type Error;
-
-    /// Attempt to assemble this object into a sequence of concrete
-    /// instructions.
-    fn assemble(&self) -> Result<Vec<Instruction>,Self::Error>;
-}
-
-// =============================================================================
-// Assembler
-// =============================================================================
-
-impl Assemble for [LabelledInstruction] {
-    type Error = AssembleError;
-
-    /// Convert _labelled_ instructions into _concrete_ instructions
-    /// by first determining the byteoffset of each label, and then
-    /// using this to instantiate any partial instructions.  This can
-    /// lead to an error if there is a partial instruction which
-    /// refers to a label that does not exist; or, if a label is
-    /// declared more than once.
-    ///
-    /// This algorithm computes the byte offsets of each instruction
-    /// iteratively until a fixed-point is reached.  This is necessary
-    /// because instructions are variable length.  In particular, legacy
-    /// bytecode uses labelled `PUSH` instructions for almost all control
-    /// flow.  Whilst, for EOF bytecode, this may be less of a problem it
-    /// can still presumably arise.  Since we want to choose the smallest
-    /// `PUSH` instructions possible, we have a chicken-and-egg problem:
-    /// to choose the smallest instructions we need to know the actual
-    /// byte offset of all instructions; to know the actual byte offset of
-    /// all instructions means we need to have determined what `PUSH`
-    /// instruction to use, etc.
-    ///
-    /// Computing byte offsets for variable length instructions is a
-    /// classic problem (e.g. as found in Java bytecode), which we resolve
-    /// iteratively.  We assume all `PUSH` instructions have a one byte
-    /// operand to determine an initial set of offsets.  Based on this, we
-    /// then refine our choices of `PUSH` instruction (always increasing
-    /// monotonically in size) until we have a solution.
-    fn assemble(&self) -> Result<Vec<Instruction>,AssembleError> {
-        // Identify all labels contained within the sequence of assembly
-        // instructions.  For each, we record their _instruction offset_.
-        let labels = init_labels(self)?;
-        // Construct initial set of empty offsets based on the minimum
-        // length of each partial instruction;
-        let mut offsets = init_offsets(self);
-        // Iterate to a fixpoint.
-        while update_offsets(self, &labels, &mut offsets) {
-            // Keep going until no more changes!
-        }
-        let mut insns = Vec::new();
-        //
-        // Instantiate all instructions
-        for (i,b) in self.iter().enumerate() {
-            // Calculate byte offset of instruction, which is needed
-            // to compute relative addresses.
-            let insn_byte_offset = offsets[i];
-            // Instantiate the instruction
-            let insn = b.instantiate(insn_byte_offset,|lab| {
-                // For given label compute its byte offset using the
-                // label offsets and instruction offsets.
-                get_label_byte_offset(lab,&labels,&offsets)
-            }).unwrap();
-            // Check whether we got anything
-            match insn {
-                Some(i) => { insns.push(i); }
-                None => {}
-            }
-        }
-        Ok(insns)
+/// Convert _labelled_ instructions into _concrete_ instructions
+/// by first determining the byteoffset of each label, and then
+/// using this to instantiate any partial instructions.  This can
+/// lead to an error if there is a partial instruction which
+/// refers to a label that does not exist; or, if a label is
+/// declared more than once.
+///
+/// This algorithm computes the byte offsets of each instruction
+/// iteratively until a fixed-point is reached.  This is necessary
+/// because instructions are variable length.  In particular, legacy
+/// bytecode uses labelled `PUSH` instructions for almost all control
+/// flow.  Whilst, for EOF bytecode, this may be less of a problem it
+/// can still presumably arise.  Since we want to choose the smallest
+/// `PUSH` instructions possible, we have a chicken-and-egg problem:
+/// to choose the smallest instructions we need to know the actual
+/// byte offset of all instructions; to know the actual byte offset of
+/// all instructions means we need to have determined what `PUSH`
+/// instruction to use, etc.
+///
+/// Computing byte offsets for variable length instructions is a
+/// classic problem (e.g. as found in Java bytecode), which we resolve
+/// iteratively.  We assume all `PUSH` instructions have a one byte
+/// operand to determine an initial set of offsets.  Based on this, we
+/// then refine our choices of `PUSH` instruction (always increasing
+/// monotonically in size) until we have a solution.
+pub fn assemble(asm: &[AssemblyInstruction]) -> Result<Vec<Instruction>,AssembleError> {
+    // Identify all labels contained within the sequence of assembly
+    // instructions.  For each, we record their _instruction offset_.
+    let labels = init_labels(asm)?;
+    // Construct initial set of empty offsets based on the minimum
+    // length of each partial instruction;
+    let mut offsets = init_offsets(asm);
+    // Iterate to a fixpoint.
+    while update_offsets(asm, &labels, &mut offsets) {
+        // Keep going until no more changes!
     }
+    let mut insns = Vec::new();
+    //
+    // Instantiate all instructions
+    for (i,b) in asm.iter().enumerate() {
+        // Calculate byte offset of instruction, which is needed
+        // to compute relative addresses.
+        let insn_byte_offset = offsets[i];
+        // Instantiate the instruction
+        let insn = b.instantiate(insn_byte_offset,|lab| {
+            // For given label compute its byte offset using the
+            // label offsets and instruction offsets.
+            get_label_byte_offset(lab,&labels,&offsets)
+        }).unwrap();
+        // Check whether we got anything
+        match insn {
+            Some(i) => { insns.push(i); }
+            None => {}
+        }
+    }
+    Ok(insns)
 }
 
 /// Initialise the labels map which maps each label to its
@@ -112,12 +92,12 @@ impl Assemble for [LabelledInstruction] {
 /// instruction's _byte offset_ (i.e. since not all instructions are
 /// one byte long).  Finally, this also checks that every partial
 /// instruction targets a known label.
-fn init_labels(instructions: &[LabelledInstruction]) -> Result<HashMap<String,usize>,AssembleError> {
+fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,usize>,AssembleError> {
     let mut labels : HashMap<String, usize> = HashMap::new();
     // Compute labels
     for (i,b) in instructions.iter().enumerate() {
         match b {
-            LabelledInstruction::LABEL(lab) => {
+            AssemblyInstruction::LABEL(lab) => {
                 // NOTE: how to avoid this allocation?  It seems like
                 // we should be able to use a `HashMap<&str,usize>`
                 // here but I was unable to get it to work fully.
@@ -148,7 +128,7 @@ fn init_labels(instructions: &[LabelledInstruction]) -> Result<HashMap<String,us
 /// `2`, etc.  Finally, artificial instructions (e.g. labels) have no
 /// length since they do not correspond to actual instructions in the
 /// final sequence.
-fn init_offsets(instructions: &[LabelledInstruction]) -> Vec<usize> {
+fn init_offsets(instructions: &[AssemblyInstruction]) -> Vec<usize> {
     let mut offsets = Vec::new();
     let mut offset = 0;
     for insn in instructions {
@@ -164,7 +144,7 @@ fn init_offsets(instructions: &[LabelledInstruction]) -> Vec<usize> {
 /// actually changed.  The key is that as we recalculate offsets
 /// we may find the width has changed.  If this happens, we have
 /// to recalculate all offsets again assuming the larger width(s).
-fn update_offsets(instructions: &[LabelledInstruction], labels: &HashMap<String,usize>, offsets: &mut [usize]) -> bool {
+fn update_offsets(instructions: &[AssemblyInstruction], labels: &HashMap<String,usize>, offsets: &mut [usize]) -> bool {
     let mut changed = false;
     let mut offset = 0;
     // Calculate label offsets
@@ -183,7 +163,7 @@ fn update_offsets(instructions: &[LabelledInstruction], labels: &HashMap<String,
 
 /// Determine the _actual length_ of an assembly instruction based on
 /// the current estimate of all bytecode offsets.
-fn insn_length(index: usize, insn: &LabelledInstruction, labels: &HashMap<String,usize>, offsets: &[usize]) -> usize {
+fn insn_length(index: usize, insn: &AssemblyInstruction, labels: &HashMap<String,usize>, offsets: &[usize]) -> usize {
     // Calculate byte offset of instruction, which is needed
     // to compute relative addresses.
     let insn_byte_offset = offsets[index];
