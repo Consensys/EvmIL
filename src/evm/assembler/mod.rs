@@ -100,7 +100,7 @@ impl Assembly {
     /// ways.  For example, the target for a `PUSHL` does not match
     /// any known `JUMPEST` label; Or, the stack size is exceeded,
     /// etc.
-    pub fn to_bytecode(mut self) -> Result<Bytecode, AssemblyError> {
+    pub fn to_bytecode(mut self) -> Result<Bytecode<Instruction>, AssemblyError> {
         // Resolve all partial instructions into concrete instructions.
         resolve_labels(&mut self.bytecodes)?;
         // Translate concrete instructions into bytes.
@@ -174,11 +174,11 @@ impl<'a> IntoIterator for &'a Assembly {
     }
 }
 
-impl From<Bytecode> for Assembly {
+impl From<Bytecode<Instruction>> for Assembly {
     /// Construct an assembly from a bytecode structure.  The key
     /// challenge here lies in identifying labels, and converting full
     /// instructions into partial instructions.
-    fn from(bytecode: Bytecode) -> Self {
+    fn from(bytecode: Bytecode<Instruction>) -> Self {
         //
         let mut asm = Assembly::new();
         //

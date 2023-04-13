@@ -9,15 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::evm::{Bytecode};
+use crate::evm::{Bytecode,Instruction};
 
-pub fn from_bytes(bytes: &[u8]) -> Bytecode {
+pub fn from_bytes(bytes: &[u8]) -> Bytecode<Instruction> {
     todo!()
 }
 
 /// Convert this bytecode contract into a byte sequence correctly
 /// formatted for legacy code.
-pub fn to_bytes(bytecode: &Bytecode) -> Vec<u8> {
+pub fn to_bytes(bytecode: &Bytecode<Instruction>) -> Vec<u8> {
     let mut bytes = Vec::new();
     //
     for s in bytecode { s.encode(&mut bytes); }

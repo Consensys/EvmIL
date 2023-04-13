@@ -139,7 +139,7 @@ impl std::error::Error for DecodingError {}
 /// quite prescriptive, its possible that the incoming bytes are
 /// malformed in some way --- in which case an error will be
 /// generated.
-pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
+pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode<Instruction>,DecodingError> {
     let mut iter = ByteDecoder::new(bytes);
     iter.match_u16(EOF_MAGIC,|w| DecodingError::InvalidMagicNumber(w))?;
     // Pull out static information
@@ -194,7 +194,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode,DecodingError> {
 // Encoding (EOF)
 // ============================================================================
 
-pub fn to_bytes(bytecode: Bytecode) -> Result<Vec<u8>,EncodingError> {
+pub fn to_bytes(bytecode: Bytecode<Instruction>) -> Result<Vec<u8>,EncodingError> {
     let mut code_sections = Vec::new();
     let mut data_section : Option<Vec<u8>> = None;
     // Count number of code contracts (to be deprecated?)

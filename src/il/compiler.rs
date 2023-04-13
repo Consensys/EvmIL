@@ -59,7 +59,7 @@ impl Compiler {
     }
 
     /// Extract the bytecode for the compiled terms.
-    pub fn to_bytecode(self) -> Bytecode {
+    pub fn to_bytecode(self) -> Bytecode<Instruction> {
         // NOTE: following is safe since the assembly was constructed
         // by this compiler, and therefore is assumed to be well
         // formed.
@@ -472,20 +472,20 @@ impl Compiler {
 
 /// Translate a sequence of IL statements into EVM bytecode, or fail
 /// with an error.
-impl TryFrom<&[Term]> for Bytecode {
+impl TryFrom<&[Term]> for Bytecode<Instruction> {
     type Error = CompilerError;
 
-    fn try_from(terms: &[Term]) -> std::result::Result<Bytecode, Self::Error> {
+    fn try_from(terms: &[Term]) -> std::result::Result<Bytecode<Instruction>, Self::Error> {
         try_from(terms)
     }
 }
 
 /// Translate a sequence of IL statements into EVM bytecode, or fail
 /// with an error.
-impl<const N: usize> TryFrom<&[Term; N]> for Bytecode {
+impl<const N: usize> TryFrom<&[Term; N]> for Bytecode<Instruction> {
     type Error = crate::il::CompilerError;
 
-    fn try_from(terms: &[Term; N]) -> std::result::Result<Bytecode, Self::Error> {
+    fn try_from(terms: &[Term; N]) -> std::result::Result<Bytecode<Instruction>, Self::Error> {
         try_from(terms)
     }
 }
@@ -494,7 +494,7 @@ impl<const N: usize> TryFrom<&[Term; N]> for Bytecode {
 // Helpers
 // ===================================================================
 
-fn try_from(terms: &[Term]) -> std::result::Result<Bytecode, CompilerError> {
+fn try_from(terms: &[Term]) -> std::result::Result<Bytecode<Instruction>, CompilerError> {
     let mut compiler = Compiler::new();
     // Translate statements one-by-one
     for t in terms {

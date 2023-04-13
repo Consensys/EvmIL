@@ -25,18 +25,18 @@ use crate::evm::{Instruction};
 /// either a _code section_ or a _data section_.  For EOF contracts,
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
-pub struct Bytecode {
-    sections: Vec<Section>
+pub struct Bytecode<T> {
+    sections: Vec<Section<T>>
 }
 
-impl Bytecode {
+impl<T> Bytecode<T> {
     pub fn empty() -> Self {
         Bytecode {
             sections: Vec::new()
         }
     }
 
-    pub fn new(sections: Vec<Section>) -> Self {
+    pub fn new(sections: Vec<Section<T>>) -> Self {
         Bytecode { sections }
     }
 
@@ -45,12 +45,12 @@ impl Bytecode {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> BytecodeIter<'a,Section> {
+    pub fn iter<'a>(&'a self) -> BytecodeIter<'a,Section<T>> {
         self.sections.iter()
     }
 
     /// Add a new section to this bytecode container
-    pub fn add(&mut self, section: Section) {
+    pub fn add(&mut self, section: Section<T>) {
         self.sections.push(section)
     }
 }
@@ -63,9 +63,9 @@ impl Bytecode {
 /// data).
 pub type BytecodeIter<'a,T> = std::slice::Iter<'a,T>;
 
-impl<'a> IntoIterator for &'a Bytecode {
-    type Item = &'a Section;
-    type IntoIter = BytecodeIter<'a,Section>;
+impl<'a,T> IntoIterator for &'a Bytecode<T> {
+    type Item = &'a Section<T>;
+    type IntoIter = BytecodeIter<'a,Section<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
@@ -76,15 +76,15 @@ impl<'a> IntoIterator for &'a Bytecode {
 // Section
 // ============================================================================
 
-pub enum Section {
+pub enum Section<T> {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
     /// along with appropriate _metadata_.
-    Code(Vec<Instruction>, u8, u8, u16)
+    Code(Vec<T>, u8, u8, u16)
 }
 
-impl Section {
+impl Section<Instruction> {
     /// Flattern this section into an appropriately formated byte
     /// sequence for the enclosing container type.
     pub fn encode(&self, bytes: &mut Vec<u8>) {
