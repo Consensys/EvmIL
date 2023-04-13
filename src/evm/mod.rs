@@ -14,6 +14,8 @@ mod assembler;
 mod bytecode;
 mod fork;
 mod instruction;
+pub mod legacy;
+pub mod eof;
 pub mod opcode;
 
 pub use assembler::*;

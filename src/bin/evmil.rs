@@ -19,6 +19,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::evm::{Assembly, AssemblyInstruction, Bytecode};
+use evmil::evm::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
@@ -32,6 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subcommand(
             Command::new("compile")
                 .about("Compile EvmIL code to EVM bytecode")
+                .arg(Arg::new("eof").long("eof"))
                 .arg(Arg::new("file").required(true))
                 .visible_alias("c")
         )
@@ -39,6 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Command::new("disassemble")
                 .about("Disassemble a raw hex string into EVM bytecode")
                 .arg(Arg::new("code").short('c').long("code"))
+                .arg(Arg::new("eof").long("eof"))
                 .arg(Arg::new("target").required(true))
                 .visible_alias("d")
         )
@@ -87,7 +90,13 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Assemble instructions into a bytecode container
     let bytecode = compiler.to_bytecode();
     // Translate container into bytes
-    let bytes: Vec<u8> = bytecode.to_legacy_bytes();
+    let bytes = if args.contains_id("eof") {
+        // EVM Object Format
+        eof::to_bytes(bytecode).unwrap()
+    } else {
+        // Legacy
+        legacy::to_bytes(&bytecode)
+    };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
     //
@@ -113,7 +122,11 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let bytecode = Bytecode::from_bytes(&bytes)?;
+    let bytecode = if args.contains_id("eof") {
+        eof::from_bytes(&bytes)?
+    } else {
+        legacy::from_bytes(&bytes)
+    };
     // Convert it into assembly language
     let asm = Assembly::from(bytecode);
     // Iterate bytecode sections
@@ -139,10 +152,10 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Check whether EOF or legacy code generation
     let bytes = if args.contains_id("eof") {
         // EVM Object Format
-        assembly.to_bytecode()?.to_eof_bytes()
+        eof::to_bytes(assembly.to_bytecode()?).unwrap()
     } else {
         // Legacy
-        assembly.to_bytecode()?.to_legacy_bytes()
+        legacy::to_bytes(&assembly.to_bytecode()?)
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
