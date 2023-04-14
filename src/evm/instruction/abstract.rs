@@ -6,11 +6,11 @@ use crate::util::{ToHexString};
 /// to support different forms of control flow.
 pub trait InstructionOperands {
     /// Identifies the type of 16bit relative offsets.
-    type RelOffset16 : Debug;
+    type RelOffset16 : fmt::Display+Debug;
     /// Identifies the type for _push label_ instructions.
-    type PushLabel : Debug;
+    type PushLabel : fmt::Display+Debug;
     /// Identifies the type for _label_ instructions.
-    type Label : Debug;
+    type Label : fmt::Display+Debug;
 }
 
 /// A void operand is used to signal that something is impossible
@@ -18,6 +18,12 @@ pub trait InstructionOperands {
 /// setting, etc).
 #[derive(Clone,Debug,PartialEq)]
 pub enum VoidOperand{}
+
+impl fmt::Display for VoidOperand {
+    fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+        unreachable!()
+    }
+}
 
 /// An abstract instruction is parameterised over the type of _control
 /// flow_ it supports.  In particular, _concrete_ instructions are
@@ -170,6 +176,9 @@ impl<T:InstructionOperands+Debug> fmt::Display for AbstractInstruction<T> {
             AbstractInstruction::DUP(n) => {
                 write!(f, "dup{}",n)
             }
+            AbstractInstruction::LABEL(lab) => {
+                write!(f, "{lab}:")
+            }
             AbstractInstruction::LOG(n) => {
                 write!(f, "log{n}")
             }
@@ -183,10 +192,10 @@ impl<T:InstructionOperands+Debug> fmt::Display for AbstractInstruction<T> {
                 write!(f, "push {}", hex)
             }
             AbstractInstruction::RJUMP(offset) => {
-                write!(f, "rjump {offset:?}")
+                write!(f, "rjump {offset}")
             }
             AbstractInstruction::RJUMPI(offset) => {
-                write!(f, "rjumpi {offset:?}")
+                write!(f, "rjumpi {offset}")
             }
             AbstractInstruction::SWAP(n) => {
                 write!(f, "swap{n}")
