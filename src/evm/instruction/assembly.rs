@@ -35,7 +35,12 @@ impl AssemblyInstruction {
     /// Get the branch target label associated with this instruction
     /// (if there is one).
     pub fn target(&self) -> Option<&str> {
-        todo!()
+        match self {
+            PUSHL(lab) => Some(lab),
+            RJUMP(lab) => Some(lab),
+            RJUMPI(lab) => Some(lab),
+            _ => None
+        }
     }
 
     /// Returns the minimum length of this instruction.  In many

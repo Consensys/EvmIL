@@ -10,10 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use std::collections::{HashMap};
 use crate::evm::AbstractInstruction::*;
-use crate::evm::{Assembly,Bytecode,AssemblyInstruction,Instruction,Section};
-use crate::util::{FromHexString,ToHexString};
+use crate::evm::{Assembly,AssemblyInstruction,Section};
+use crate::util::{FromHexString};
 use super::lexer::{Lexer,Token};
 
 // ===================================================================
@@ -56,7 +55,7 @@ pub fn parse(input: &str) -> Result<Assembly,AssemblyError> {
         sections.push(parse_section(&mut lexer)?);
     }
     // Done
-    todo!();
+    Ok(Assembly::new(sections))
 }
 
 /// Parse a single line of assembly language.
@@ -79,94 +78,91 @@ fn parse_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,Assem
 fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
     let mut insns = Vec::new();
     //
-    match lexer.next()? {
-        // Token::Identifier("push"|"PUSH") => {
-        //     self.parse_push(lexer.next()?)?
-        // }
-        // Token::Identifier("rjump"|"RJUMP") => {
-        //     self.parse_rjump(lexer.next()?)?
-        // }
-        // Token::Identifier("rjumpi"|"RJUMPI") => {
-        //     self.parse_rjumpi(lexer.next()?)?
-        // }
-        Token::Identifier(id) => {
-            insns.push(parse_opcode(id)?);
-        }
-        Token::Label(s) => {
-            // Mark label in bytecode sequence
-            insns.push(LABEL(s.to_string()));
-        }
-        _ => {
-            // Something went wrong
-            return Err(AssemblyError::UnexpectedToken);
-        }
-    };
+    loop {
+        match lexer.lookahead()? {
+            Token::Identifier("push"|"PUSH") => {
+                _ = lexer.next();
+                insns.push(parse_push(lexer.next()?)?)
+            }
+            Token::Identifier("rjump"|"RJUMP") => {
+                _ = lexer.next();
+                insns.push(parse_rjump(lexer.next()?)?);
+            }
+            Token::Identifier("rjumpi"|"RJUMPI") => {
+                _ = lexer.next();
+                insns.push(parse_rjumpi(lexer.next()?)?);
+            }
+            Token::Identifier(id) => {
+                _ = lexer.next();
+                insns.push(parse_opcode(id)?);
+            }
+            Token::Label(s) => {
+                _ = lexer.next();
+                // Mark label in bytecode sequence
+                insns.push(LABEL(s.to_string()));
+            }
+            Token::EOF|Token::Section(_) => {
+                return Ok(Section::Code(insns,0,0,0));
+            }
+            _ => {
+                // Something went wrong
+                return Err(AssemblyError::UnexpectedToken);
+            }
+        };
+    }
     //
     // FIXME: zeros do not make sense here.
-    Ok(Section::Code(insns,0,0,0))
+
 }
 
 fn parse_data_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
-    // let bytes = Vec::new();
-    // match lexer.next()? {
-    //     Token::Hex(s) => {
-    //         self.push(parse_hex(s)?)
-    //     }
-    //     _ => {
-    //         // Something went wrong
-    //         return Err(AssemblyError::UnexpectedToken);
-    //     }
-    // };
-    todo!()
+    let mut bytes = Vec::new();
+    loop {
+        match lexer.lookahead()? {
+            Token::Hex(s) => {
+                _ = lexer.next();
+                bytes.extend(parse_hex(s)?)
+            }
+            Token::EOF|Token::Section(_) => {
+                return Ok(Section::Data(bytes));
+            }
+            _ => {
+                // Something went wrong
+                return Err(AssemblyError::UnexpectedToken);
+            }
+        }
+    };
 }
 
-// /// Parse a push instruction with a given operand.
-// fn parse_push(&mut self, operand: Token) -> Result<(),AssemblyError> {
-//     // Push always expects an argument, though it could be a
-//     // label or a hexadecimal operand.
-//     match operand {
-//         Token::Hex(s) => {
-//             self.bytecode.push(Instruction::PUSH(parse_hex(s)?));
-//             Ok(())
-//         }
-//         Token::Identifier(s) => {
-//             // This indicates we have an incomplete push
-//             // instruction which requires a label to be resolved
-//             // before it can be fully instantiated.
-//             let insn = Partial(2,s.to_string(),|_,lab| Instruction::PUSH(lab.to_bytes()));
-//             self.bytecode.push(insn);
-//             Ok(())
-//         },
-//         Token::EOF => Err(AssemblyError::ExpectedOperand),
-//         _ => Err(AssemblyError::UnexpectedToken)
-//     }
-// }
+/// Parse a push instruction with a given operand.
+fn parse_push(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    // Push always expects an argument, though it could be a
+    // label or a hexadecimal operand.
+    match operand {
+        Token::Hex(s) => Ok(PUSH(parse_hex(s)?)),
+        Token::Identifier(s) => Ok(PUSHL(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
+    }
+}
 
-// /// Parse a rjump instruction with a given operand label.
-// fn parse_rjump(&mut self, operand: Token) -> Result<(),AssemblyError> {
-//     match operand {
-//         Token::Identifier(s) => {
-//             let insn = Partial(3,s.to_string(),|pc,lab| Instruction::RJUMP(lab.relative_to(pc+3)));
-//             self.bytecode.push(insn);
-//             Ok(())
-//         },
-//         Token::EOF => Err(AssemblyError::ExpectedOperand),
-//         _ => Err(AssemblyError::UnexpectedToken)
-//     }
-// }
+/// Parse a rjump instruction with a given operand label.
+fn parse_rjump(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    match operand {
+        Token::Identifier(s) => Ok(RJUMP(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
+    }
+}
 
-// /// Parse a rjumpi instruction with a given operand label.
-// fn parse_rjumpi(&mut self, operand: Token) -> Result<(),AssemblyError> {
-//     match operand {
-//         Token::Identifier(s) => {
-//             let insn = Partial(3,s.to_string(),|pc,lab| Instruction::RJUMPI(lab.relative_to(pc+3)));
-//             self.bytecode.push(insn);
-//             Ok(())
-//         },
-//         Token::EOF => Err(AssemblyError::ExpectedOperand),
-//         _ => Err(AssemblyError::UnexpectedToken)
-//     }
-// }
+/// Parse a rjumpi instruction with a given operand label.
+fn parse_rjumpi(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    match operand {
+        Token::Identifier(s) => Ok(RJUMPI(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
+    }
+}
 
 // ===================================================================
 // Helpers

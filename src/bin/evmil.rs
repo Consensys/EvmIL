@@ -18,7 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly,Bytecode};
+use evmil::evm::{Assembly,Section};
 use evmil::evm::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -128,19 +128,23 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         legacy::from_bytes(&bytes)
     };
     // Convert it into assembly language
-    // let asm = Assembly::from(bytecode);
-    // // Iterate bytecode sections
-    // for insn in &asm {
-    //     match insn {
-    //         AssemblyInstruction::CodeSection => {}
-    //         AssemblyInstruction::DataSection => {}
-    //         AssemblyInstruction::Label(_) => {}
-    //         _ => { print!("        "); }
-    //     }
-    //     println!("{}",insn);
-    // }
-    // Ok(true)
-    todo!()
+    let asm = bytecode; // FOR NOW!
+    // Iterate bytecode sections
+    for section in &asm {
+        match section {
+            Section::Code(insns,_,_,_) => {
+                println!(".code");
+                for insn in insns {
+                    println!("\t{}",insn);
+                }
+            }
+            Section::Data(bytes) => {
+                println!(".data");
+                println!("\t{}",bytes.to_hex_string());
+            }
+        }
+    }
+    Ok(true)
 }
 
 /// Assemble a given bytecode sequence.

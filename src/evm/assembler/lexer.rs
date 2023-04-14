@@ -16,7 +16,7 @@ use super::AssemblyError;
 // Token
 // ===================================================================
 
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum Token<'a> {
     EOF, // End-Of-File (not EVM Object Format)
     Section(&'a str),

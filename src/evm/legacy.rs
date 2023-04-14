@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::evm::{Bytecode,Instruction};
 
-pub fn from_bytes(bytes: &[u8]) -> Bytecode<Instruction> {
+pub fn from_bytes(_bytes: &[u8]) -> Bytecode<Instruction> {
     todo!()
 }
 

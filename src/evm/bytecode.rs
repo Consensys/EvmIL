@@ -9,8 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt;
-use crate::evm::{assembler,eof,opcode};
+use crate::evm::{assembler};
 use crate::evm::{AssembleError,AssemblyError,AssemblyInstruction,Instruction};
 
 // ============================================================================
@@ -24,6 +23,7 @@ use crate::evm::{AssembleError,AssemblyError,AssemblyInstruction,Instruction};
 /// either a _code section_ or a _data section_.  For EOF contracts,
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
+#[derive(Clone,Debug)]
 pub struct Bytecode<T> {
     sections: Vec<Section<T>>
 }
@@ -121,6 +121,7 @@ impl<'a,T> IntoIterator for &'a Bytecode<T> {
 // Section
 // ============================================================================
 
+#[derive(Clone,Debug)]
 pub enum Section<T> {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),
