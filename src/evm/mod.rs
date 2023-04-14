@@ -12,6 +12,7 @@
 
 mod assembler;
 mod bytecode;
+mod disassembler;
 mod fork;
 mod instruction;
 pub mod legacy;

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::evm::{assembler};
+use crate::evm::{assembler,disassembler};
 use crate::evm::{AssembleError,AssemblyError,AssemblyInstruction,Instruction};
 
 // ============================================================================
@@ -68,7 +68,29 @@ pub type Assembly = Bytecode<AssemblyInstruction>;
 pub type AssemblySection = Section<AssemblyInstruction>;
 
 impl Assembly {
-    /// Assembly an assembly into a `Bytecode` object containing
+    /// Disassemble a set of concrete bytecodes into an assembly.
+    /// This inserts labels as necessary for jump targets, and convert
+    /// control-flow instructions from using concrete jump
+    /// destinations to labels.
+    pub fn from(bytecodes: &Bytecode<Instruction>) -> Self {
+        let mut sections : Vec<AssemblySection> = Vec::new();
+        // Map each assemply section to a compiled section.
+        for s in bytecodes {
+            match s {
+                Section::Code(insns,_,_,_) => {
+                    let asm = disassembler::disassemble(insns);
+                    sections.push(Section::Code(asm,0,0,0));
+                }
+                Section::Data(bytes) => {
+                    sections.push(Section::Data(bytes.clone()));
+                }
+            }
+        }
+        // Done
+        Assembly::new(sections)
+    }
+
+    /// Assemble an assembly into a `Bytecode` object containing
     /// concrete EVM instructions.  This requires resolving any labels
     /// contained within the assembly into known jump destinations.
     /// As such, this can fail if an instruction attempts to branch to
@@ -115,7 +137,6 @@ impl<'a,T> IntoIterator for &'a Bytecode<T> {
         self.sections.iter()
     }
 }
-
 
 // ============================================================================
 // Section
