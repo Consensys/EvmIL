@@ -1,7 +1,7 @@
 use evmil::il::BinOp::*;
 use evmil::il::Term;
 use evmil::il::Term::*;
-use evmil::evm::Bytecode;
+use evmil::evm::{legacy,Bytecode};
 use evmil::util::ToHexString;
 
 // ============================================================================
@@ -46,7 +46,7 @@ fn check(terms: &[Term], hex: &str) {
     // Translate statements into bytecode instructions
     let bytecode = Bytecode::try_from(terms).unwrap();
     // Translate instructions into bytes
-    let bytes: Vec<u8> = bytecode.to_legacy_bytes();
+    let bytes: Vec<u8> = legacy::to_bytes(&bytecode);
     // Check against expected hex string
     assert_eq!(hex, bytes.to_hex_string());
 }

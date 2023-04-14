@@ -9,266 +9,307 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::FromHexString;
-use crate::evm::opcode;
-use crate::evm::{Instruction};
+use std::fmt;
+use crate::evm::AbstractInstruction::*;
+use crate::evm::{Assembly,AssemblyInstruction,Section};
+use crate::util::{FromHexString};
 use super::lexer::{Lexer,Token};
-use super::{Assembly,AssemblyInstruction,AssemblyLanguageError};
 
-pub struct Parser {
-    bytecode: Assembly
+// ===================================================================
+// Parse Error
+// ===================================================================
+
+/// Indicates an error occurred whilst parsing some assembly language
+/// into an assembly (i.e. an error originating from the lexer or
+/// parser).
+#[derive(Debug)]
+pub enum AssemblyError {
+    ExpectedOperand,
+    InvalidHexString(usize),
+    InvalidInstruction,
+    UnexpectedCharacter(usize),
+    UnexpectedToken
 }
 
-impl Parser {
-    /// Construct a new parser from a given string slice.
-    pub fn new() -> Self {
-        let bytecode = Assembly::new();
-        //
-        Parser { bytecode }
+impl fmt::Display for AssemblyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
+}
 
-    pub fn to_assembly(self) -> Assembly {
-        self.bytecode
+impl std::error::Error for AssemblyError {
+
+}
+
+// ===================================================================
+// Parser
+// ===================================================================
+
+/// Parse assembly language to form an assembly
+pub fn parse(input: &str) -> Result<Assembly,AssemblyError> {
+    // Holds the set of lines being parsed.
+    let mut lexer = Lexer::new(input);
+    let mut sections = Vec::new();
+    // Keep going until we reach the end.
+    while lexer.lookahead()? != Token::EOF {
+        sections.push(parse_section(&mut lexer)?);
     }
+    // Done
+    Ok(Assembly::new(sections))
+}
 
-    /// Parse a single line of assembly language.
-    pub fn parse(&mut self, line: &str) -> Result<(),AssemblyLanguageError> {
-        let mut lexer = Lexer::new(line);
-        //
-        match lexer.next()? {
-            Token::Section("code") => {
-                self.bytecode.push(AssemblyInstruction::CodeSection);
-            }
-            Token::Section("data") => {
-                self.bytecode.push(AssemblyInstruction::DataSection);
-            }
-            Token::Hex(s) => {
-                self.bytecode.push(AssemblyInstruction::DataBytes(parse_hex(s)?))
-            }
+/// Parse a single line of assembly language.
+fn parse_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
+    //
+    match lexer.next()? {
+        Token::Section("code") => {
+            parse_code_section(lexer)
+        }
+        Token::Section("data") => {
+            parse_data_section(lexer)
+        }
+        _ => {
+            // Something went wrong
+            Err(AssemblyError::UnexpectedToken)
+        }
+    }
+}
+
+fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
+    let mut insns = Vec::new();
+    //
+    loop {
+        match lexer.lookahead()? {
             Token::Identifier("push"|"PUSH") => {
-                self.parse_push(lexer.next()?)?
+                _ = lexer.next();
+                insns.push(parse_push(lexer.next()?)?)
             }
             Token::Identifier("rjump"|"RJUMP") => {
-                self.parse_rjump(lexer.next()?)?
+                _ = lexer.next();
+                insns.push(parse_rjump(lexer.next()?)?);
             }
             Token::Identifier("rjumpi"|"RJUMPI") => {
-                self.parse_rjumpi(lexer.next()?)?
+                _ = lexer.next();
+                insns.push(parse_rjumpi(lexer.next()?)?);
             }
             Token::Identifier(id) => {
-                self.bytecode.push(parse_opcode(id)?);
+                _ = lexer.next();
+                insns.push(parse_opcode(id)?);
             }
             Token::Label(s) => {
+                _ = lexer.next();
                 // Mark label in bytecode sequence
-                self.bytecode.push(AssemblyInstruction::Label(s.to_string()));
+                insns.push(LABEL(s.to_string()));
+            }
+            Token::EOF|Token::Section(_) => {
+                return Ok(Section::Code(insns,0,0,0));
             }
             _ => {
                 // Something went wrong
-                return Err(AssemblyLanguageError::UnexpectedToken);
+                return Err(AssemblyError::UnexpectedToken);
             }
         };
-        // Sanity check what's left
-        match lexer.next()? {
-            Token::EOF => Ok(()),
-            _ => Err(AssemblyLanguageError::UnexpectedToken)
-        }
     }
+    //
+    // FIXME: zeros do not make sense here.
 
-    /// Parse a push instruction with a given operand.
-    fn parse_push(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
-        // Push always expects an argument, though it could be a
-        // label or a hexadecimal operand.
-        match operand {
+}
+
+fn parse_data_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
+    let mut bytes = Vec::new();
+    loop {
+        match lexer.lookahead()? {
             Token::Hex(s) => {
-                self.bytecode.push(Instruction::PUSH(parse_hex(s)?));
-                Ok(())
+                _ = lexer.next();
+                bytes.extend(parse_hex(s)?)
             }
-            Token::Identifier(s) => {
-                // This indicates we have an incomplete push
-                // instruction which requires a label to be resolved
-                // before it can be fully instantiated.
-                let insn = AssemblyInstruction::Partial(2,s.to_string(),|_,lab| Instruction::PUSH(lab.to_bytes()));
-                self.bytecode.push(insn);
-                Ok(())
-            },
-            Token::EOF => Err(AssemblyLanguageError::ExpectedOperand),
-            _ => Err(AssemblyLanguageError::UnexpectedToken)
+            Token::EOF|Token::Section(_) => {
+                return Ok(Section::Data(bytes));
+            }
+            _ => {
+                // Something went wrong
+                return Err(AssemblyError::UnexpectedToken);
+            }
         }
-    }
+    };
+}
 
-    /// Parse a rjump instruction with a given operand label.
-    fn parse_rjump(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
-        match operand {
-            Token::Identifier(s) => {
-                let insn = AssemblyInstruction::Partial(3,s.to_string(),|pc,lab| Instruction::RJUMP(lab.relative_to(pc+3)));
-                self.bytecode.push(insn);
-                Ok(())
-            },
-            Token::EOF => Err(AssemblyLanguageError::ExpectedOperand),
-            _ => Err(AssemblyLanguageError::UnexpectedToken)
-        }
-    }
-
-    /// Parse a rjumpi instruction with a given operand label.
-    fn parse_rjumpi(&mut self, operand: Token) -> Result<(),AssemblyLanguageError> {
-        match operand {
-            Token::Identifier(s) => {
-                let insn = AssemblyInstruction::Partial(3,s.to_string(),|pc,lab| Instruction::RJUMPI(lab.relative_to(pc+3)));
-                self.bytecode.push(insn);
-                Ok(())
-            },
-            Token::EOF => Err(AssemblyLanguageError::ExpectedOperand),
-            _ => Err(AssemblyLanguageError::UnexpectedToken)
-        }
+/// Parse a push instruction with a given operand.
+fn parse_push(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    // Push always expects an argument, though it could be a
+    // label or a hexadecimal operand.
+    match operand {
+        Token::Hex(s) => Ok(PUSH(parse_hex(s)?)),
+        Token::Identifier(s) => Ok(PUSHL(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
     }
 }
 
+/// Parse a rjump instruction with a given operand label.
+fn parse_rjump(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    match operand {
+        Token::Identifier(s) => Ok(RJUMP(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
+    }
+}
+
+/// Parse a rjumpi instruction with a given operand label.
+fn parse_rjumpi(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    match operand {
+        Token::Identifier(s) => Ok(RJUMPI(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
+    }
+}
 
 // ===================================================================
 // Helpers
 // ===================================================================
 
 /// Parse a hexadecimal string
-fn parse_hex(hex: &str) -> Result<Vec<u8>,AssemblyLanguageError> {
+fn parse_hex(hex: &str) -> Result<Vec<u8>,AssemblyError> {
     match hex.from_hex_string() {
         Ok(bytes) => { Ok(bytes) }
-        Err(_e) => Err(AssemblyLanguageError::InvalidHexString(0))
+        Err(_e) => Err(AssemblyError::InvalidHexString(0))
     }
 }
 
 /// Parse a given opcode from a string, and a given number of operand
 /// bytes.
-fn parse_opcode(insn: &str) -> Result<Instruction,AssemblyLanguageError> {
-    let opcode = match insn {
+fn parse_opcode(insn: &str) -> Result<AssemblyInstruction,AssemblyError> {
+    let insn = match insn {
         // 0s: Stop and Arithmetic Operations
-        "stop"|"STOP" => opcode::STOP,
-        "add"|"ADD" => opcode::ADD,
-        "mul"|"MUL" => opcode::MUL,
-        "sub"|"SUB" => opcode::SUB,
-        "div"|"DIV" => opcode::DIV,
-        "sdiv"|"SDIV" => opcode::SDIV,
-        "mod"|"MOD" => opcode::MOD,
-        "smod"|"SMOD" => opcode::SMOD,
-        "addmod"|"ADDMOD" => opcode::ADDMOD,
-        "mulmod"|"MULMOD" => opcode::MULMOD,
-        "exp"|"EXP" => opcode::EXP,
-        "signextend"|"SIGNEXTEND" => opcode::SIGNEXTEND,
+        "stop"|"STOP" => STOP,
+        "add"|"ADD" => ADD,
+        "mul"|"MUL" => MUL,
+        "sub"|"SUB" => SUB,
+        "div"|"DIV" => DIV,
+        "sdiv"|"SDIV" => SDIV,
+        "mod"|"MOD" => MOD,
+        "smod"|"SMOD" => SMOD,
+        "addmod"|"ADDMOD" => ADDMOD,
+        "mulmod"|"MULMOD" => MULMOD,
+        "exp"|"EXP" => EXP,
+        "signextend"|"SIGNEXTEND" => SIGNEXTEND,
         // 10s: Comparison & Bitwise Logic Operations
-        "lt"|"LT" => opcode::LT,
-        "gt"|"GT" => opcode::GT,
-        "slt"|"SLT" => opcode::SLT,
-        "sgt"|"SGT" => opcode::SGT,
-        "eq"|"EQ" => opcode::EQ,
-        "iszero"|"ISZERO" => opcode::ISZERO,
-        "and"|"AND" => opcode::AND,
-        "or"|"OR" => opcode::OR,
-        "xor"|"XOR" => opcode::XOR,
-        "not"|"NOT" => opcode::NOT,
-        "byte"|"BYTE" => opcode::BYTE,
-        "shl"|"SHL" => opcode::SHL,
-        "shr"|"SHR" => opcode::SHR,
-        "sar"|"SAR" => opcode::SAR,
+        "lt"|"LT" => LT,
+        "gt"|"GT" => GT,
+        "slt"|"SLT" => SLT,
+        "sgt"|"SGT" => SGT,
+        "eq"|"EQ" => EQ,
+        "iszero"|"ISZERO" => ISZERO,
+        "and"|"AND" => AND,
+        "or"|"OR" => OR,
+        "xor"|"XOR" => XOR,
+        "not"|"NOT" => NOT,
+        "byte"|"BYTE" => BYTE,
+        "shl"|"SHL" => SHL,
+        "shr"|"SHR" => SHR,
+        "sar"|"SAR" => SAR,
         // 20s: Keccak256
-        "keccak256"|"KECCAK256" => opcode::KECCAK256,
+        "keccak256"|"KECCAK256" => KECCAK256,
         // 30s: Environmental Information
-        "address"|"ADDRESS" => opcode::ADDRESS,
-        "balance"|"BALANCE" => opcode::BALANCE,
-        "origin"|"ORIGIN" => opcode::ORIGIN,
-        "caller"|"CALLER" => opcode::CALLER,
-        "callvalue"|"CALLVALUE" => opcode::CALLVALUE,
-        "calldataload"|"CALLDATALOAD" => opcode::CALLDATALOAD,
-        "calldatasize"|"CALLDATASIZE" => opcode::CALLDATASIZE,
-        "calldatacopy"|"CALLDATACOPY" => opcode::CALLDATACOPY,
-        "codesize"|"CODESIZE" => opcode::CODESIZE,
-        "codecopy"|"CODECOPY" => opcode::CODECOPY,
-        "gasprice"|"GASPRICE" => opcode::GASPRICE,
-        "extcodesize"|"EXTCODESIZE" => opcode::EXTCODESIZE,
-        "extcodecopy"|"EXTCODECOPY" => opcode::EXTCODECOPY,
-        "returndatasize"|"RETURNDATASIZE" => opcode::RETURNDATASIZE,
-        "returndatacopy"|"RETURNDATACOPY" => opcode::RETURNDATACOPY,
-        "extcodehash"|"EXTCODEHASH" => opcode::EXTCODEHASH,
+        "address"|"ADDRESS" => ADDRESS,
+        "balance"|"BALANCE" => BALANCE,
+        "origin"|"ORIGIN" => ORIGIN,
+        "caller"|"CALLER" => CALLER,
+        "callvalue"|"CALLVALUE" => CALLVALUE,
+        "calldataload"|"CALLDATALOAD" => CALLDATALOAD,
+        "calldatasize"|"CALLDATASIZE" => CALLDATASIZE,
+        "calldatacopy"|"CALLDATACOPY" => CALLDATACOPY,
+        "codesize"|"CODESIZE" => CODESIZE,
+        "codecopy"|"CODECOPY" => CODECOPY,
+        "gasprice"|"GASPRICE" => GASPRICE,
+        "extcodesize"|"EXTCODESIZE" => EXTCODESIZE,
+        "extcodecopy"|"EXTCODECOPY" => EXTCODECOPY,
+        "returndatasize"|"RETURNDATASIZE" => RETURNDATASIZE,
+        "returndatacopy"|"RETURNDATACOPY" => RETURNDATACOPY,
+        "extcodehash"|"EXTCODEHASH" => EXTCODEHASH,
         // 40s: Block Information
-        "blockhash"|"BLOCKHASH" => opcode::BLOCKHASH,
-        "coinbase"|"COINBASE" => opcode::COINBASE,
-        "timestamp"|"TIMESTAMP" => opcode::TIMESTAMP,
-        "number"|"NUMBER" => opcode::NUMBER,
-        "difficulty"|"DIFFICULTY" => opcode::DIFFICULTY,
-        "gaslimit"|"GASLIMIT" => opcode::GASLIMIT,
-        "chainid"|"CHAINID" => opcode::CHAINID,
-        "selfbalance"|"SELFBALANCE" => opcode::SELFBALANCE,
+        "blockhash"|"BLOCKHASH" => BLOCKHASH,
+        "coinbase"|"COINBASE" => COINBASE,
+        "timestamp"|"TIMESTAMP" => TIMESTAMP,
+        "number"|"NUMBER" => NUMBER,
+        "difficulty"|"DIFFICULTY" => DIFFICULTY,
+        "gaslimit"|"GASLIMIT" => GASLIMIT,
+        "chainid"|"CHAINID" => CHAINID,
+        "selfbalance"|"SELFBALANCE" => SELFBALANCE,
         // 50s: Stack, Memory, Storage and Flow Operations
-        "pop"|"POP" => opcode::POP,
-        "mload"|"MLOAD" => opcode::MLOAD,
-        "mstore"|"MSTORE" => opcode::MSTORE,
-        "mstore8"|"MSTORE8" => opcode::MSTORE8,
-        "sload"|"SLOAD" => opcode::SLOAD,
-        "sstore"|"SSTORE" => opcode::SSTORE,
-        "jump"|"JUMP" => opcode::JUMP,
-        "jumpi"|"JUMPI" => opcode::JUMPI,
-        "pc"|"PC" => opcode::PC,
-        "msize"|"MSIZE" => opcode::MSIZE,
-        "gas"|"GAS" => opcode::GAS,
-        "jumpdest"|"JUMPDEST" => opcode::JUMPDEST,
+        "pop"|"POP" => POP,
+        "mload"|"MLOAD" => MLOAD,
+        "mstore"|"MSTORE" => MSTORE,
+        "mstore8"|"MSTORE8" => MSTORE8,
+        "sload"|"SLOAD" => SLOAD,
+        "sstore"|"SSTORE" => SSTORE,
+        "jump"|"JUMP" => JUMP,
+        "jumpi"|"JUMPI" => JUMPI,
+        "pc"|"PC" => PC,
+        "msize"|"MSIZE" => MSIZE,
+        "gas"|"GAS" => GAS,
+        "jumpdest"|"JUMPDEST" => JUMPDEST,
         // 60s & 70s: Push Operations
         "push"|"PUSH" => {
             // Should be impossible to get here!
             unreachable!();
         }
         // 80s: Duplication Operations
-        "dup1"|"DUP1" => opcode::DUP1,
-        "dup2"|"DUP2" => opcode::DUP2,
-        "dup3"|"DUP3" => opcode::DUP3,
-        "dup4"|"DUP4" => opcode::DUP4,
-        "dup5"|"DUP5" => opcode::DUP5,
-        "dup6"|"DUP6" => opcode::DUP6,
-        "dup7"|"DUP7" => opcode::DUP7,
-        "dup8"|"DUP8" => opcode::DUP8,
-        "dup9"|"DUP9" => opcode::DUP9,
-        "dup10"|"DUP10" => opcode::DUP10,
-        "dup11"|"DUP11" => opcode::DUP11,
-        "dup12"|"DUP12" => opcode::DUP12,
-        "dup13"|"DUP13" => opcode::DUP13,
-        "dup14"|"DUP14" => opcode::DUP14,
-        "dup15"|"DUP15" => opcode::DUP15,
-        "dup16"|"DUP16" => opcode::DUP16,
+        "dup1"|"DUP1" => DUP(1),
+        "dup2"|"DUP2" => DUP(2),
+        "dup3"|"DUP3" => DUP(3),
+        "dup4"|"DUP4" => DUP(4),
+        "dup5"|"DUP5" => DUP(5),
+        "dup6"|"DUP6" => DUP(6),
+        "dup7"|"DUP7" => DUP(7),
+        "dup8"|"DUP8" => DUP(8),
+        "dup9"|"DUP9" => DUP(9),
+        "dup10"|"DUP10" => DUP(10),
+        "dup11"|"DUP11" => DUP(11),
+        "dup12"|"DUP12" => DUP(12),
+        "dup13"|"DUP13" => DUP(13),
+        "dup14"|"DUP14" => DUP(14),
+        "dup15"|"DUP15" => DUP(15),
+        "dup16"|"DUP16" => DUP(16),
         // 90s: Swap Operations
-        "swap1"|"SWAP1" => opcode::SWAP1,
-        "swap2"|"SWAP2" => opcode::SWAP2,
-        "swap3"|"SWAP3" => opcode::SWAP3,
-        "swap4"|"SWAP4" => opcode::SWAP4,
-        "swap5"|"SWAP5" => opcode::SWAP5,
-        "swap6"|"SWAP6" => opcode::SWAP6,
-        "swap7"|"SWAP7" => opcode::SWAP7,
-        "swap8"|"SWAP8" => opcode::SWAP8,
-        "swap9"|"SWAP9" => opcode::SWAP9,
-        "swap10"|"SWAP10" => opcode::SWAP10,
-        "swap11"|"SWAP11" => opcode::SWAP11,
-        "swap12"|"SWAP12" => opcode::SWAP12,
-        "swap13"|"SWAP13" => opcode::SWAP13,
-        "swap14"|"SWAP14" => opcode::SWAP14,
-        "swap15"|"SWAP15" => opcode::SWAP15,
-        "swap16"|"SWAP16" => opcode::SWAP16,
+        "swap1"|"SWAP1" => SWAP(1),
+        "swap2"|"SWAP2" => SWAP(2),
+        "swap3"|"SWAP3" => SWAP(3),
+        "swap4"|"SWAP4" => SWAP(4),
+        "swap5"|"SWAP5" => SWAP(5),
+        "swap6"|"SWAP6" => SWAP(6),
+        "swap7"|"SWAP7" => SWAP(7),
+        "swap8"|"SWAP8" => SWAP(8),
+        "swap9"|"SWAP9" => SWAP(9),
+        "swap10"|"SWAP10" => SWAP(10),
+        "swap11"|"SWAP11" => SWAP(11),
+        "swap12"|"SWAP12" => SWAP(12),
+        "swap13"|"SWAP13" => SWAP(13),
+        "swap14"|"SWAP14" => SWAP(14),
+        "swap15"|"SWAP15" => SWAP(15),
+        "swap16"|"SWAP16" => SWAP(16),
         // a0s: Log Operations
-        "log0"|"LOG0" => opcode::LOG0,
-        "log1"|"LOG1" => opcode::LOG1,
-        "log2"|"LOG2" => opcode::LOG2,
-        "log3"|"LOG3" => opcode::LOG3,
-        "log4"|"LOG4" => opcode::LOG4,
+        "log0"|"LOG0" => LOG(0),
+        "log1"|"LOG1" => LOG(1),
+        "log2"|"LOG2" => LOG(2),
+        "log3"|"LOG3" => LOG(3),
+        "log4"|"LOG4" => LOG(4),
         // f0s: System Operations
-        "create"|"CREATE" => opcode::CREATE,
-        "call"|"CALL" => opcode::CALL,
-        "callcode"|"CALLCODE" => opcode::CALLCODE,
-        "return"|"RETURN" => opcode::RETURN,
-        "delegatecall"|"DELEGATECALL" => opcode::DELEGATECALL,
-        "create2"|"CREATE2" => opcode::CREATE2,
-        "staticcall"|"STATICCALL" => opcode::STATICCALL,
-        "revert"|"REVERT" => opcode::REVERT,
-        "invalid"|"INVALID" => opcode::INVALID,
-        "selfdestruct"|"SELFDESTRUCT" => opcode::SELFDESTRUCT,
+        "create"|"CREATE" => CREATE,
+        "call"|"CALL" => CALL,
+        "callcode"|"CALLCODE" => CALLCODE,
+        "return"|"RETURN" => RETURN,
+        "delegatecall"|"DELEGATECALL" => DELEGATECALL,
+        "create2"|"CREATE2" => CREATE2,
+        "staticcall"|"STATICCALL" => STATICCALL,
+        "revert"|"REVERT" => REVERT,
+        "invalid"|"INVALID" => INVALID,
+        "selfdestruct"|"SELFDESTRUCT" => SELFDESTRUCT,
         //
         _ => {
-            return Err(AssemblyLanguageError::InvalidInstruction);
+            return Err(AssemblyError::InvalidInstruction);
         }
     };
     //
-    Ok(Instruction::decode(0, &[opcode]))
+    Ok(insn)
 }

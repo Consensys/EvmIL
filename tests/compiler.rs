@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{PathBuf};
 use evmil::evm::{Bytecode};
+use evmil::evm::legacy;
 use evmil::il::Parser;
 use evmil::util::{FromHexString};
 
@@ -24,7 +25,7 @@ fn check(test: &str) {
     // Translate statements into bytecode instructions
     let bytecode = Bytecode::try_from(terms.as_slice()).unwrap();
     // Translate instructions into bytes
-    let eil_bytes: Vec<u8> = bytecode.to_legacy_bytes();
+    let eil_bytes: Vec<u8> = legacy::to_bytes(&bytecode);
     // Parse hex string into bytes
     let bin_bytes = bin.trim().from_hex_string().unwrap();
     // Check they match
