@@ -54,73 +54,6 @@ impl<T> Bytecode<T> {
     }
 }
 
-// ============================================================================
-// Assembly
-// ============================================================================
-
-/// An assembly represents one or more sections contained assembly
-/// instructions (that is, instructions which uses labels instead of
-/// explicit jump targets).
-pub type Assembly = Bytecode<AssemblyInstruction>;
-
-/// An assembly section represents a section as found within an
-/// `Assembly`.
-pub type AssemblySection = Section<AssemblyInstruction>;
-
-impl Assembly {
-    /// Disassemble a set of concrete bytecodes into an assembly.
-    /// This inserts labels as necessary for jump targets, and convert
-    /// control-flow instructions from using concrete jump
-    /// destinations to labels.
-    pub fn from(bytecodes: &Bytecode<Instruction>) -> Self {
-        let mut sections : Vec<AssemblySection> = Vec::new();
-        // Map each assemply section to a compiled section.
-        for s in bytecodes {
-            match s {
-                Section::Code(insns,_,_,_) => {
-                    let asm = disassembler::disassemble(insns);
-                    sections.push(Section::Code(asm,0,0,0));
-                }
-                Section::Data(bytes) => {
-                    sections.push(Section::Data(bytes.clone()));
-                }
-            }
-        }
-        // Done
-        Assembly::new(sections)
-    }
-
-    /// Assemble an assembly into a `Bytecode` object containing
-    /// concrete EVM instructions.  This requires resolving any labels
-    /// contained within the assembly into known jump destinations.
-    /// As such, this can fail if an instruction attempts to branch to
-    /// a label which does not exist.
-    pub fn assemble(&self) -> Result<Bytecode<Instruction>,AssembleError> {
-        let mut sections = Vec::new();
-        // Map each assemply section to a compiled section.
-        for s in &self.sections {
-            match s {
-                Section::Code(insns,_,_,_) => {
-                    let ninsns = assembler::assemble(insns)?;
-                    sections.push(Section::Code(ninsns,0,0,0));
-                }
-                Section::Data(bytes) => {
-                    sections.push(Section::Data(bytes.clone()));
-                }
-            }
-        }
-        // Done
-        Ok(Bytecode::new(sections))
-    }
-
-    /// Parse some assembly language into an `Assembly`.  This can
-    /// fail for a variety of reasons, such as an unknown instruction
-    /// is used or there is some unexpected junk in the file.
-    pub fn from_str(input: &str) -> Result<Assembly,AssemblyError> {
-        assembler::parse(input)
-    }
-}
-
 // ===================================================================
 // Traits
 // ===================================================================
@@ -148,7 +81,7 @@ pub enum Section<T> {
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
     /// along with appropriate _metadata_.
-    Code(Vec<T>, u8, u8, u16)
+    Code(Vec<T>)
 }
 
 impl Section<Instruction> {
@@ -159,7 +92,7 @@ impl Section<Instruction> {
             Section::Data(bs) => {
                 bytes.extend(bs);
             }
-            Section::Code(insns, _, _, _) => {
+            Section::Code(insns) => {
                 for b in insns {
                     // NOTE: unwrap safe as instructions validated on
                     // entry to the container.
@@ -167,5 +100,73 @@ impl Section<Instruction> {
                 }
             }
         }
+    }
+}
+
+
+// ============================================================================
+// Assembly
+// ============================================================================
+
+/// An assembly represents one or more sections contained assembly
+/// instructions (that is, instructions which uses labels instead of
+/// explicit jump targets).
+pub type Assembly = Bytecode<AssemblyInstruction>;
+
+/// An assembly section represents a section as found within an
+/// `Assembly`.
+pub type AssemblySection = Section<AssemblyInstruction>;
+
+impl Assembly {
+    /// Disassemble a set of concrete bytecodes into an assembly.
+    /// This inserts labels as necessary for jump targets, and convert
+    /// control-flow instructions from using concrete jump
+    /// destinations to labels.
+    pub fn from(bytecodes: &Bytecode<Instruction>) -> Self {
+        let mut sections : Vec<AssemblySection> = Vec::new();
+        // Map each assemply section to a compiled section.
+        for s in bytecodes {
+            match s {
+                Section::Code(insns) => {
+                    let asm = disassembler::disassemble(insns);
+                    sections.push(Section::Code(asm));
+                }
+                Section::Data(bytes) => {
+                    sections.push(Section::Data(bytes.clone()));
+                }
+            }
+        }
+        // Done
+        Assembly::new(sections)
+    }
+
+    /// Assemble an assembly into a `Bytecode` object containing
+    /// concrete EVM instructions.  This requires resolving any labels
+    /// contained within the assembly into known jump destinations.
+    /// As such, this can fail if an instruction attempts to branch to
+    /// a label which does not exist.
+    pub fn assemble(&self) -> Result<Bytecode<Instruction>,AssembleError> {
+        let mut sections = Vec::new();
+        // Map each assemply section to a compiled section.
+        for s in &self.sections {
+            match s {
+                Section::Code(insns) => {
+                    let ninsns = assembler::assemble(insns)?;
+                    sections.push(Section::Code(ninsns));
+                }
+                Section::Data(bytes) => {
+                    sections.push(Section::Data(bytes.clone()));
+                }
+            }
+        }
+        // Done
+        Ok(Bytecode::new(sections))
+    }
+
+    /// Parse some assembly language into an `Assembly`.  This can
+    /// fail for a variety of reasons, such as an unknown instruction
+    /// is used or there is some unexpected junk in the file.
+    pub fn from_str(input: &str) -> Result<Assembly,AssemblyError> {
+        assembler::parse(input)
     }
 }

@@ -102,7 +102,7 @@ fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
                 insns.push(LABEL(s.to_string()));
             }
             Token::EOF|Token::Section(_) => {
-                return Ok(Section::Code(insns,0,0,0));
+                return Ok(Section::Code(insns));
             }
             _ => {
                 // Something went wrong
