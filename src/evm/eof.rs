@@ -175,11 +175,12 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode<Instruction>,DecodingError> {
     for i in 0..num_code_sections {
         let bytes = iter.decode_bytes(code_sizes[i])?;
         // Recall type information
-        let (inputs,outputs,max_stack) = types[i];
+        let (_inputs,_outputs,_max_stack) = types[i];
         // Convert byte sequence into an instruction sequence.
         let insns = bytes.to_insns();
         // Add code section
-        code.add(Section::Code(insns,inputs,outputs,max_stack))
+        code.add(Section::Code(insns));
+        // Validate types information?
     }
     // parse data sectin (if present)
     let data = iter.decode_bytes(data_size)?.to_vec();
@@ -200,7 +201,7 @@ pub fn to_bytes(bytecode: Bytecode<Instruction>) -> Result<Vec<u8>,EncodingError
     // Count number of code contracts (to be deprecated?)
     for section in &bytecode {
         match section {
-            Section::Code(_,_,_,_) => {
+            Section::Code(_) => {
                 if data_section != None {
                     return Err(EncodingError::DataSectionNotLast)
                 }
@@ -250,10 +251,11 @@ pub fn to_bytes(bytecode: Bytecode<Instruction>) -> Result<Vec<u8>,EncodingError
     // Write types data
     for section in &bytecode {
         match section {
-            Section::Code(_,inputs,outputs,max_stack) => {
-                bytes.encode_u8(*inputs);
-                bytes.encode_u8(*outputs);
-                bytes.encode_u16(*max_stack);
+            Section::Code(_) => {
+                // FIXME: infer necessary information.
+                bytes.encode_u8(0);
+                bytes.encode_u8(0);
+                bytes.encode_u16(0);
             }
             _ => {}
         }

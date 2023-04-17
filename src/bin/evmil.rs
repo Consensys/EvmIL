@@ -132,7 +132,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Iterate bytecode sections
     for section in &asm {
         match section {
-            Section::Code(insns,_,_,_) => {
+            Section::Code(insns) => {
                 println!(".code");
                 for insn in insns {
                     match insn {

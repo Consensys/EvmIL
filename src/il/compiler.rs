@@ -60,7 +60,7 @@ impl Compiler {
 
     pub fn to_assembly(self) -> Assembly {
         let mut sections = Vec::new();
-        sections.push(Section::Code(self.bytecode,0,0,0));
+        sections.push(Section::Code(self.bytecode));
         Assembly::new(sections)
     }
 
