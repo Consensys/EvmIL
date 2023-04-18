@@ -52,29 +52,17 @@ pub trait EvmState {
     /// Defines the memory implementation used in this EVM.
     type Storage : EvmStorage<Word=Self::Word>;
 
-    /// Get read access to the operand stack contained within this
-    /// state.
-    fn stack(&self) -> &Self::Stack;
-
     /// Get write access to the operand stack contained within this
     /// state.
-    fn stack_mut(&mut self) -> &mut Self::Stack;
-
-    /// Get read access to the scratch memory contained within this
-    /// state.
-    fn memory(&self) -> &Self::Memory;
+    fn stack(&mut self) -> &mut Self::Stack;
 
     /// Get write access to the scratch memory contained within this
     /// state.
-    fn memory_mut(&self) -> &Self::Memory;
-
-    /// Get read access to the persistent storage contained within
-    /// this state.
-    fn storage(&self) -> &Self::Storage;
+    fn memory(&self) -> &mut Self::Memory;
 
     /// Get write access to the persistent storage contained within
     /// this state.
-    fn storage_mut(&self) -> &Self::Storage;
+    fn storage(&self) -> &mut Self::Storage;
 
     /// Skip _program counter_ over `n` bytes in the instruction
     /// stream.
