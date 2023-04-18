@@ -17,12 +17,12 @@ use crate::util::{w256,Interval};
 pub trait EvmWord : Sized + Clone + PartialEq +
     From<w256> + // Allow conversion from 256 bit words
     std::ops::Add<Output = Self> +
-    std::ops::Sub<Output = Self> +
-    std::ops::Mul<Output = Self> +
-    std::ops::Rem<Output = Self> +
-    std::ops::Not<Output = Self> +
-    std::ops::Shl<Output = Self> +
-    std::ops::Shr<Output = Self>
+    // std::ops::Sub<Output = Self> +
+    // std::ops::Mul<Output = Self> +
+    // std::ops::Rem<Output = Self> +
+    // std::ops::Not<Output = Self> +
+    // std::ops::Shl<Output = Self> +
+    // std::ops::Shr<Output = Self>
 {
 }
 
