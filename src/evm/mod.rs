@@ -13,6 +13,7 @@
 mod assembler;
 mod bytecode;
 mod disassembler;
+mod execution;
 mod fork;
 mod instruction;
 mod semantics;
@@ -23,6 +24,7 @@ pub mod opcode;
 
 pub use assembler::{AssembleError,AssemblyError};
 pub use bytecode::*;
+pub use execution::*;
 pub use fork::*;
 pub use instruction::*;
 pub use semantics::*;

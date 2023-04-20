@@ -9,14 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::{w256,Interval};
+use crate::util::{Concretizable,w256,Interval};
 
 /// Represents the fundamental unit of computation within the EVM,
 /// namely a word.  This is intentially left abstract, so that it
 /// could be reused across both _concrete_ and _abstract_ semantics.
-pub trait EvmWord : Sized + Clone + PartialEq +
+pub trait EvmWord : Sized + Clone +
     From<w256> + // Allow conversion from 256 bit words
-    std::ops::Add<Output = Self> +
+    Concretizable<Item=w256> + // Allow conversion back to 256 words
+    // std::ops::Add<Output = Self> +
     // std::ops::Sub<Output = Self> +
     // std::ops::Mul<Output = Self> +
     // std::ops::Rem<Output = Self> +
@@ -52,20 +53,23 @@ pub trait EvmState {
     /// Defines the memory implementation used in this EVM.
     type Storage : EvmStorage<Word=Self::Word>;
 
+    /// Get the program counter.  Every `EvmState` has a statically
+    /// known `pc`.
+    fn pc(&self) -> usize;
+
     /// Get write access to the operand stack contained within this
     /// state.
     fn stack(&mut self) -> &mut Self::Stack;
 
     /// Get write access to the scratch memory contained within this
     /// state.
-    fn memory(&self) -> &mut Self::Memory;
+    fn memory(&mut self) -> &mut Self::Memory;
 
     /// Get write access to the persistent storage contained within
     /// this state.
-    fn storage(&self) -> &mut Self::Storage;
+    fn storage(&mut self) -> &mut Self::Storage;
 
-    /// Skip _program counter_ over `n` bytes in the instruction
-    /// stream.
+    /// Move _program counter_ over `n` bytes in the next instruction.
     fn skip(&mut self, n: usize);
 
     /// Move _program counter_ to a given (byte) offset within the
@@ -91,17 +95,14 @@ pub trait EvmStack {
     /// Check at least `n` operands on the stack.
     fn has_operands(&self, n: usize) -> bool;
 
-    /// Determine number of items on stack.
-    fn depth(&self) -> Self::Word;
-
     /// Peek `nth` item from stack (where `n==0` is top element).
-    fn peek(&self, n: usize) -> Self::Word;
+    fn peek(&self, n: usize) -> &Self::Word;
 
     /// Push an item onto the stack.
     fn push(&mut self, item: Self::Word);
 
     /// Pop an item from the stack.
-    fn pop(&mut self, n: usize);
+    fn pop(&mut self) -> Self::Word;
 
     /// Set ith item on stack (where `n==0` is top element)
     fn set(&mut self, n: usize, item: Self::Word);

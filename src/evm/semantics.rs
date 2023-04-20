@@ -9,10 +9,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::{w256,Top};
+use crate::util::{Concretizable,w256,Top};
 use crate::evm::{EvmState,EvmStack,EvmMemory,EvmStorage,Instruction};
 use crate::evm::AbstractInstruction::*;
 use crate::evm::EvmException::*;
+
+/// Represents the possible outcomes from executing a given
+/// instruction in a given state.
+pub enum Outcome<T:EvmState> {
+    /// Signal contract return.
+    Return, // add more info about return state
+    /// Indicates that a single ongoing execution state has been
+    /// produced (i.e. no errors or branching has occurred).
+    Continue(T),
+    /// Indicates that the given state splits into two states
+    /// (e.g. because of a branch).
+    Split(T,T),
+    /// Indicates an exception was raised.
+    Exception(EvmException)
+}
 
 /// Represents the set of possible errors that can arise when
 /// executing a given sequence of EVM bytecode.
@@ -33,15 +48,16 @@ pub enum EvmException {
     WriteProtectionViolated
 }
 
-/// Execute an instruction from the given EVM state.
-pub fn execute<T:EvmState>(insn: &Instruction, state: &mut T) -> Result<(),EvmException>
+/// Execute an instruction from the given EVM state producing one (or
+/// more) output states.
+pub fn execute<T:EvmState+Clone>(insn: &Instruction, state: T) -> Outcome<T>
 where T::Word : Top {
     match insn {
         // ===========================================================
         // 0s: Stop and Arithmetic Operations
         // ===========================================================
-        STOP => Ok(()),
-        ADD => execute_binary(state,|l,r| l+r),
+        STOP => Outcome::Return,
+        ADD => execute_binary(state,|l,r| T::Word::TOP),
         MUL => execute_binary(state, |_,_| T::Word::TOP),
         SUB => execute_binary(state, |_,_| T::Word::TOP),
         DIV => execute_binary(state,  |_,_| T::Word::TOP),
@@ -120,7 +136,7 @@ where T::Word : Top {
         PC => execute_producer(state, &[T::Word::TOP]),
         MSIZE => execute_producer(state, &[T::Word::TOP]),
         GAS => execute_producer(state, &[T::Word::TOP]),
-        JUMPDEST => Ok(()), // nop
+        JUMPDEST => execute_nop(state),
         JUMP => execute_jump(state),
         JUMPI => execute_jumpi(state),
 
@@ -140,32 +156,38 @@ where T::Word : Top {
         SWAP(k) => execute_swap(state,*k as usize),
 
         _ => {
-            Err(EvmException::InvalidOpcode)
+            Outcome::Exception(InvalidOpcode)
         }
     }
+}
+
+// ===================================================================
+// Nop
+// ===================================================================
+fn execute_nop<T:EvmState>(mut state: T) -> Outcome<T> {
+    state.skip(1);
+    Outcome::Continue(state)
 }
 
 // ===================================================================
 // Unary Operations
 // ===================================================================
 
-fn execute_unary<T:EvmState,F>(state: &mut T, op: F) -> Result<(),EvmException>
+fn execute_unary<T:EvmState,F>(mut state: T, op: F) -> Outcome<T>
 where F:Fn(T::Word)->T::Word {
     let stack = state.stack();
     //
     if !stack.has_operands(1) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
         // Read word on top of stack
-        let word = stack.peek(0);
-        // Pop it off
-        stack.pop(1);
+        let word = stack.pop();
         // Push back result of operation
         stack.push(op(word));
         // Move to next instruction
         state.skip(1);
         // Done
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
@@ -173,19 +195,18 @@ where F:Fn(T::Word)->T::Word {
 // Binary Operations
 // ===================================================================
 
-fn execute_binary<T:EvmState,F>(state: &mut T, op: F) -> Result<(),EvmException>
+fn execute_binary<T:EvmState,F>(mut state: T, op: F) -> Outcome<T>
 where F:Fn(T::Word,T::Word)->T::Word {
     let stack = state.stack();
     //
     if !stack.has_operands(2) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
-        let lhs = stack.peek(1);
-        let rhs = stack.peek(0);
-        stack.pop(2);
+        let rhs = stack.pop();
+        let lhs = stack.pop();
         stack.push(op(lhs,rhs));
         state.skip(1);
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
@@ -193,29 +214,29 @@ where F:Fn(T::Word,T::Word)->T::Word {
 // Producers / Consumers
 // ===================================================================
 
-fn execute_producer<T:EvmState>(state: &mut T, items: &[T::Word]) -> Result<(),EvmException> {
+fn execute_producer<T:EvmState>(mut state: T, items: &[T::Word]) -> Outcome<T> {
     let stack = state.stack();
     //
     if !stack.has_capacity(items.len()) {
-        Err(StackOverflow)
+        Outcome::Exception(StackOverflow)
     } else {
         for i in items {
             stack.push(i.clone());
         }
         state.skip(1);
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
-fn execute_consumer<T:EvmState>(state: &mut T, n: usize) -> Result<(),EvmException> {
+fn execute_consumer<T:EvmState>(mut state: T, n: usize) -> Outcome<T> {
     let stack = state.stack();
     //
     if !stack.has_operands(n) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
-        stack.pop(n);
+        for i in 0..n { stack.pop(); }
         state.skip(1);
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
@@ -223,16 +244,14 @@ fn execute_consumer<T:EvmState>(state: &mut T, n: usize) -> Result<(),EvmExcepti
 // Memory / Storage
 // ===================================================================
 
-fn execute_mload<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
+fn execute_mload<T:EvmState>(mut state: T) -> Outcome<T> {
     let stack = state.stack();
     //
     if !stack.has_operands(1) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
-        // Determine address to load from
-        let address = stack.peek(0);
         // Pop address from stack
-        stack.pop(1);
+        let address = stack.pop();
         // Read word from memory
         let word = state.memory().read(address);
         // Push value at address
@@ -240,44 +259,40 @@ fn execute_mload<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
         // Move to next instruction
         state.skip(1);
         //
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
-fn execute_mstore<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
+fn execute_mstore<T:EvmState>(mut state: T) -> Outcome<T> {
     let stack = state.stack();
     //
     if !stack.has_operands(2) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
-        // Determine address to load from
-        let address = stack.peek(0);
-        let word = stack.peek(1);
-        // Pop both from stack
-        stack.pop(2);
+        // Pop address and word to store
+        let address = stack.pop();
+        let word = stack.pop();
         // Write word into memory
         state.memory().write(address, word);
         // Move to next instruction
         state.skip(1);
         //
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
-fn execute_mstore8<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
+fn execute_mstore8<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
     todo!()
 }
 
-fn execute_sload<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
+fn execute_sload<T:EvmState>(mut state: T) -> Outcome<T> {
     let stack = state.stack();
     //
     if !stack.has_operands(1) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
         // Determine address to load from
-        let address = stack.peek(0);
-        // Pop address from stack
-        stack.pop(1);
+        let address = stack.pop();
         // Read word from memory
         let word = state.storage().get(address);
         // Push value at address
@@ -285,27 +300,25 @@ fn execute_sload<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
         // Move to next instruction
         state.skip(1);
         //
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
-fn execute_sstore<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
+fn execute_sstore<T:EvmState>(mut state: T) -> Outcome<T> {
     let stack = state.stack();
     //
     if !stack.has_operands(2) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
-        // Determine address to load from
-        let address = stack.peek(0);
-        let word = stack.peek(1);
-        // Pop both from stack
-        stack.pop(2);
+        // Pop address and value to store
+        let address = stack.pop();
+        let word = stack.pop();
         // Write word into memory
         state.storage().put(address, word);
         // Move to next instruction
         state.skip(1);
         //
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
@@ -313,19 +326,46 @@ fn execute_sstore<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
 // Jump
 // ===================================================================
 
-fn execute_jump<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
-    todo!()
+fn execute_jump<T:EvmState>(mut state: T) -> Outcome<T> {
+    let stack = state.stack();
+    //
+    if !stack.has_operands(1) {
+        Outcome::Exception(StackUnderflow)
+    } else {
+        // Pop jump address
+        let address = stack.pop();
+        // Jump to the concrete address
+        state.goto(address.constant().into());
+        // Done
+        Outcome::Continue(state)
+    }
 }
 
-fn execute_jumpi<T:EvmState>(state: &mut T) -> Result<(),EvmException> {
-    todo!()
+fn execute_jumpi<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
+    let stack = state.stack();
+    //
+    if !stack.has_operands(2) {
+        Outcome::Exception(StackUnderflow)
+    } else {
+        // Pop jump address & value
+        let address = stack.pop();
+        let _value = stack.pop();
+        // Jump to the concrete address
+        let mut branch = state.clone();
+        // Current state moves to next instruction
+        state.skip(1);
+        // Branch state jumps to address
+        branch.goto(address.constant().into());
+        // Done
+        Outcome::Split(state,branch)
+    }
 }
 
 // ===================================================================
 // Push
 // ===================================================================
 
-fn execute_push<T:EvmState>(state: &mut T, bytes: &[u8]) -> Result<(),EvmException> {
+fn execute_push<T:EvmState>(mut state: T, bytes: &[u8]) -> Outcome<T> {
     let stack = state.stack();
     //
     if stack.has_capacity(1) {
@@ -336,9 +376,9 @@ fn execute_push<T:EvmState>(state: &mut T, bytes: &[u8]) -> Result<(),EvmExcepti
         // Advance program counter
         state.skip(1 + bytes.len());
         //
-        Ok(())
+        Outcome::Continue(state)
     } else {
-        Err(StackOverflow)
+        Outcome::Exception(StackOverflow)
     }
 }
 
@@ -346,19 +386,19 @@ fn execute_push<T:EvmState>(state: &mut T, bytes: &[u8]) -> Result<(),EvmExcepti
 // Dup
 // ===================================================================
 
-fn execute_dup<T:EvmState>(state: &mut T, k: usize) -> Result<(),EvmException> {
+fn execute_dup<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
     assert!(1 <= k && k <= 16);
     let stack = state.stack();
     //
     if !stack.has_operands(k) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else if !stack.has_capacity(1) {
-        Err(StackOverflow)
+        Outcome::Exception(StackOverflow)
     } else {
         let val = stack.peek(k-1);
-        stack.push(val);
+        stack.push(val.clone());
         state.skip(1);
-        Ok(())
+        Outcome::Continue(state)
     }
 }
 
@@ -366,18 +406,20 @@ fn execute_dup<T:EvmState>(state: &mut T, k: usize) -> Result<(),EvmException> {
 // Swap
 // ===================================================================
 
-fn execute_swap<T:EvmState>(state: &mut T, k: usize) -> Result<(),EvmException> {
+fn execute_swap<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
     assert!(1 <= k && k <= 16);
     let stack = state.stack();
     //
     if !stack.has_operands(k) {
-        Err(StackUnderflow)
+        Outcome::Exception(StackUnderflow)
     } else {
-        let kth = stack.peek(k-1);
-        let top = stack.peek(0);
+        // FIXME: a proper swap operation would improve performance
+        // here.
+        let kth = stack.peek(k-1).clone();
+        let top = stack.peek(0).clone();
         stack.set(k-1,top);
         stack.set(0,kth);
         state.skip(1);
-        Ok(())
+        Outcome::Continue(state)
     }
 }
