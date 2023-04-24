@@ -12,7 +12,6 @@
 
 mod assembler;
 mod bytecode;
-mod disassembler;
 mod execution;
 mod fork;
 mod instruction;

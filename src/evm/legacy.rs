@@ -10,18 +10,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::util::{Concretizable,w256,Top};
-use crate::evm::{Bytecode,Execution,Instruction,Section,ToInstructions};
+use crate::evm::{AssemblyInstruction,Bytecode,Execution,Instruction,Section,ToInstructions};
 use crate::evm::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
+use crate::evm::AbstractInstruction::*;
 
-pub fn from_bytes(bytes: &[u8]) -> Bytecode<Instruction> {
+pub fn from_bytes(bytes: &[u8]) -> Bytecode<AssemblyInstruction> {
     /// Convert bytes into instructions
     let insns = bytes.to_insns();
     let mut bytecode = Bytecode::new(vec![Section::Code(insns)]);
     let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
-    // run the execution (and hope it succeeds!)
+    // Run execution (and for now hope it succeeds!)
     execution.execute(LegacyEvmState::new());
+    // Construct assembly language
+    let mut asm = Vec::new();
+    let mut pc = 0;
+    let Section::Code(insns) = bytecode.iter().next().unwrap() else { unreachable!(); };
     //
-    bytecode
+    for insn in insns {
+        // Check whether this is a databyte or not.
+        asm.push(translate_insn(insn));
+        pc += insn.length()
+    }
+    //
+    Bytecode::new(vec![Section::Code(asm)])
 }
 
 /// Convert this bytecode contract into a byte sequence correctly
@@ -215,4 +226,105 @@ impl Concretizable for aw256 {
 
 impl EvmWord for aw256 {
 
+}
+
+// ===================================================================
+// Disassembler
+// ===================================================================
+
+fn translate_insn(insn: &Instruction) -> AssemblyInstruction {
+    match insn {
+        // 0s: Stop and Arithmetic Operations
+        STOP => STOP,
+        ADD => ADD,
+        MUL => MUL,
+        SUB => SUB,
+        DIV => DIV,
+        SDIV => SDIV,
+        MOD => MOD,
+        SMOD => SMOD,
+        ADDMOD => ADDMOD,
+        MULMOD => MULMOD,
+        EXP => EXP,
+        SIGNEXTEND => SIGNEXTEND,
+        // 10s: Comparison & Bitwise Logic Operations
+        LT => LT,
+        GT => GT,
+        SLT => SLT,
+        SGT => SGT,
+        EQ => EQ,
+        ISZERO => ISZERO,
+        AND => AND,
+        OR => OR,
+        XOR => XOR,
+        NOT => NOT,
+        BYTE => BYTE,
+        SHL => SHL,
+        SHR => SHR,
+        SAR => SAR,
+        // 20s: Keccak256
+        KECCAK256 => KECCAK256,
+        // 30s: Environmental Information
+        ADDRESS => ADDRESS,
+        BALANCE => BALANCE,
+        ORIGIN => ORIGIN,
+        CALLER => CALLER,
+        CALLVALUE => CALLVALUE,
+        CALLDATALOAD => CALLDATALOAD,
+        CALLDATASIZE => CALLDATASIZE,
+        CALLDATACOPY => CALLDATACOPY,
+        CODESIZE => CODESIZE,
+        CODECOPY => CODECOPY,
+        GASPRICE => GASPRICE,
+        EXTCODESIZE => EXTCODESIZE,
+        EXTCODECOPY => EXTCODECOPY,
+        RETURNDATASIZE => RETURNDATASIZE,
+        RETURNDATACOPY => RETURNDATACOPY,
+        EXTCODEHASH => EXTCODEHASH,
+        // 40s: Block Information
+        BLOCKHASH => BLOCKHASH,
+        COINBASE => COINBASE,
+        TIMESTAMP => TIMESTAMP,
+        NUMBER => NUMBER,
+        DIFFICULTY => DIFFICULTY,
+        GASLIMIT => GASLIMIT,
+        CHAINID => CHAINID,
+        SELFBALANCE => SELFBALANCE,
+        // 50s: Stack, Memory, Storage and Flow Operations
+        POP => POP,
+        MLOAD => MLOAD,
+        MSTORE => MSTORE,
+        MSTORE8 => MSTORE8,
+        SLOAD => SLOAD,
+        SSTORE => SSTORE,
+        JUMP => JUMP,
+        JUMPI => JUMPI,
+        PC => PC,
+        MSIZE => MSIZE,
+        GAS => GAS,
+        JUMPDEST => JUMPDEST,
+        // 60s & 70s: Push Operations
+        PUSH(bs) => PUSH(bs.clone()),
+        // 80s: Duplication Operations
+        DUP(n) => DUP(*n),
+        // 90s: Swap Operations
+        SWAP(n) => SWAP(*n),
+        // a0s: Log Operations
+        LOG(n) => LOG(*n),
+        // f0s: System Operations
+        CREATE => CREATE,
+        CALL => CALL,
+        CALLCODE => CALLCODE,
+        RETURN => RETURN,
+        DELEGATECALL => DELEGATECALL,
+        CREATE2 => CREATE2,
+        STATICCALL => STATICCALL,
+        REVERT => REVERT,
+        INVALID => INVALID,
+        SELFDESTRUCT => SELFDESTRUCT,
+        DATA(bs) => DATA(bs.clone()),
+        //
+        PUSHL(_)|LABEL(_) => unreachable!(),
+        RJUMP(_)|RJUMPI(_) => unreachable!()
+    }
 }

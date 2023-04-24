@@ -122,13 +122,11 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let bytecode = if args.contains_id("eof") {
+    let asm = if args.contains_id("eof") {
         eof::from_bytes(&bytes)?
     } else {
         legacy::from_bytes(&bytes)
     };
-    // Convert it into assembly language
-    let asm = Assembly::from(&bytecode);
     // Iterate bytecode sections
     for section in &asm {
         match section {
