@@ -1,6 +1,7 @@
 .code
-        push 0x05
+        push lab0
         selfbalance
         pop
         jump
+lab0:
         jumpdest

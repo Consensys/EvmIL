@@ -3,15 +3,15 @@
         push 0x01
         lt
         iszero
-        push lab1
+        push lab0
         jumpi
         push 0x03
         push 0x02
         lt
-        push lab0
+        push lab1
         jumpi
-lab1:
+lab0:
         jumpdest
         invalid
-lab0:
+lab1:
         jumpdest

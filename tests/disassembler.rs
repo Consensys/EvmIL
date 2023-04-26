@@ -1,5 +1,8 @@
 use std::fs;
 use std::path::{PathBuf};
+use evmil::util::{FromHexString};
+use evmil::evm::legacy;
+use evmil::evm::{Assembly};
 
 pub static TESTS_DIR: &str = "tests/files";
 
@@ -11,17 +14,17 @@ fn check(test: &str) {
     let asmfile = to_asmfile(test);
     let binfile = to_binfile(test);
     // Read the test file
-    let _asm = fs::read_to_string(asmfile).unwrap();
-    let _bin = fs::read_to_string(binfile).unwrap();
-    // // Parse assembly into instructions
-    // let asm_code = match Assembler::new(&asm).parse() {
-    //     Ok(insns) => insns,
-    //     Err(e) => panic!("{test}.asm: {e}")
-    // };
-    // // Parse hex string into bytes
-    // let bin_bytes = bin.trim().from_hex_string().unwrap();
+    let asm = fs::read_to_string(asmfile).unwrap();
+    let bin = fs::read_to_string(binfile).unwrap();
+    // Construct assembly from input file
+    let assembly = match Assembly::from_str(&asm) {
+        Ok(insns) => insns,
+        Err(e) => panic!("{test}.asm: {e}")
+    };
+    // Parse hex string into bytes
+    let bytes = bin.trim().from_hex_string().unwrap();
     // // Construct disassembly
-    // let disasm: Disassembly<AbstractStack<AbstractWord>> = Disassembly::new(&bin_bytes).build();
+    let disassembly = legacy::from_bytes(&bytes);
     // // Disassemble bytes into instructions
     // let bin_insns = disasm.to_vec();
     // // Check they match
@@ -29,7 +32,7 @@ fn check(test: &str) {
     // ========================================================
     // TODO: reenable this!
     // ========================================================
-    // assert_eq!(bin_insns,asm_code.instructions());
+    assert_eq!(assembly,disassembly);
 }
 
 fn to_asmfile(test: &str) -> PathBuf {

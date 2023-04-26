@@ -1,5 +1,5 @@
 .code
-        push 0x0e
+        push lab0
         push 0x00
         push 0x00
         push 0x00
@@ -7,4 +7,5 @@
         push 0x00
         dup6
         jump
+lab0:
         jumpdest

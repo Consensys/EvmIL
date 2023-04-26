@@ -1,9 +1,11 @@
 .code
-        push 0x0a
+        push lab1
         push 0x00
         mload
-        push 0x08
+        push lab0
         jumpi
+lab0:
         jumpdest
         jump
+lab1:
         jumpdest

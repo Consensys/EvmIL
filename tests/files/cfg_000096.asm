@@ -1,7 +1,9 @@
 .code
-        push 0x03
+        push lab0
         jump
+lab0:
         jumpdest
-        push 0x07
+        push lab1
         jump
+lab1:
         jumpdest

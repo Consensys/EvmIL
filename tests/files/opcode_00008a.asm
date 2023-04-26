@@ -1,5 +1,5 @@
 .code
-        push 0x0c
+        push lab0
         push 0x01
         dup1
         dup1
@@ -9,4 +9,5 @@
         staticcall
         pop
         jump
+lab0:
         jumpdest

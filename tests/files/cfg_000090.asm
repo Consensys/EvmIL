@@ -1,6 +1,7 @@
 .code
         push 0x01
-        push 0x06
+        push lab0
         jumpi
         stop
+lab0:
         jumpdest

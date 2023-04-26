@@ -1,7 +1,6 @@
 .code
-        push 0x04
+        push lab0
         jump
-.data
-        0x00
-.code
+        db 0x00
+lab0:
         jumpdest

@@ -1,6 +1,7 @@
 .code
-        push 0x03
+        push lab0
         jump
+lab0:
         jumpdest
         stop
 .data

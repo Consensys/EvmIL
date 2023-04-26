@@ -1,7 +1,7 @@
 .code
-        push 0x05
+        push lab0
         jump
-.data
-        0x0102
-.code
+        db 0x01
+        db 0x02
+lab0:
         jumpdest

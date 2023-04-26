@@ -18,14 +18,14 @@ use super::semantics::{execute,Outcome};
 /// here.
 type Bytecode = super::Bytecode<Instruction>;
 
-pub struct Execution<'a,T:EvmState+Clone> {
+pub struct Execution<'a,T:EvmState+Clone+PartialEq> {
     /// The bytecode being executed by this execution.
     bytecode: &'a Bytecode,
     /// The set of states observed at each `pc` location.
     states: Vec<ExecutionSection<T>>
 }
 
-impl<'a,T:EvmState+Clone> Execution<'a,T>
+impl<'a,T:EvmState+Clone+PartialEq> Execution<'a,T>
 where T::Word : Top {
     pub fn new(bytecode: &'a Bytecode) -> Self {
         let mut states = Vec::new();
@@ -65,7 +65,7 @@ where T::Word : Top {
     }
 }
 
-impl<'a,T:EvmState+Clone> ops::Index<usize> for Execution<'a,T>
+impl<'a,T:EvmState+Clone+PartialEq> ops::Index<usize> for Execution<'a,T>
 where T::Word : Top {
     type Output = ExecutionSection<T>;
 
@@ -74,7 +74,7 @@ where T::Word : Top {
     }
 }
 
-impl<'a,T:EvmState+Clone> ops::IndexMut<usize> for Execution<'a,T>
+impl<'a,T:EvmState+Clone+PartialEq> ops::IndexMut<usize> for Execution<'a,T>
 where T::Word : Top {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.get_mut(index)
@@ -85,12 +85,12 @@ where T::Word : Top {
 // Execution Section
 // ===================================================================
 
-pub struct ExecutionSection<T:EvmState+Clone> {
+pub struct ExecutionSection<T:EvmState+Clone+PartialEq> {
     bytecode: Vec<u8>,
     states: Vec<EvmSuperState<T>>
 }
 
-impl<T:EvmState+Clone> ExecutionSection<T>
+impl<T:EvmState+Clone+PartialEq> ExecutionSection<T>
 where T::Word : Top {
     pub fn new(insns: &[Instruction]) -> Self {
         // Convert instructions into bytecodes.  Not really clear to
@@ -129,29 +129,26 @@ where T::Word : Top {
                 // Falling off the the end of a (legacy) bytecode
                 // sequence indicates immediately that the machine has
                 // stopped.
-                self.states[pc].join(st.clone());
-            }
-            // Decode the instruction
-            let insn = Instruction::decode(pc,&self.bytecode);
-            // Execute for next state
-            match execute(&insn,st) {
-                Outcome::Return => {
-                    // For now, we don't do anything specicial with
-                    // accumulated returns.  However, at some point,
-                    // it probably makes sense.
-                }
-                Outcome::Continue(nst) => {
-                    // Execution continues.
-                    worklist.push(nst);
-                }
-                Outcome::Split(st1,st2) => {
-                    // Execution splits
-                    worklist.push(st1);
-                    worklist.push(st2);
-                }
-                Outcome::Exception(ex) => {
-                    // What to do here?
-                    todo!();
+                if self.states[pc].join(st.clone()) {
+                    // Decode the instruction
+                    let insn = Instruction::decode(pc,&self.bytecode);
+                    // Execute for next state
+                    match execute(&insn,st) {
+                        Outcome::Return|Outcome::Exception(_) => {
+                            // For now, we don't do anything specicial with
+                            // accumulated returns.  However, at some point,
+                            // it probably makes sense.
+                        }
+                        Outcome::Continue(nst) => {
+                            // Execution continues.
+                            worklist.push(nst);
+                        }
+                        Outcome::Split(st1,st2) => {
+                            // Execution splits
+                            worklist.push(st1);
+                            worklist.push(st2);
+                        }
+                    }
                 }
             }
         }
@@ -159,16 +156,16 @@ where T::Word : Top {
 }
 
 
-impl<T:EvmState+Clone> ops::Index<usize> for ExecutionSection<T>
-where T::Word : Top {
-    type Output = EvmSuperState<T>;
+impl<T:EvmState+Clone+PartialEq> ops::Index<usize> for
+ExecutionSection<T> where T::Word : Top { type Output =
+EvmSuperState<T>;
 
     fn index(&self, index: usize) -> &Self::Output {
         self.get(index)
     }
 }
 
-impl<T:EvmState+Clone> ops::IndexMut<usize> for ExecutionSection<T>
+impl<T:EvmState+Clone+PartialEq> ops::IndexMut<usize> for ExecutionSection<T>
 where T::Word : Top {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.get_mut(index)
@@ -181,23 +178,28 @@ where T::Word : Top {
 type EvmSuperIter<'a,T> = std::slice::Iter<'a,T>;
 
 #[derive(Clone,PartialEq)]
-pub struct EvmSuperState<T:EvmState+Clone> {
+pub struct EvmSuperState<T:EvmState+Clone+PartialEq> {
     substates: Vec<T>
 }
 
-impl<T:EvmState+Clone> EvmSuperState<T> {
+impl<T:EvmState+Clone+PartialEq> EvmSuperState<T> {
     pub fn new() -> Self {
         Self{substates: Vec::new()}
     }
-    pub fn join(&mut self, state: T) {
+    pub fn join(&mut self, state: T) -> bool {
+        let n = self.substates.len();
         // Simplest possible join operator (for now)
         self.substates.push(state);
+        // Deduplicate
+        self.substates.dedup();
+        // Check whether anything actually changed.
+        n != self.substates.len()
     }
     pub fn iter<'a>(&'a self) -> EvmSuperIter<'a,T> {
         self.substates.iter()
     }
 }
 
-impl<T:EvmState+Clone> Bottom for EvmSuperState<T> {
+impl<T:EvmState+Clone+PartialEq> Bottom for EvmSuperState<T> {
     const BOTTOM : Self = EvmSuperState{substates:Vec::new()};
 }

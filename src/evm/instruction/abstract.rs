@@ -171,7 +171,7 @@ impl<T:InstructionOperands+Debug> fmt::Display for AbstractInstruction<T> {
         match self {
             AbstractInstruction::DATA(bytes) => {
                 // Print bytes as hex string
-                write!(f, "{}", bytes.to_hex_string())
+                write!(f, "db {}", bytes.to_hex_string())
             }
             AbstractInstruction::DUP(n) => {
                 write!(f, "dup{}",n)
