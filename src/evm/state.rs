@@ -17,6 +17,7 @@ use crate::util::{Concretizable,w256,Interval};
 pub trait EvmWord : Sized + Clone +
     From<w256> + // Allow conversion from 256 bit words
     Concretizable<Item=w256> + // Allow conversion back to 256 words
+    PartialEq
     // std::ops::Add<Output = Self> +
     // std::ops::Sub<Output = Self> +
     // std::ops::Mul<Output = Self> +
