@@ -1,5 +1,6 @@
 .code
         push 0x01
-        push 0x05
+        push lab0
         jumpi
+lab0:
         jumpdest

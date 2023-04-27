@@ -1,11 +1,10 @@
 .code
         push lab0
         jump
-        push 0x00
-        push lab1
-        jumpi
-        invalid
-lab1:
-        jumpdest
+        db 0x6000
+        db 0x6009
+        db 0x57
+        db 0xfe
+        db 0x5b
 lab0:
         jumpdest

@@ -101,8 +101,8 @@ impl AssemblyInstruction {
             INVALID => 1,
             SELFDESTRUCT => 1,
             //
-            DATA(_) => {
-                panic!("Invalid instruction ({:?})", self);
+            DATA(bytes) => {
+                bytes.len()
             }
         }
     }

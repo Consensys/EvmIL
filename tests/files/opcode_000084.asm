@@ -1,9 +1,10 @@
 .code
-        push 0x09
+        push lab0
         push 0x01
         dup1
         dup1
         create
         pop
         jump
+lab0:
         jumpdest

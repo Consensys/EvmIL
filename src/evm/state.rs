@@ -9,12 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt::Debug;
 use crate::util::{Concretizable,w256,Interval};
 
 /// Represents the fundamental unit of computation within the EVM,
 /// namely a word.  This is intentially left abstract, so that it
 /// could be reused across both _concrete_ and _abstract_ semantics.
-pub trait EvmWord : Sized + Clone +
+pub trait EvmWord : Sized + Clone + Debug +
     From<w256> + // Allow conversion from 256 bit words
     Concretizable<Item=w256> + // Allow conversion back to 256 words
     PartialEq
@@ -38,7 +39,7 @@ pub trait EvmWord : Sized + Clone +
 
 /// Describes a state of the EVM, which could be running or
 /// terminated.
-pub trait EvmState {
+pub trait EvmState : Debug {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
     /// will use something that can, for example, describe unknown
@@ -105,8 +106,12 @@ pub trait EvmStack {
     /// Pop an item from the stack.
     fn pop(&mut self) -> Self::Word;
 
-    /// Set ith item on stack (where `n==0` is top element)
-    fn set(&mut self, n: usize, item: Self::Word);
+    /// Swap top item on stack with nth item on stack (where `n>0`,
+    /// and `n==0` would be the top element).
+    fn swap(&mut self, n: usize);
+
+    /// Duplicate nth item on stack (where `n==0` is the top element).
+    fn dup(&mut self, n: usize);
 }
 
 // ===============================================================
@@ -126,6 +131,10 @@ pub trait EvmMemory {
     /// Write a given value at a given address in memory, expanding
     /// memory as necessary.
     fn write(&mut self, address: Self::Word, item: Self::Word);
+
+    /// Write a given value at a given address in memory, expanding
+    /// memory as necessary.
+    fn write8(&mut self, address: Self::Word, item: Self::Word);
 }
 
 // ===============================================================

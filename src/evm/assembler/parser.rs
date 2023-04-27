@@ -92,6 +92,10 @@ fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
                 _ = lexer.next();
                 insns.push(parse_rjumpi(lexer.next()?)?);
             }
+            Token::Identifier("db"|"DB") => {
+                _ = lexer.next();
+                insns.push(parse_data(lexer.next()?)?);
+            }
             Token::Identifier(id) => {
                 _ = lexer.next();
                 insns.push(parse_opcode(id)?);
@@ -159,6 +163,14 @@ fn parse_rjump(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
 fn parse_rjumpi(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
     match operand {
         Token::Identifier(s) => Ok(RJUMPI(s.to_string())),
+        Token::EOF => Err(AssemblyError::ExpectedOperand),
+        _ => Err(AssemblyError::UnexpectedToken)
+    }
+}
+
+fn parse_data(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+    match operand {
+        Token::Hex(s) => Ok(DATA(parse_hex(s)?)),
         Token::EOF => Err(AssemblyError::ExpectedOperand),
         _ => Err(AssemblyError::UnexpectedToken)
     }

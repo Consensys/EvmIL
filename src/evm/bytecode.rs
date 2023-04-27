@@ -23,12 +23,12 @@ use crate::evm::{AssembleError,AssemblyError,AssemblyInstruction,Instruction};
 /// either a _code section_ or a _data section_.  For EOF contracts,
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
-#[derive(Clone,Debug)]
-pub struct Bytecode<T> {
+#[derive(Clone,Debug,PartialEq)]
+pub struct Bytecode<T:PartialEq> {
     sections: Vec<Section<T>>
 }
 
-impl<T> Bytecode<T> {
+impl<T:PartialEq> Bytecode<T> {
     pub fn empty() -> Self {
         Bytecode {
             sections: Vec::new()
@@ -62,7 +62,7 @@ impl<T> Bytecode<T> {
 /// data).
 pub type BytecodeIter<'a,T> = std::slice::Iter<'a,T>;
 
-impl<'a,T> IntoIterator for &'a Bytecode<T> {
+impl<'a,T:PartialEq> IntoIterator for &'a Bytecode<T> {
     type Item = &'a Section<T>;
     type IntoIter = BytecodeIter<'a,Section<T>>;
 
@@ -75,7 +75,7 @@ impl<'a,T> IntoIterator for &'a Bytecode<T> {
 // Section
 // ============================================================================
 
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Section<T> {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),

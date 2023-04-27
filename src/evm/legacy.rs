@@ -18,20 +18,29 @@ use crate::evm::AbstractInstruction::*;
 pub fn from_bytes(bytes: &[u8]) -> Bytecode<AssemblyInstruction> {
     /// NOTE: currently, we begin by converting bytes into
     /// instructions.  Personally, I think this is a bad choice and
-    /// that we would be better of working directly with bytes.
+    /// that we would be better of working directly with bytes.  It
+    /// certainly makes for some ugly repetition here.
     let insns = bytes.to_insns();
     let mut bytecode = Bytecode::new(vec![Section::Code(insns)]);
     let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
     // Run execution (and for now hope it succeeds!)
     execution.execute(LegacyEvmState::new());
-    // Construct assembly language
-    let Section::Code(insns) = bytecode.iter().next().unwrap() else { unreachable!(); };
     // Extract analysis results for first section;
     let analysis = &execution[0];
-    // Generate initial translation
-    let mut asm = disassemble(analysis,insns);
+    // Identify position where the data section starts.
+    let pivot = identify_data(analysis,bytes);
+    // Split instructions from data
+    let insns = (&bytes[..pivot]).to_insns();
+    // Translate instructions into assembly instructions.
+    let asm = disassemble(analysis,&insns);
     // Done
-    Bytecode::new(vec![Section::Code(asm)])
+    if pivot == bytes.len() {
+        // No data section
+        Bytecode::new(vec![Section::Code(asm)])
+    } else {
+        let databytes = bytes[pivot..].to_vec();
+        Bytecode::new(vec![Section::Code(asm),Section::Data(databytes)])
+    }
 }
 
 /// Convert this bytecode contract into a byte sequence correctly
@@ -48,6 +57,32 @@ pub fn to_bytes(bytecode: &Bytecode<Instruction>) -> Vec<u8> {
 // Helpers
 // ===================================================================
 
+/// Identify the data section within the instruction array.  That is,
+/// all contiguous unreachable bytes from the end of the instruction
+/// sequence.
+fn identify_data(analysis: &ExecutionSection<LegacyEvmState>, bytes: &[u8]) -> usize {
+    if bytes.len() == 0 {
+        0
+    } else {
+        // Seach backwards through the data for the first reachable
+        // instruction.  Everything after this instruction is
+        // considered to be part of the data section.
+        let mut pc = bytes.len() - 1;
+        loop {
+            // First instruction is always considered to be reachable,
+            // no matter what.
+            if pc == 0 || !analysis[pc].is_bottom() {
+                // Decode last reachable instruction so that we can
+                // figure out its length.
+                let insn = Instruction::decode(pc,bytes);
+                // Done!
+                return pc + insn.length();
+            }
+            pc -= 1;
+        }
+    }
+}
+
 /// Perform initial translation.  This just translates each concrete
 /// instruction into its corresponding assembly instruction, whilst
 /// identifying unreachable data bytes.
@@ -56,7 +91,7 @@ fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction
     let mut asm = Vec::new();
     // Initialise translation
     for (i,insn) in insns.iter().enumerate() {
-        if analysis[pc].is_bottom() {
+        if pc != 0 && analysis[pc].is_bottom() {
             let mut bytes = Vec::new();
             insn.encode(&mut bytes);
             asm.push(AssemblyInstruction::DATA(bytes));
@@ -87,7 +122,7 @@ fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Ins
     for (i,insn) in insns.iter().enumerate() {
         let info = &analysis[pc];
         // Check whether instruction is reachable.
-        if !info.is_bottom() {
+        if pc == 0 || !info.is_bottom() {
             match insn {
                 Instruction::JUMP|Instruction::JUMPI => {
                     for s in info.iter() {
@@ -146,14 +181,13 @@ fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Ins
     }
 }
 
-
 /// Map every reachable `JUMPDEST` instruction to a fresh label.
 fn determine_labels(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction]) -> HashMap<u16,String> {
     let mut pc = 0;
     let mut labels = HashMap::new();
     for insn in insns {
         let info = &analysis[pc];
-        if !info.is_bottom() {
+        if pc == 0 || !info.is_bottom() {
             match insn {
                 Instruction::JUMPDEST => {
                     // Construct label
@@ -184,7 +218,7 @@ fn determine_insn_offsets(analysis: &ExecutionSection<LegacyEvmState>, insns: &[
 // Legacy State
 // ===================================================================
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct LegacyEvmState {
     stack: LegacyEvmStack,
     memory: LegacyEvmMemory,
@@ -236,7 +270,7 @@ impl EvmState for LegacyEvmState {
 // Legacy Stack
 // ===================================================================
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct LegacyEvmStack {
     pc: usize,
     items: Vec<(usize,aw256)>
@@ -278,10 +312,18 @@ impl EvmStack for LegacyEvmStack {
         self.items.pop().unwrap().1
     }
 
-    fn set(&mut self, n: usize, item: Self::Word) {
+    fn dup(&mut self, n: usize) {
         assert!(self.has_operands(n));
-        let m = self.items.len() - n;
-        self.items[m] = (0,item);
+        let i = self.items.len() - (n+1);
+        self.items.push(self.items[i]);
+    }
+
+    fn swap(&mut self, n: usize) {
+        assert!(self.has_operands(n));
+        let i = self.items.len() - (n+1);
+        let j = self.items.len() - 1;
+        // Use slice swap to avoid cloning.
+        self.items.swap(i,j);
     }
 }
 
@@ -289,7 +331,7 @@ impl EvmStack for LegacyEvmStack {
 // Legacy Memory
 // ===================================================================
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct LegacyEvmMemory { }
 
 impl EvmMemory for LegacyEvmMemory {
@@ -302,13 +344,17 @@ impl EvmMemory for LegacyEvmMemory {
     fn write(&mut self, address: Self::Word, item: Self::Word) {
         // no op (for now)
     }
+
+    fn write8(&mut self, address: Self::Word, item: Self::Word) {
+        // no op (for now)
+    }
 }
 
 // ===================================================================
 // Legacy Storage
 // ===================================================================
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct LegacyEvmStorage { }
 
 impl EvmStorage for LegacyEvmStorage {
@@ -327,7 +373,7 @@ impl EvmStorage for LegacyEvmStorage {
 // Abstract Word
 // ===================================================================
 
-#[derive(Copy,Clone,PartialEq)]
+#[derive(Copy,Clone,Debug,PartialEq)]
 pub enum aw256 {
     Word(w256),
     Unknown

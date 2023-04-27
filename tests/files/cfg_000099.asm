@@ -1,21 +1,25 @@
 .code
         push 0x00
         sload
-        push 0x0d
+        push lab1
         jumpi
-        push 0x0b
-        push 0x19
+        push lab0
+        push lab3
         jump
+lab0:
         jumpdest
         stop
+lab1:
         jumpdest
-        push 0x13
-        push 0x19
+        push lab2
+        push lab3
         jump
+lab2:
         jumpdest
         push 0x00
         push 0x00
         revert
+lab3:
         jumpdest
         jump
 .data

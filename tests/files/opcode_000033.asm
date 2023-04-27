@@ -1,6 +1,7 @@
 .code
-        push 0x06
+        push lab0
         push 0x01
         pop
         jump
+lab0:
         jumpdest

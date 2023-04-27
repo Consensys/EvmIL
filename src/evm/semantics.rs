@@ -64,8 +64,8 @@ where T::Word : Top {
         SDIV => execute_binary(state,  |_,_| T::Word::TOP),
         MOD => execute_binary(state,  |_,_| T::Word::TOP),
         SMOD => execute_binary(state,  |_,_| T::Word::TOP),
-        ADDMOD => execute_binary(state,  |_,_| T::Word::TOP),
-        MULMOD => execute_binary(state, |_,_| T::Word::TOP),
+        ADDMOD => execute_ternary(state,  |_,_,_| T::Word::TOP),
+        MULMOD => execute_ternary(state, |_,_,_| T::Word::TOP),
         EXP => execute_binary(state,  |_,_| T::Word::TOP),
         SIGNEXTEND => execute_binary(state,  |_,_| T::Word::TOP),
 
@@ -101,7 +101,7 @@ where T::Word : Top {
         CALLER => execute_producer(state, &[T::Word::TOP]),
         CALLVALUE => execute_producer(state, &[T::Word::TOP]),
         CALLDATALOAD => execute_unary(state, |_| T::Word::TOP),
-        CALLDATASIZE => execute_unary(state, |_| T::Word::TOP),
+        CALLDATASIZE => execute_producer(state, &[T::Word::TOP]),
         CALLDATACOPY => execute_consumer(state, 3),
         CODESIZE => execute_producer(state, &[T::Word::TOP]),
         CODECOPY => execute_consumer(state, 3),
@@ -155,6 +155,24 @@ where T::Word : Top {
         // ===========================================================
         SWAP(k) => execute_swap(state,*k as usize),
 
+        // ===========================================================
+        // a0s: Logging Operations
+        // ===========================================================
+        LOG(k) => execute_consumer(state,(k+2) as usize),
+
+        // ===========================================================
+        // f0s: System Operations
+        // ===========================================================
+        CREATE => execute_consumer_producer(state, 3, &[T::Word::TOP]),
+        CALL => execute_consumer_producer(state, 7, &[T::Word::TOP]),
+        CALLCODE => execute_consumer_producer(state, 7, &[T::Word::TOP]),
+        RETURN => execute_consumer_outcome(state, 2, Outcome::Return),
+        DELEGATECALL => execute_consumer_producer(state, 6, &[T::Word::TOP]),
+        CREATE2 => execute_consumer_producer(state, 4, &[T::Word::TOP]),
+        STATICALL => execute_consumer_producer(state, 6, &[T::Word::TOP]),
+        REVERT => execute_consumer_outcome(state, 2, Outcome::Exception(Revert)),
+        INVALID => Outcome::Exception(InvalidOpcode),
+        SELFDESTRUCT => execute_consumer_outcome(state, 1, Outcome::Return),
         _ => {
             Outcome::Exception(InvalidOpcode)
         }
@@ -211,8 +229,50 @@ where F:Fn(T::Word,T::Word)->T::Word {
 }
 
 // ===================================================================
+// Ternary Operations
+// ===================================================================
+
+fn execute_ternary<T:EvmState,F>(mut state: T, op: F) -> Outcome<T>
+where F:Fn(T::Word,T::Word,T::Word)->T::Word {
+    let stack = state.stack();
+    //
+    if !stack.has_operands(3) {
+        Outcome::Exception(StackUnderflow)
+    } else {
+        let first = stack.pop();
+        let second = stack.pop();
+        let third = stack.pop();
+        stack.push(op(first,second,third));
+        state.skip(1);
+        Outcome::Continue(state)
+    }
+}
+
+// ===================================================================
 // Producers / Consumers
 // ===================================================================
+
+fn execute_consumer_outcome<T:EvmState>(mut state: T, n: usize, outcome: Outcome<T>) -> Outcome<T> {
+    let stack = state.stack();
+    //
+    if !stack.has_operands(n) {
+        Outcome::Exception(StackUnderflow)
+    } else {
+        outcome
+    }
+}
+
+fn execute_consumer_producer<T:EvmState>(mut state: T, n: usize, items: &[T::Word]) -> Outcome<T> {
+    let stack = state.stack();
+    //
+    if !stack.has_operands(n) {
+        Outcome::Exception(StackUnderflow)
+    } else {
+        for i in 0..n { stack.pop(); }
+        // Put stuff on
+        execute_producer(state,items)
+    }
+}
 
 fn execute_producer<T:EvmState>(mut state: T, items: &[T::Word]) -> Outcome<T> {
     let stack = state.stack();
@@ -282,7 +342,21 @@ fn execute_mstore<T:EvmState>(mut state: T) -> Outcome<T> {
 }
 
 fn execute_mstore8<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
-    todo!()
+let stack = state.stack();
+    //
+    if !stack.has_operands(2) {
+        Outcome::Exception(StackUnderflow)
+    } else {
+        // Pop address and word to store
+        let address = stack.pop();
+        let word = stack.pop();
+        // Write byte into memory
+        state.memory().write8(address, word);
+        // Move to next instruction
+        state.skip(1);
+        //
+        Outcome::Continue(state)
+    }
 }
 
 fn execute_sload<T:EvmState>(mut state: T) -> Outcome<T> {
@@ -395,8 +469,7 @@ fn execute_dup<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
     } else if !stack.has_capacity(1) {
         Outcome::Exception(StackOverflow)
     } else {
-        let val = stack.peek(k-1);
-        stack.push(val.clone());
+        stack.dup(k-1);
         state.skip(1);
         Outcome::Continue(state)
     }
@@ -415,10 +488,7 @@ fn execute_swap<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
     } else {
         // FIXME: a proper swap operation would improve performance
         // here.
-        let kth = stack.peek(k-1).clone();
-        let top = stack.peek(0).clone();
-        stack.set(k-1,top);
-        stack.set(0,kth);
+        stack.swap(k);
         state.skip(1);
         Outcome::Continue(state)
     }

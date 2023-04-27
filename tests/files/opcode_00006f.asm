@@ -1,6 +1,7 @@
 .code
-        push 0x05
+        push lab0
         callvalue
         swap1
         jump
+lab0:
         jumpdest
