@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::Debug;
-use crate::util::{Concretizable,w256,Interval};
+use crate::util::{Concretizable,w256};
 
 /// Represents the fundamental unit of computation within the EVM,
 /// namely a word.  This is intentially left abstract, so that it
@@ -59,17 +59,29 @@ pub trait EvmState : Debug {
     /// known `pc`.
     fn pc(&self) -> usize;
 
+    /// Get read access to the operand stack contained within this
+    /// state.
+    fn stack(&self) -> &Self::Stack;
+
     /// Get write access to the operand stack contained within this
     /// state.
-    fn stack(&mut self) -> &mut Self::Stack;
+    fn stack_mut(&mut self) -> &mut Self::Stack;
+
+    /// Get read access to the scratch memory contained within this
+    /// state.
+    fn memory(&self) -> &Self::Memory;
 
     /// Get write access to the scratch memory contained within this
     /// state.
-    fn memory(&mut self) -> &mut Self::Memory;
+    fn memory_mut(&mut self) -> &mut Self::Memory;
+
+    /// Get read access to the persistent storage contained within
+    /// this state.
+    fn storage(&self) -> &Self::Storage;
 
     /// Get write access to the persistent storage contained within
     /// this state.
-    fn storage(&mut self) -> &mut Self::Storage;
+    fn storage_mut(&mut self) -> &mut Self::Storage;
 
     /// Move _program counter_ over `n` bytes in the next instruction.
     fn skip(&mut self, n: usize);

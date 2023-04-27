@@ -16,12 +16,12 @@ use crate::evm::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 use crate::evm::AbstractInstruction::*;
 
 pub fn from_bytes(bytes: &[u8]) -> Bytecode<AssemblyInstruction> {
-    /// NOTE: currently, we begin by converting bytes into
-    /// instructions.  Personally, I think this is a bad choice and
-    /// that we would be better of working directly with bytes.  It
-    /// certainly makes for some ugly repetition here.
+    // NOTE: currently, we begin by converting bytes into
+    // instructions.  Personally, I think this is a bad choice and
+    // that we would be better of working directly with bytes.  It
+    // certainly makes for some ugly repetition here.
     let insns = bytes.to_insns();
-    let mut bytecode = Bytecode::new(vec![Section::Code(insns)]);
+    let bytecode = Bytecode::new(vec![Section::Code(insns)]);
     let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
     // Run execution (and for now hope it succeeds!)
     execution.execute(LegacyEvmState::new());
@@ -90,10 +90,11 @@ fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction
     let mut pc = 0;
     let mut asm = Vec::new();
     // Initialise translation
-    for (i,insn) in insns.iter().enumerate() {
+    for insn in insns {
         if pc != 0 && analysis[pc].is_bottom() {
             let mut bytes = Vec::new();
-            insn.encode(&mut bytes);
+            // Following is safe because ... ?
+            insn.encode(&mut bytes).unwrap();
             asm.push(AssemblyInstruction::DATA(bytes));
         } else {
             // Check whether this is a databyte or not.
@@ -113,13 +114,13 @@ fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction
 /// appropriate.
 fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction], asm: &mut Vec<AssemblyInstruction>) {
     // Construct labels
-    let mut labels = determine_labels(analysis,insns);
+    let labels = determine_labels(analysis,insns);
     // Initialise instruction offsets
-    let offsets = determine_insn_offsets(analysis,insns);
+    let offsets = determine_insn_offsets(insns);
     //
     let mut pc = 0;
     //
-    for (i,insn) in insns.iter().enumerate() {
+    for insn in insns {
         let info = &analysis[pc];
         // Check whether instruction is reachable.
         if pc == 0 || !info.is_bottom() {
@@ -147,15 +148,15 @@ fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Ins
                                 asm[dep_i] = AssemblyInstruction::PUSHL(label);
                             }
                             _ => {
-                                /// This indicates an usual case,
-                                /// where the jump destination has
-                                /// been constructed in an unusual
-                                /// manner.  For example, it might
-                                /// have been constructed by adding
-                                /// two numbers together, or it might
-                                /// have been stored in memory.  For
-                                /// now, I just don't handle this
-                                /// case.
+                                // This indicates an usual case,
+                                // where the jump destination has
+                                // been constructed in an unusual
+                                // manner.  For example, it might
+                                // have been constructed by adding
+                                // two numbers together, or it might
+                                // have been stored in memory.  For
+                                // now, I just don't handle this
+                                // case.
                                 panic!("Complex dependency encountered!");
                             }
                         }
@@ -203,7 +204,7 @@ fn determine_labels(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instru
 }
 
 /// Construct a map from byte offsets to instruction offsets.
-fn determine_insn_offsets(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction]) -> Vec<usize> {
+fn determine_insn_offsets(insns: &[Instruction]) -> Vec<usize> {
     let mut pc = 0;
     let mut offsets = Vec::new();
     for (i,insn) in insns.iter().enumerate() {
@@ -243,15 +244,27 @@ impl EvmState for LegacyEvmState {
         self.stack.pc
     }
 
-    fn stack(&mut self) -> &mut Self::Stack {
+    fn stack(&self) -> &Self::Stack {
+        &self.stack
+    }
+
+    fn memory(&self) -> &Self::Memory {
+        &self.memory
+    }
+
+    fn storage(&self) -> &Self::Storage {
+        &self.storage
+    }
+
+    fn stack_mut(&mut self) -> &mut Self::Stack {
         &mut self.stack
     }
 
-    fn memory(&mut self) -> &mut Self::Memory {
+    fn memory_mut(&mut self) -> &mut Self::Memory {
         &mut self.memory
     }
 
-    fn storage(&mut self) -> &mut Self::Storage {
+    fn storage_mut(&mut self) -> &mut Self::Storage {
         &mut self.storage
     }
 
@@ -317,7 +330,6 @@ impl EvmStack for LegacyEvmStack {
     }
 
     fn dup(&mut self, n: usize) {
-        assert!(n >= 0);
         assert!(self.has_operands(n+1));
         let i = self.items.len() - (n+1);
         self.items.push(self.items[i]);
@@ -343,15 +355,15 @@ pub struct LegacyEvmMemory { }
 impl EvmMemory for LegacyEvmMemory {
     type Word = aw256;
 
-    fn read(&mut self, address: Self::Word) -> Self::Word {
+    fn read(&mut self, _address: Self::Word) -> Self::Word {
         aw256::Unknown
     }
 
-    fn write(&mut self, address: Self::Word, item: Self::Word) {
+    fn write(&mut self, _address: Self::Word, _item: Self::Word) {
         // no op (for now)
     }
 
-    fn write8(&mut self, address: Self::Word, item: Self::Word) {
+    fn write8(&mut self, _address: Self::Word, _item: Self::Word) {
         // no op (for now)
     }
 }
@@ -366,11 +378,11 @@ pub struct LegacyEvmStorage { }
 impl EvmStorage for LegacyEvmStorage {
     type Word = aw256;
 
-    fn get(&mut self, address: Self::Word) -> Self::Word {
+    fn get(&mut self, _address: Self::Word) -> Self::Word {
         aw256::Unknown
     }
 
-    fn put(&mut self, address: Self::Word, item: Self::Word) {
+    fn put(&mut self, _address: Self::Word, _item: Self::Word) {
         // no op (for now)
     }
 }

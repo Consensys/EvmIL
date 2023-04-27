@@ -11,7 +11,6 @@
 // limitations under the License.
 use std::{cmp, fmt, mem};
 use std::fmt::{Debug,Display};
-use crate::evm;
 use crate::util::{Bottom, Interval, Join, JoinInto, JoinLattice};
 
 // ============================================================================

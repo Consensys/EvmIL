@@ -97,7 +97,10 @@ where T::Word : Top {
         // me how best to handle this, to be honest.
         let mut bytecode = Vec::new();
         for i in insns {
-            i.encode(&mut bytecode);
+            // Just assuming this is safe for now.  The only way it
+            // could not be would be if one of the instructions is
+            // malformed.  That probably cannot arise by construction.
+            i.encode(&mut bytecode).unwrap();
         }
         // Construct initially empty super states
         let states = vec![EvmSuperState::new(); bytecode.len()];
