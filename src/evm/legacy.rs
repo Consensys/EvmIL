@@ -297,6 +297,10 @@ impl EvmStack for LegacyEvmStack {
         self.items.len() >= n
     }
 
+    fn size(&self) -> usize {
+        self.items.len()
+    }
+
     fn peek(&self, n: usize) -> &Self::Word {
         assert!(self.has_operands(n));
         let (_,word) = &self.items[self.items.len() - (n+1)];
@@ -313,13 +317,15 @@ impl EvmStack for LegacyEvmStack {
     }
 
     fn dup(&mut self, n: usize) {
-        assert!(self.has_operands(n));
+        assert!(n >= 0);
+        assert!(self.has_operands(n+1));
         let i = self.items.len() - (n+1);
         self.items.push(self.items[i]);
     }
 
     fn swap(&mut self, n: usize) {
-        assert!(self.has_operands(n));
+        assert!(n > 0);
+        assert!(self.has_operands(n+1));
         let i = self.items.len() - (n+1);
         let j = self.items.len() - 1;
         // Use slice swap to avoid cloning.

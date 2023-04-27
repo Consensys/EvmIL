@@ -50,7 +50,7 @@ pub enum EvmException {
 
 /// Execute an instruction from the given EVM state producing one (or
 /// more) output states.
-pub fn execute<T:EvmState+Clone>(insn: &Instruction, state: T) -> Outcome<T>
+pub fn execute<T:EvmState+Clone>(insn: &Instruction, mut state: T) -> Outcome<T>
 where T::Word : Top {
     match insn {
         // ===========================================================
@@ -169,7 +169,7 @@ where T::Word : Top {
         RETURN => execute_consumer_outcome(state, 2, Outcome::Return),
         DELEGATECALL => execute_consumer_producer(state, 6, &[T::Word::TOP]),
         CREATE2 => execute_consumer_producer(state, 4, &[T::Word::TOP]),
-        STATICALL => execute_consumer_producer(state, 6, &[T::Word::TOP]),
+        STATICCALL => execute_consumer_producer(state, 6, &[T::Word::TOP]),
         REVERT => execute_consumer_outcome(state, 2, Outcome::Exception(Revert)),
         INVALID => Outcome::Exception(InvalidOpcode),
         SELFDESTRUCT => execute_consumer_outcome(state, 1, Outcome::Return),

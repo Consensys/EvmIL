@@ -191,6 +191,10 @@ impl<T:InstructionOperands+Debug> fmt::Display for AbstractInstruction<T> {
                 // Print!
                 write!(f, "push {}", hex)
             }
+            AbstractInstruction::PUSHL(label) => {
+                // Print!
+                write!(f, "push {}", label)
+            }
             AbstractInstruction::RJUMP(offset) => {
                 write!(f, "rjump {offset}")
             }

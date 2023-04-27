@@ -97,6 +97,9 @@ pub trait EvmStack {
     /// Check at least `n` operands on the stack.
     fn has_operands(&self, n: usize) -> bool;
 
+    /// Get the size of the stack.
+    fn size(&self) -> usize;
+
     /// Peek `nth` item from stack (where `n==0` is top element).
     fn peek(&self, n: usize) -> &Self::Word;
 
