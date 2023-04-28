@@ -416,7 +416,7 @@ fn translate_insn(pc: usize, insn: &Instruction, labels: &HashMap<usize,String>)
         SELFDESTRUCT => SELFDESTRUCT,
         DATA(bs) => DATA(bs.clone()),
         //
-        PUSHL(_)|LABEL(_) => unreachable!(),
+        PUSHL(..)|LABEL(_) => unreachable!(),
     }
 }
 

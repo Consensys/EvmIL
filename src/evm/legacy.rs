@@ -145,7 +145,7 @@ fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Ins
                                 let label = labels.get(&n.into()).unwrap().clone();
                                 // Convert concrete instruction to
                                 // labelled instruction.
-                                asm[dep_i] = AssemblyInstruction::PUSHL(label);
+                                asm[dep_i] = AssemblyInstruction::PUSHL(false,label);
                             }
                             _ => {
                                 // This indicates an usual case,
@@ -527,7 +527,7 @@ fn translate_insn(insn: &Instruction) -> AssemblyInstruction {
         SELFDESTRUCT => SELFDESTRUCT,
         DATA(bs) => DATA(bs.clone()),
         //
-        PUSHL(_)|LABEL(_) => unreachable!(),
+        PUSHL(..)|LABEL(_) => unreachable!(),
         RJUMP(_)|RJUMPI(_) => unreachable!()
     }
 }

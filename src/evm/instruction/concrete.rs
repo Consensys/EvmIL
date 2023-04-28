@@ -220,7 +220,7 @@ impl Instruction {
             INVALID => opcode::INVALID,
             SELFDESTRUCT => opcode::SELFDESTRUCT,
             //
-            PUSHL(_)|LABEL(_) => {
+            PUSHL(..)|LABEL(_) => {
                 // Unreachable because these instructions are not
                 // concrete.
                 unreachable!();

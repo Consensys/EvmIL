@@ -144,7 +144,7 @@ fn parse_push(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
     // label or a hexadecimal operand.
     match operand {
         Token::Hex(s) => Ok(PUSH(parse_hex(s)?)),
-        Token::Identifier(s) => Ok(PUSHL(s.to_string())),
+        Token::Identifier(s) => Ok(PUSHL(false,s.to_string())),
         Token::EOF => Err(AssemblyError::ExpectedOperand),
         _ => Err(AssemblyError::UnexpectedToken)
     }
