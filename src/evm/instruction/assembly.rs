@@ -36,7 +36,7 @@ impl AssemblyInstruction {
     /// (if there is one).
     pub fn target(&self) -> Option<&str> {
         match self {
-            PUSHL(lab) => Some(lab),
+            PUSHL(_,lab) => Some(lab),
             RJUMP(lab) => Some(lab),
             RJUMPI(lab) => Some(lab),
             _ => None
@@ -82,7 +82,7 @@ impl AssemblyInstruction {
             RJUMP(_)|RJUMPI(_) => 2,
             // 60s & 70s: Push Operations
             PUSH(bs) => bs.len(),
-            PUSHL(_) => 2,
+            PUSHL(large,_) => if *large {3} else {2},
             LABEL(_) => 0,
             // 80s: Duplication Operations
             DUP(_) => 1,
@@ -204,9 +204,9 @@ impl AssemblyInstruction {
             }
             // 60s & 70s: Push Operations
             PUSH(bs) => PUSH(bs.clone()),
-            PUSHL(lab) => {
+            PUSHL(large,lab) => {
                 match mapper(lab) {
-                    Some(loffset) => PUSH(to_abs_bytes(loffset)),
+                    Some(loffset) => PUSH(to_abs_bytes(*large,loffset)),
                     None => {
                         return Err(());
                     }
@@ -249,8 +249,8 @@ fn to_rel_offset(pc: usize, target: usize) -> i16 {
 }
 
 /// Calculate the variable bytes for an absolute branch target.
-fn to_abs_bytes(target: usize) -> Vec<u8> {
-    if target > 255 {
+fn to_abs_bytes(large: bool, target: usize) -> Vec<u8> {
+    if large || target > 255 {
         vec![(target / 256) as u8, (target % 256) as u8]
     } else {
         vec![target as u8]

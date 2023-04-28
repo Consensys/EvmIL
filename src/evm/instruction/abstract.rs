@@ -110,7 +110,7 @@ pub enum AbstractInstruction<T:InstructionOperands> {
     RJUMPI(T::RelOffset16), // EIP4200
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
-    PUSHL(T::PushLabel),
+    PUSHL(bool,T::PushLabel),
     LABEL(T::Label),
     // 80s: Duplicate Operations
     DUP(u8),
@@ -191,9 +191,13 @@ impl<T:InstructionOperands+Debug> fmt::Display for AbstractInstruction<T> {
                 // Print!
                 write!(f, "push {}", hex)
             }
-            AbstractInstruction::PUSHL(label) => {
+            AbstractInstruction::PUSHL(large,label) => {
                 // Print!
-                write!(f, "push {}", label)
+                if *large {
+                    write!(f, "pushl {}", label)
+                } else {
+                    write!(f, "push {}", label)
+                }
             }
             AbstractInstruction::RJUMP(offset) => {
                 write!(f, "rjump {offset}")

@@ -163,9 +163,9 @@ impl Compiler {
         // Translate arguments
         for e in exprs { self.translate(e)?; }
         // Push return address
-        self.bytecode.push(PUSHL(retlab.clone()));
+        self.bytecode.push(PUSHL(false,retlab.clone()));
         // Push function address
-        self.bytecode.push(PUSHL(name.to_string()));
+        self.bytecode.push(PUSHL(false,name.to_string()));
         // Perform jump
         self.bytecode.push(JUMP);
         // Identify return point
@@ -181,7 +181,7 @@ impl Compiler {
 
     fn translate_goto(&mut self, label: &str) -> Result {
         // Translate unconditional branch
-        self.bytecode.push(PUSHL(label.to_string()));
+        self.bytecode.push(PUSHL(false,label.to_string()));
         self.bytecode.push(JUMP);
         //
         Ok(())
@@ -335,12 +335,12 @@ impl Compiler {
         //
         match (true_lab, false_lab) {
             (Some(lab), None) => {
-                self.bytecode.push(PUSHL(lab.to_string()));
+                self.bytecode.push(PUSHL(false,lab.to_string()));
                 self.bytecode.push(JUMPI);
             }
             (None, Some(lab)) => {
                 self.bytecode.push(ISZERO);
-                self.bytecode.push(PUSHL(lab.to_string()));
+                self.bytecode.push(PUSHL(false,lab.to_string()));
                 self.bytecode.push(JUMPI);
             }
             (_, _) => {
@@ -377,7 +377,7 @@ impl Compiler {
         }
         // Allocate fresh label
         let lab = self.fresh_label();
-        self.bytecode.push(PUSHL(lab.clone()));
+        self.bytecode.push(PUSHL(false,lab.clone()));
         self.bytecode.push(JUMPI);
         self.bytecode.push(POP);
         self.translate(rhs)?;

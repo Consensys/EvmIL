@@ -143,9 +143,11 @@ fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Ins
                                 assert_eq!(n,s.stack.peek(0).constant());
                                 // Construct label
                                 let label = labels.get(&n.into()).unwrap().clone();
+                                // Check for a "large push"
+                                let large = bytes.len() > 1 && bytes[0] == 0x00;
                                 // Convert concrete instruction to
                                 // labelled instruction.
-                                asm[dep_i] = AssemblyInstruction::PUSHL(label);
+                                asm[dep_i] = AssemblyInstruction::PUSHL(large,label);
                             }
                             _ => {
                                 // This indicates an usual case,
@@ -527,7 +529,7 @@ fn translate_insn(insn: &Instruction) -> AssemblyInstruction {
         SELFDESTRUCT => SELFDESTRUCT,
         DATA(bs) => DATA(bs.clone()),
         //
-        PUSHL(_)|LABEL(_) => unreachable!(),
+        PUSHL(..)|LABEL(_) => unreachable!(),
         RJUMP(_)|RJUMPI(_) => unreachable!()
     }
 }
