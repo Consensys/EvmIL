@@ -194,7 +194,7 @@ impl<T:InstructionOperands+Debug> fmt::Display for AbstractInstruction<T> {
             AbstractInstruction::PUSHL(large,label) => {
                 // Print!
                 if *large {
-                    write!(f, "push2 {}", label)
+                    write!(f, "pushl {}", label)
                 } else {
                     write!(f, "push {}", label)
                 }

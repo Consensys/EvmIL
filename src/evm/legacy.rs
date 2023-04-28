@@ -143,9 +143,11 @@ fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Ins
                                 assert_eq!(n,s.stack.peek(0).constant());
                                 // Construct label
                                 let label = labels.get(&n.into()).unwrap().clone();
+                                // Check for a "large push"
+                                let large = bytes.len() > 1 && bytes[0] == 0x00;
                                 // Convert concrete instruction to
                                 // labelled instruction.
-                                asm[dep_i] = AssemblyInstruction::PUSHL(false,label);
+                                asm[dep_i] = AssemblyInstruction::PUSHL(large,label);
                             }
                             _ => {
                                 // This indicates an usual case,

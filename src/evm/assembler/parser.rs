@@ -82,7 +82,11 @@ fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
         match lexer.lookahead()? {
             Token::Identifier("push"|"PUSH") => {
                 _ = lexer.next();
-                insns.push(parse_push(lexer.next()?)?)
+                insns.push(parse_push(false,lexer.next()?)?)
+            }
+            Token::Identifier("pushl"|"PUSHL") => {
+                _ = lexer.next();
+                insns.push(parse_push(true,lexer.next()?)?)
             }
             Token::Identifier("rjump"|"RJUMP") => {
                 _ = lexer.next();
@@ -139,12 +143,12 @@ fn parse_data_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
 }
 
 /// Parse a push instruction with a given operand.
-fn parse_push(operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
+fn parse_push(large: bool, operand: Token) -> Result<AssemblyInstruction,AssemblyError> {
     // Push always expects an argument, though it could be a
     // label or a hexadecimal operand.
     match operand {
         Token::Hex(s) => Ok(PUSH(parse_hex(s)?)),
-        Token::Identifier(s) => Ok(PUSHL(false,s.to_string())),
+        Token::Identifier(s) => Ok(PUSHL(large,s.to_string())),
         Token::EOF => Err(AssemblyError::ExpectedOperand),
         _ => Err(AssemblyError::UnexpectedToken)
     }

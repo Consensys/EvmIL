@@ -204,9 +204,9 @@ impl AssemblyInstruction {
             }
             // 60s & 70s: Push Operations
             PUSH(bs) => PUSH(bs.clone()),
-            PUSHL(_,lab) => {
+            PUSHL(large,lab) => {
                 match mapper(lab) {
-                    Some(loffset) => PUSH(to_abs_bytes(loffset)),
+                    Some(loffset) => PUSH(to_abs_bytes(*large,loffset)),
                     None => {
                         return Err(());
                     }
@@ -249,8 +249,8 @@ fn to_rel_offset(pc: usize, target: usize) -> i16 {
 }
 
 /// Calculate the variable bytes for an absolute branch target.
-fn to_abs_bytes(target: usize) -> Vec<u8> {
-    if target > 255 {
+fn to_abs_bytes(large: bool, target: usize) -> Vec<u8> {
+    if large || target > 255 {
         vec![(target / 256) as u8, (target % 256) as u8]
     } else {
         vec![target as u8]
