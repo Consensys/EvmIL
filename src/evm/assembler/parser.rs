@@ -25,6 +25,7 @@ use super::lexer::{Lexer,Token};
 #[derive(Debug)]
 pub enum AssemblyError {
     ExpectedOperand,
+    InvalidComment(usize),
     InvalidHexString(usize),
     InvalidInstruction,
     UnexpectedCharacter(usize),
@@ -323,6 +324,7 @@ fn parse_opcode(insn: &str) -> Result<AssemblyInstruction,AssemblyError> {
         "selfdestruct"|"SELFDESTRUCT" => SELFDESTRUCT,
         //
         _ => {
+            println!("{insn}");
             return Err(AssemblyError::InvalidInstruction);
         }
     };
