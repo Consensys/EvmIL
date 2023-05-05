@@ -61,7 +61,7 @@ impl<'a> Lexer<'a> {
 
     pub fn lookahead(&self) -> Result<Token<'a>,AssemblyError> {
         // Skip any whitespace
-        let start = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
+        let start = self.skip_whitespace(self.index);
         // Sanity check for end-of-file
         if start >= self.chars.len() {
             Ok(Token::EOF)
@@ -78,7 +78,7 @@ impl<'a> Lexer<'a> {
 
     pub fn next(&mut self) -> Result<Token<'a>,AssemblyError> {
         // Skip any whitespace
-        self.index = skip(&self.chars, self.index, |c| c.is_ascii_whitespace());
+        self.index = self.skip_whitespace(self.index);
         // Determine next token
         let tok = self.lookahead()?;
         // Account for next token
@@ -117,6 +117,19 @@ impl<'a> Lexer<'a> {
         let end = skip(&self.chars,start,|c| c.is_ascii_alphabetic());
         // Done
         Ok(Token::Section(&self.input[start..end]))
+    }
+
+    fn skip_whitespace(&self, mut index: usize) -> usize {
+        index = skip(&self.chars, index, |c| c.is_ascii_whitespace());
+        // Check for a comment
+        if self.chars[index..].starts_with(&[';']) {
+            // Skip to newline
+            index = skip(&self.chars, index, |c| c != '\n');
+            // Recursive call to handle trainling whitespace
+            self.skip_whitespace(index)
+        } else {
+            index
+        }
     }
 }
 
