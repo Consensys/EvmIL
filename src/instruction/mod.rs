@@ -12,8 +12,9 @@
 mod r#abstract;
 mod assembly;
 mod concrete;
-
+mod opcode;
 
 pub use r#abstract::*;
 pub use assembly::*;
 pub use concrete::*;
+pub use opcode::*;

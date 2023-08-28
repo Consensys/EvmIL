@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::slice::{Iter};
-use crate::evm::{assembler};
-use crate::evm::{AssembleError,AssemblyError};
-use crate::evm::instruction::{AssemblyInstruction,Instruction};
+use crate::{assembler};
+use crate::{AssembleError,AssemblyError};
+use crate::instruction::{AssemblyInstruction,Instruction};
 
 // ============================================================================
 // Bytecode Contract

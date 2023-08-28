@@ -10,10 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::util::{Concretizable,w256,Top};
-use crate::evm::{EvmState,EvmStack,EvmMemory,EvmStorage};
-use crate::evm::instruction::{Instruction};
-use crate::evm::instruction::AbstractInstruction::*;
-use crate::evm::EvmException::*;
+use crate::state::{EvmState,EvmStack,EvmMemory,EvmStorage};
+use crate::instruction::{Instruction};
+use crate::instruction::AbstractInstruction::*;
 
 /// Represents the possible outcomes from executing a given
 /// instruction in a given state.
@@ -48,6 +47,8 @@ pub enum EvmException {
     AccountCollision,
     WriteProtectionViolated
 }
+
+use EvmException::*;
 
 /// Execute an instruction from the given EVM state producing one (or
 /// more) output states.
