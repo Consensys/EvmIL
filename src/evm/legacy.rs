@@ -11,7 +11,8 @@
 // limitations under the License.
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
-use crate::evm::{AssemblyInstruction,Bytecode,Execution,ExecutionSection,Instruction,Section,ToInstructions};
+use crate::evm::{AssemblyInstruction,Bytecode,Instruction,Section,ToInstructions};
+use crate::evm::execution::{Execution,ExecutionSection};
 use crate::evm::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 use crate::evm::AbstractInstruction::*;
 
