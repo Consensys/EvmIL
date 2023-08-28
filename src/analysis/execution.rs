@@ -11,10 +11,10 @@
 // limitations under the License.
 use std::ops;
 use crate::bytecode::{Section};
-use crate::state::{EvmState};
 use crate::bytecode::Instruction;
-use super::semantics::{execute,Outcome};
 use crate::util::{Bottom,Top};
+use super::state::{EvmState};
+use super::semantics::{execute,Outcome};
 
 /// Simple alias since we're always dealing with concrete executions
 /// here.

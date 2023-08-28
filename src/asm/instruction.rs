@@ -32,10 +32,10 @@ impl InstructionOperands for AssemblyOperands {
 
 use AbstractInstruction::*;
 
-/// A labelled instruction does not have concrete information
-/// regarding branch targets.  Rather, branch target information is
-/// represented using _labels_.  Currently, a label is simply
-/// implemented as a `String`.
+/// An individual assembly language instruction.  Assembly
+/// instructions do not have concrete information regarding branch
+/// targets.  Rather, branch target information is represented using
+/// _labels_.  Currently, a label is simply implemented as a `String`.
 pub type AssemblyInstruction = AbstractInstruction<AssemblyOperands>;
 
 impl AssemblyInstruction {
