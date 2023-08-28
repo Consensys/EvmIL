@@ -14,8 +14,8 @@ use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
 use crate::bytecode::{Contract,Instruction,Section,ToInstructions};
 use crate::bytecode::AbstractInstruction::*;
-use crate::execution::{Execution,ExecutionSection};
-use crate::state::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
+use crate::analysis::{Execution,ExecutionSection};
+use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 
 pub fn from_bytes(bytes: &[u8]) -> Contract<AssemblyInstruction> {
     // NOTE: currently, we begin by converting bytes into

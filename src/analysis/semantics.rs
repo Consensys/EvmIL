@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::util::{Concretizable,w256,Top};
-use crate::state::{EvmState,EvmStack,EvmMemory,EvmStorage};
 use crate::bytecode::{Instruction};
 use crate::bytecode::AbstractInstruction::*;
+use super::state::{EvmState,EvmStack,EvmMemory,EvmStorage};
 
 /// Represents the possible outcomes from executing a given
 /// instruction in a given state.
