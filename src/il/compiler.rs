@@ -12,10 +12,9 @@
 use crate::il::{BinOp, Region, Term};
 use crate::contract::{Bytecode,Section};
 use crate::asm::{Assembly,AssemblyInstruction};
-use crate::instruction::{Instruction};
-use crate::instruction::AbstractInstruction::*;
+use crate::bytecode::{Instruction};
+use crate::bytecode::AbstractInstruction::*;
 use crate::util::*;
-
 
 type Result = std::result::Result<(), CompilerError>;
 

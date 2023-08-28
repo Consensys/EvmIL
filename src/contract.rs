@@ -12,7 +12,7 @@
 use std::slice::{Iter};
 use crate::asm;
 use crate::asm::{AssembleError,AssemblyInstruction,AssemblyError};
-use crate::instruction::{Instruction};
+use crate::bytecode::{Instruction};
 
 // ============================================================================
 // Bytecode Contract

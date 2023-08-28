@@ -12,10 +12,9 @@
 use std::ops;
 use crate::contract::{Section};
 use crate::state::{EvmState};
-use crate::instruction::Instruction;
+use crate::bytecode::Instruction;
 use super::semantics::{execute,Outcome};
 use crate::util::{Bottom,Top};
-
 
 /// Simple alias since we're always dealing with concrete executions
 /// here.

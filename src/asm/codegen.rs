@@ -1,7 +1,7 @@
 use std::fmt;
 use std::collections::{HashMap};
 use super::{AssemblyInstruction};
-use crate::instruction::{Instruction};
+use crate::bytecode::{Instruction};
 
 // =============================================================================
 // Assemble Error

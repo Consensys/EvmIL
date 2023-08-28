@@ -12,7 +12,7 @@ pub use parser::{AssemblyError};
 pub use codegen::{AssembleError};
 
 use crate::contract::{Bytecode,Section};
-use crate::instruction::Instruction;
+use crate::bytecode::Instruction;
 
 // ============================================================================
 // Assembly

@@ -12,7 +12,7 @@
 use std::fmt;
 use crate::contract::{Section};
 use super::{Assembly,AssemblyInstruction};
-use crate::instruction::AbstractInstruction::*;
+use crate::bytecode::AbstractInstruction::*;
 use crate::util::{FromHexString};
 use super::lexer::{Lexer,Token};
 
