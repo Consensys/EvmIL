@@ -10,11 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::bytecode::{Section};
 use super::{Assembly,AssemblyInstruction};
-use crate::instruction::AbstractInstruction::*;
-use crate::util::{FromHexString};
 use super::lexer::{Lexer,Token};
+use crate::bytecode::{Section};
+use crate::bytecode::AbstractInstruction::*;
+use crate::util::{FromHexString};
 
 // ===================================================================
 // Parse Error

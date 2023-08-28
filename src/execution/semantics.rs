@@ -11,8 +11,8 @@
 // limitations under the License.
 use crate::util::{Concretizable,w256,Top};
 use crate::state::{EvmState,EvmStack,EvmMemory,EvmStorage};
-use crate::instruction::{Instruction};
-use crate::instruction::AbstractInstruction::*;
+use crate::bytecode::{Instruction};
+use crate::bytecode::AbstractInstruction::*;
 
 /// Represents the possible outcomes from executing a given
 /// instruction in a given state.

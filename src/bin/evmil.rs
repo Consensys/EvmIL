@@ -20,7 +20,7 @@ use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::asm::{Assembly,AssemblyInstruction};
 use evmil::bytecode::{Section};
-use evmil::{eof,legacy};
+use evmil::bytecode::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 

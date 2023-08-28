@@ -12,27 +12,26 @@
 use std::ops;
 use crate::bytecode::{Section};
 use crate::state::{EvmState};
-use crate::instruction::Instruction;
+use crate::bytecode::Instruction;
 use super::semantics::{execute,Outcome};
 use crate::util::{Bottom,Top};
 
-
 /// Simple alias since we're always dealing with concrete executions
 /// here.
-type Bytecode = crate::bytecode::Bytecode<Instruction>;
+type Contract = crate::bytecode::Contract<Instruction>;
 
 pub struct Execution<'a,T:EvmState+Clone+PartialEq> {
     /// The bytecode being executed by this execution.
-    bytecode: &'a Bytecode,
+    contract: &'a Contract,
     /// The set of states observed at each `pc` location.
     states: Vec<ExecutionSection<T>>
 }
 
 impl<'a,T:EvmState+Clone+PartialEq> Execution<'a,T>
 where T::Word : Top {
-    pub fn new(bytecode: &'a Bytecode) -> Self {
+    pub fn new(contract: &'a Contract) -> Self {
         let mut states = Vec::new();
-        for s in bytecode {
+        for s in contract {
             match s {
                 Section::Code(insns) => {
                     states.push(ExecutionSection::new(insns));
@@ -43,7 +42,7 @@ where T::Word : Top {
                 }
             }
         }
-        Self{bytecode, states}
+        Self{contract, states}
     }
 
     pub fn get(&self, index: usize) -> &ExecutionSection<T> {
@@ -55,7 +54,7 @@ where T::Word : Top {
     }
 
     pub fn execute(&mut self, state: T) {
-        let root : &Section<Instruction> = self.bytecode.iter().next().unwrap();
+        let root : &Section<Instruction> = self.contract.iter().next().unwrap();
         // Access first section and begin execution from there.
         match root {
             Section::Code(_) => {

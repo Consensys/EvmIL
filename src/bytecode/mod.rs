@@ -10,9 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 mod r#abstract;
+mod contract;
 mod concrete;
+pub mod eof;  // For now.  Should be deprecated
+pub mod legacy; // For now.  Should be deprecated
 mod opcode;
 
 pub use r#abstract::*;
 pub use concrete::*;
+pub use contract::*;
 pub use opcode::*;
