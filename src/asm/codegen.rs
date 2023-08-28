@@ -1,34 +1,7 @@
 use std::fmt;
 use std::collections::{HashMap};
-use super::{AssemblyInstruction};
+use super::{AssemblyError,AssemblyInstruction};
 use crate::bytecode::{Instruction};
-
-// =============================================================================
-// Assemble Error
-// =============================================================================
-
-#[derive(Debug)]
-pub enum AssembleError {
-    /// Indicates a labelled instruction was encountered that targets a
-    /// non-existent label.
-    UnknownLabel(String),
-    /// Indicates that the distance of a calculated relative offset
-    /// exceeds 16bits.
-    InvalidRelativeOffset,
-    /// Indicates that the distance of a calculated offset exceeds the
-    /// maximum permitted code size.
-    OffsetTooLarge,
-}
-
-impl fmt::Display for AssembleError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for AssembleError {
-
-}
 
 /// Convert _labelled_ instructions into _concrete_ instructions
 /// by first determining the byteoffset of each label, and then
@@ -55,7 +28,7 @@ impl std::error::Error for AssembleError {
 /// operand to determine an initial set of offsets.  Based on this, we
 /// then refine our choices of `PUSH` instruction (always increasing
 /// monotonically in size) until we have a solution.
-pub fn assemble(asm: &[AssemblyInstruction]) -> Result<Vec<Instruction>,AssembleError> {
+pub fn assemble(asm: &[AssemblyInstruction]) -> Result<Vec<Instruction>,AssemblyError> {
     // Identify all labels contained within the sequence of assembly
     // instructions.  For each, we record their _instruction offset_.
     let labels = init_labels(asm)?;
@@ -93,7 +66,7 @@ pub fn assemble(asm: &[AssemblyInstruction]) -> Result<Vec<Instruction>,Assemble
 /// instruction's _byte offset_ (i.e. since not all instructions are
 /// one byte long).  Finally, this also checks that every partial
 /// instruction targets a known label.
-fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,usize>,AssembleError> {
+fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,usize>,AssemblyError> {
     let mut labels : HashMap<String, usize> = HashMap::new();
     // Compute labels
     for (i,b) in instructions.iter().enumerate() {
@@ -112,7 +85,7 @@ fn init_labels(instructions: &[AssemblyInstruction]) -> Result<HashMap<String,us
         match insn.target() {
             Some(lab) => {
                 if !labels.contains_key(lab) {
-                    return Err(AssembleError::UnknownLabel(lab.to_string()))
+                    return Err(AssemblyError::UnknownLabel(lab.to_string()))
                 }
             }
             None => {} // ignore

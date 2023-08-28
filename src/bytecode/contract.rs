@@ -11,7 +11,7 @@
 // limitations under the License.
 use std::slice::{Iter};
 use crate::asm;
-use crate::asm::{AssembleError,AssemblyInstruction,AssemblyError};
+use crate::asm::{AssemblyInstruction,AssemblyError};
 use crate::bytecode::{Instruction};
 
 // ============================================================================
