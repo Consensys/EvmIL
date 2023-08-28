@@ -12,7 +12,6 @@
 
 mod assembler;
 mod bytecode;
-mod execution;
 mod instruction;
 mod semantics;
 mod state;
@@ -21,6 +20,10 @@ mod state;
 /// Again, this includes assembling / disassembling EOF contracts,
 /// validing them, managing EOF versions, etc.
 pub mod eof;
+/// Functionality related to execution or analysis of bytecode
+/// sequences.  This supports both runtime execution, as well as
+/// various kinds of static analysis and verification.
+pub mod execution;
 /// Functionality related to distinguishing different forks of the
 /// EVM.  This includes mechanisms for identifying what EIPs are
 /// active in the current execution.
@@ -34,10 +37,8 @@ pub mod legacy;
 /// the same opcode (e.g. if they are active only in specific forks).
 pub mod opcode;
 
-
 pub use assembler::{AssembleError,AssemblyError};
 pub use bytecode::*;
-pub use execution::*;
 pub use instruction::*;
 pub use semantics::*;
 pub use state::*;
