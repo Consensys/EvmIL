@@ -13,8 +13,7 @@ use std::fmt;
 use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
 use crate::asm::{AssemblyInstruction};
-use crate::contract::{Bytecode,Section};
-use crate::bytecode::{Instruction,ToInstructions};
+use crate::bytecode::{Bytecode,Instruction,Section,ToInstructions};
 use crate::bytecode::AbstractInstruction::*;
 
 /// The EOF magic prefix as dictated in EIP3540.

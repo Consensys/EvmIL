@@ -12,8 +12,7 @@
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
-use crate::contract::{Bytecode,Section};
-use crate::bytecode::{Instruction,ToInstructions};
+use crate::bytecode::{Bytecode,Instruction,Section,ToInstructions};
 use crate::bytecode::AbstractInstruction::*;
 use crate::execution::{Execution,ExecutionSection};
 use crate::state::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};

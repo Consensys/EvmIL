@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::ops;
-use crate::contract::{Section};
+use crate::bytecode::{Section};
 use crate::state::{EvmState};
 use crate::bytecode::Instruction;
 use super::semantics::{execute,Outcome};
@@ -18,7 +18,7 @@ use crate::util::{Bottom,Top};
 
 /// Simple alias since we're always dealing with concrete executions
 /// here.
-type Bytecode = crate::contract::Bytecode<Instruction>;
+type Bytecode = crate::bytecode::Bytecode<Instruction>;
 
 pub struct Execution<'a,T:EvmState+Clone+PartialEq> {
     /// The bytecode being executed by this execution.

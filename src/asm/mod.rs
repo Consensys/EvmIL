@@ -11,8 +11,7 @@ pub use instruction::{AssemblyInstruction};
 pub use parser::{AssemblyError};
 pub use codegen::{AssembleError};
 
-use crate::contract::{Bytecode,Section};
-use crate::bytecode::Instruction;
+use crate::bytecode::{Bytecode,Instruction,Section};
 
 // ============================================================================
 // Assembly
