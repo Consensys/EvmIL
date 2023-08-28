@@ -26,19 +26,19 @@ use crate::bytecode::{Instruction};
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
-pub struct Bytecode<T:PartialEq> {
+pub struct Contract<T:PartialEq> {
     sections: Vec<Section<T>>
 }
 
-impl<T:PartialEq> Bytecode<T> {
+impl<T:PartialEq> Contract<T> {
     pub fn empty() -> Self {
-        Bytecode {
+        Self {
             sections: Vec::new()
         }
     }
 
     pub fn new(sections: Vec<Section<T>>) -> Self {
-        Bytecode { sections }
+        Self { sections }
     }
 
     /// Return the number of sections in the code.
@@ -60,7 +60,7 @@ impl<T:PartialEq> Bytecode<T> {
 // Traits
 // ===================================================================
 
-impl<'a,T:PartialEq> IntoIterator for &'a Bytecode<T> {
+impl<'a,T:PartialEq> IntoIterator for &'a Contract<T> {
     type Item = &'a Section<T>;
     type IntoIter = Iter<'a,Section<T>>;
 

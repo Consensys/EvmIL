@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::{PathBuf};
-use evmil::bytecode::{Bytecode};
+use evmil::bytecode::{Contract};
 use evmil::bytecode::legacy;
 use evmil::il::Parser;
 use evmil::util::{FromHexString};
@@ -23,7 +23,7 @@ fn check(test: &str) {
         Err(e) => panic!("{test}.eil: {e}")
     };
     // Translate statements into bytecode instructions
-    let bytecode = Bytecode::try_from(terms.as_slice()).unwrap();
+    let bytecode = Contract::try_from(terms.as_slice()).unwrap();
     // Translate instructions into bytes
     let eil_bytes: Vec<u8> = legacy::to_bytes(&bytecode);
     // Parse hex string into bytes

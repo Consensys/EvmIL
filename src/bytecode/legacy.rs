@@ -12,18 +12,18 @@
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{Bytecode,Instruction,Section,ToInstructions};
+use crate::bytecode::{Contract,Instruction,Section,ToInstructions};
 use crate::bytecode::AbstractInstruction::*;
 use crate::execution::{Execution,ExecutionSection};
 use crate::state::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 
-pub fn from_bytes(bytes: &[u8]) -> Bytecode<AssemblyInstruction> {
+pub fn from_bytes(bytes: &[u8]) -> Contract<AssemblyInstruction> {
     // NOTE: currently, we begin by converting bytes into
     // instructions.  Personally, I think this is a bad choice and
     // that we would be better of working directly with bytes.  It
     // certainly makes for some ugly repetition here.
     let insns = bytes.to_insns();
-    let bytecode = Bytecode::new(vec![Section::Code(insns)]);
+    let bytecode = Contract::new(vec![Section::Code(insns)]);
     let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
     // Run execution (and for now hope it succeeds!)
     execution.execute(LegacyEvmState::new());
@@ -38,16 +38,16 @@ pub fn from_bytes(bytes: &[u8]) -> Bytecode<AssemblyInstruction> {
     // Done
     if pivot == bytes.len() {
         // No data section
-        Bytecode::new(vec![Section::Code(asm)])
+        Contract::new(vec![Section::Code(asm)])
     } else {
         let databytes = bytes[pivot..].to_vec();
-        Bytecode::new(vec![Section::Code(asm),Section::Data(databytes)])
+        Contract::new(vec![Section::Code(asm),Section::Data(databytes)])
     }
 }
 
 /// Convert this bytecode contract into a byte sequence correctly
 /// formatted for legacy code.
-pub fn to_bytes(bytecode: &Bytecode<Instruction>) -> Vec<u8> {
+pub fn to_bytes(bytecode: &Contract<Instruction>) -> Vec<u8> {
     let mut bytes = Vec::new();
     //
     for s in bytecode { s.encode(&mut bytes); }

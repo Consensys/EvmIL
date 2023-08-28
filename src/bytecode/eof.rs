@@ -13,7 +13,7 @@ use std::fmt;
 use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{Bytecode,Instruction,Section,ToInstructions};
+use crate::bytecode::{Contract,Instruction,Section,ToInstructions};
 use crate::bytecode::AbstractInstruction::*;
 
 /// The EOF magic prefix as dictated in EIP3540.
@@ -66,7 +66,7 @@ impl fmt::Display for EncodingError {
 // ============================================================================
 
 /// An error which arises when attempting to decode a sequence of
-/// bytes into a `Bytecode` structure.  In essence, this indicates the
+/// bytes into a `Contract` structure.  In essence, this indicates the
 /// bytecode sequence is malformed in some way.  These errors
 /// generally apply when decoding EOF containers, since these have
 /// essential and required structure.
@@ -142,7 +142,7 @@ impl std::error::Error for DecodingError {}
 /// quite prescriptive, its possible that the incoming bytes are
 /// malformed in some way --- in which case an error will be
 /// generated.
-pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode<AssemblyInstruction>,DecodingError> {
+pub fn from_bytes(bytes: &[u8]) -> Result<Contract<AssemblyInstruction>,DecodingError> {
     let mut iter = ByteDecoder::new(bytes);
     iter.match_u16(EOF_MAGIC,|w| DecodingError::InvalidMagicNumber(w))?;
     // Pull out static information
@@ -173,7 +173,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode<AssemblyInstruction>,Decoding
         let max_stack = iter.decode_u16()?;
         types.push((inputs,outputs,max_stack));
     }
-    let mut code = Bytecode::new(Vec::new());
+    let mut code = Contract::new(Vec::new());
     // parse code section(s)
     for i in 0..num_code_sections {
         let bytes = iter.decode_bytes(code_sizes[i])?;
@@ -198,7 +198,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Bytecode<AssemblyInstruction>,Decoding
 // Encoding (EOF)
 // ============================================================================
 
-pub fn to_bytes(bytecode: Bytecode<Instruction>) -> Result<Vec<u8>,EncodingError> {
+pub fn to_bytes(bytecode: Contract<Instruction>) -> Result<Vec<u8>,EncodingError> {
     let mut code_sections = Vec::new();
     let mut data_section : Option<Vec<u8>> = None;
     // Count number of code contracts (to be deprecated?)

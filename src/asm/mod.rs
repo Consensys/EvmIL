@@ -11,28 +11,28 @@ pub use instruction::{AssemblyInstruction};
 pub use parser::{AssemblyError};
 pub use codegen::{AssembleError};
 
-use crate::bytecode::{Bytecode,Instruction,Section};
+use crate::bytecode::{Contract,Instruction,Section};
 
 // ============================================================================
 // Assembly
 // ============================================================================
 
-/// An assembly represents one or more sections contained assembly
-/// instructions (that is, instructions which uses labels instead of
-/// explicit jump targets).
-pub type Assembly = Bytecode<AssemblyInstruction>;
+/// An assembly represents a contract containing sections of assembly
+/// language instructions (that is, instructions which uses labels
+/// instead of explicit jump targets).
+pub type Assembly = Contract<AssemblyInstruction>;
 
 /// An assembly section represents a section as found within an
 /// `Assembly`.
 pub type AssemblySection = Section<AssemblyInstruction>;
 
 impl Assembly {
-    /// Assemble an assembly into a `Bytecode` object containing
-    /// concrete EVM instructions.  This requires resolving any labels
-    /// contained within the assembly into known jump destinations.
-    /// As such, this can fail if an instruction attempts to branch to
-    /// a label which does not exist.
-    pub fn assemble(&self) -> Result<Bytecode<Instruction>,AssembleError> {
+    /// Assemble an assembly into a contract containing concrete EVM
+    /// instructions.  This requires resolving any labels contained
+    /// within the assembly into known jump destinations.  As such,
+    /// this can fail if an instruction attempts to branch to a label
+    /// which does not exist.
+    pub fn assemble(&self) -> Result<Contract<Instruction>,AssembleError> {
         let mut sections = Vec::new();
         // Map each assemply section to a compiled section.
         for s in self {
@@ -47,7 +47,7 @@ impl Assembly {
             }
         }
         // Done
-        Ok(Bytecode::new(sections))
+        Ok(Contract::new(sections))
     }
 
     /// Parse some assembly language into an `Assembly`.  This can
