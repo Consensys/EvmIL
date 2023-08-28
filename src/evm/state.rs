@@ -29,16 +29,21 @@ pub trait EvmWord : Sized + Clone + Debug +
 {
 }
 
-/// Default implementations for `EvmWord`
-// impl EvmWord for w256 {}
-// impl EvmWord for Interval<w256> {}
-
 // ===================================================================
 // State
 // ===================================================================
 
-/// Describes a state of the EVM, which could be running or
-/// terminated.
+/// Describes the state of an EVM at a given point (which could be
+/// _running_ or _terminated_).  In essence, this simply packages all
+/// the key components (e.g. stack, memory, storage) of the EVM state
+/// together.
+///
+/// An `EvmState` can be _concrete_ or _abstract_.  For example, a
+/// physically executing EVM operates over concrete states which are
+/// updated after each executed instruction.  In contrast, a static
+/// analysis over a sequence of EVM bytecodes produces abstract states
+/// at each point which summarise the _set of all possible states_ at
+/// that point.
 pub trait EvmState : Debug {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
@@ -95,7 +100,10 @@ pub trait EvmState : Debug {
 // Operand Stack
 // ===============================================================
 
-/// Represents the operand stack within the EVM.
+/// Abstraction of the operand stack within an EVM.  This provides the
+/// minimal set of operations required to implement the semantics of a
+/// given bytecode instruction.  For example, pushing / popping items
+/// from the stack.
 pub trait EvmStack {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
@@ -133,6 +141,9 @@ pub trait EvmStack {
 // Scratch Memory
 // ===============================================================
 
+/// Abstraction of memory within an EVM.  This provides the minimal
+/// set of operations required to implement the semantics of a given
+/// bytecode instruction.  For example, reading/writing to memory.
 pub trait EvmMemory {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
@@ -156,6 +167,10 @@ pub trait EvmMemory {
 // Peristent Storage
 // ===============================================================
 
+/// Abstraction of peristent storage within an EVM.  This provides the
+/// minimal set of operations required to implement the semantics of a
+/// given bytecode instruction.  For example, reading/writing from
+/// storage.
 pub trait EvmStorage {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm

@@ -15,6 +15,12 @@ use crate::evm::{AbstractInstruction,Instruction,InstructionOperands};
 // Concrete Instructions
 // ============================================================================
 
+/// Representation of instruction operands (more specifically, _branch
+/// offsets_) as appropriate for _assembly language_.  In assembly
+/// language, branch targets are abstract (i.e. labels) rather than
+/// concrete (i.e. absolute offsets).  Thus, an `AssemblyInstruction`
+/// is an `Instruction` with `AssemblyOperands`.  Currently, a label
+/// is simply implemented as a `String`.
 #[derive(Clone,Debug,PartialEq)]
 pub struct AssemblyOperands();
 
@@ -28,7 +34,8 @@ use AbstractInstruction::*;
 
 /// A labelled instruction does not have concrete information
 /// regarding branch targets.  Rather, branch target information is
-/// represented using _labels_.
+/// represented using _labels_.  Currently, a label is simply
+/// implemented as a `String`.
 pub type AssemblyInstruction = AbstractInstruction<AssemblyOperands>;
 
 impl AssemblyInstruction {

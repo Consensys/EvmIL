@@ -56,6 +56,9 @@ pub const SHANGHAI : Fork = Fork{id:2023_04_12, eips: &[EIP_3651,EIP_3855,EIP_38
 // EIP
 // ===================================================================
 
+/// Represents a specific EIP supported by this system.  EIPs are
+/// distinct from `Fork`s because they represent an atomic changes
+/// between forks.  
 #[derive(Debug,Eq,PartialEq)]
 pub struct EIP(&'static str);
 
@@ -63,6 +66,10 @@ pub struct EIP(&'static str);
 // Fork Definition
 // ===================================================================
 
+/// Represents a top-level `Fork` in the Ethereum system.  A `Fork` is
+/// just a collection of the active EIPs.  Thus, code can be
+/// parameterised by querying the active fork to ascertain whether a
+/// specific `EIP` is enabled or not.
 #[derive(Debug,Eq,PartialEq)]
 pub struct Fork {
     /// Fork identifier which uniquely determines the fork based on
