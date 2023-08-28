@@ -13,7 +13,7 @@ use std::fmt;
 use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{Bytecode,Section};
+use crate::contract::{Bytecode,Section};
 use crate::instruction::{Instruction,ToInstructions};
 use crate::instruction::AbstractInstruction::*;
 

@@ -2,7 +2,7 @@
 /// language.
 pub mod asm;
 /// Functionality related to bytecode containers.
-pub mod bytecode;
+pub mod contract;
 /// Functionality related to contracts adhering to the _EVM Object
 /// Format_.  See [EIP3540](https://eips.ethereum.org/EIPS/eip-3540).
 /// Again, this includes assembling / disassembling EOF contracts,

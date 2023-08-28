@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{Bytecode,Section};
+use crate::contract::{Bytecode,Section};
 use crate::instruction::{Instruction,ToInstructions};
 use crate::instruction::AbstractInstruction::*;
 use crate::execution::{Execution,ExecutionSection};

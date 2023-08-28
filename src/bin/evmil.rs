@@ -19,7 +19,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::asm::{Assembly,AssemblyInstruction};
-use evmil::bytecode::{Section};
+use evmil::contract::{Section};
 use evmil::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
