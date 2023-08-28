@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::slice::{Iter};
 use crate::evm::{assembler};
 use crate::evm::{AssembleError,AssemblyError,AssemblyInstruction,Instruction};
 
@@ -44,7 +45,7 @@ impl<T:PartialEq> Bytecode<T> {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> BytecodeIter<'a,Section<T>> {
+    pub fn iter<'a>(&'a self) -> Iter<'a,Section<T>> {
         self.sections.iter()
     }
 
@@ -58,13 +59,9 @@ impl<T:PartialEq> Bytecode<T> {
 // Traits
 // ===================================================================
 
-/// An iterator over the sections of a bytecode contract (e.g. code or
-/// data).
-pub type BytecodeIter<'a,T> = std::slice::Iter<'a,T>;
-
 impl<'a,T:PartialEq> IntoIterator for &'a Bytecode<T> {
     type Item = &'a Section<T>;
-    type IntoIter = BytecodeIter<'a,Section<T>>;
+    type IntoIter = Iter<'a,Section<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()

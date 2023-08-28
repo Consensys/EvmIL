@@ -33,6 +33,11 @@ use AbstractInstruction::*;
 // Concrete Instructions
 // ============================================================================
 
+/// Representation of instruction operands (more specifically, _branch
+/// offsets_) as appropriate for _concrete bytecode instructions_.  In
+/// legacy contracts, branch targets are implemented using _absolute
+/// offsets_.  In EOF contracts, branch targets can also be
+/// implemented using _relative offsets_.
 #[derive(Clone,Debug,PartialEq)]
 pub struct ConcreteOperands();
 

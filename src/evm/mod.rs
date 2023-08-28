@@ -17,8 +17,18 @@ mod fork;
 mod instruction;
 mod semantics;
 mod state;
+/// Functionality related to _legacy_ (i.e. pre-EOF) contracts.  For
+/// example, disassembling a legacy contract, assembling a legacy
+/// contract, etc.
 pub mod legacy;
+/// Functionality related to contracts adhering to the _EVM Object
+/// Format_.  See [EIP3540](https://eips.ethereum.org/EIPS/eip-3540).
+/// Again, this includes assembling / disassembling EOF contracts,
+/// validing them, managing EOF versions, etc.
 pub mod eof;
+/// Constants identifying the opcode associated with a given EVM
+/// bytecode instruction.  Observe that several instructions can have
+/// the same opcode (e.g. if they are active only in specific forks).
 pub mod opcode;
 
 pub use assembler::{AssembleError,AssemblyError};
