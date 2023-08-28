@@ -9,8 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt;
-use super::{Assembly,AssemblyInstruction};
+use super::{Assembly,AssemblyError,AssemblyInstruction};
 use super::lexer::{Lexer,Token};
 use crate::bytecode::{Section};
 use crate::bytecode::AbstractInstruction::*;
@@ -19,30 +18,6 @@ use crate::util::{FromHexString};
 // ===================================================================
 // Parse Error
 // ===================================================================
-
-/// Indicates an error occurred whilst parsing some assembly language
-/// into an assembly (i.e. an error originating from the lexer or
-/// parser).
-#[derive(Debug)]
-pub enum AssemblyError {
-    ExpectedOperand,
-    InvalidComment(usize),
-    InvalidHexString(usize),
-    InvalidInstruction,
-    UnexpectedCharacter(usize),
-    UnexpectedToken
-}
-
-impl fmt::Display for AssemblyError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for AssemblyError {
-
-}
-
 // ===================================================================
 // Parser
 // ===================================================================
