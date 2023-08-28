@@ -1,7 +1,8 @@
 use evmil::il::BinOp::*;
 use evmil::il::Term;
 use evmil::il::Term::*;
-use evmil::evm::{legacy,Bytecode};
+use evmil::{legacy};
+use evmil::bytecode::{Bytecode};
 use evmil::util::ToHexString;
 
 // ============================================================================

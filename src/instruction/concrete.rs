@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use super::{AbstractInstruction,InstructionOperands,VoidOperand};
-use crate::evm::opcode;
+use crate::instruction::opcode;
 
 // ============================================================================
 // Errors

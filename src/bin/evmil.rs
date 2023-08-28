@@ -18,9 +18,9 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::evm::{Assembly,Section};
-use evmil::evm::instruction::{AssemblyInstruction};
-use evmil::evm::{eof,legacy};
+use evmil::bytecode::{Assembly,Section};
+use evmil::instruction::{AssemblyInstruction};
+use evmil::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
