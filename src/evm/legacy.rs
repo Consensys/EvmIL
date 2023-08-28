@@ -11,10 +11,11 @@
 // limitations under the License.
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
-use crate::evm::{AssemblyInstruction,Bytecode,Instruction,Section,ToInstructions};
+use crate::evm::{Bytecode,Section};
+use crate::evm::instruction::{AssemblyInstruction,Instruction,ToInstructions};
+use crate::evm::instruction::AbstractInstruction::*;
 use crate::evm::execution::{Execution,ExecutionSection};
 use crate::evm::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
-use crate::evm::AbstractInstruction::*;
 
 pub fn from_bytes(bytes: &[u8]) -> Bytecode<AssemblyInstruction> {
     // NOTE: currently, we begin by converting bytes into

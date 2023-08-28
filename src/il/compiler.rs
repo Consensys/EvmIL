@@ -21,8 +21,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::evm::AbstractInstruction::*;
-use crate::evm::{Assembly,AssemblyInstruction,Bytecode,Instruction,Section};
+use crate::evm::{Assembly,Bytecode,Section};
+use crate::evm::instruction::{AssemblyInstruction,Instruction};
+use crate::evm::instruction::AbstractInstruction::*;
 use crate::util::*;
 
 

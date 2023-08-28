@@ -10,8 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::evm::AbstractInstruction::*;
-use crate::evm::{Assembly,AssemblyInstruction,Section};
+use crate::evm::{Assembly,Section};
+use crate::evm::instruction::{AssemblyInstruction};
+use crate::evm::instruction::AbstractInstruction::*;
 use crate::util::{FromHexString};
 use super::lexer::{Lexer,Token};
 

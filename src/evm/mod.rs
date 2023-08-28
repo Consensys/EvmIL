@@ -12,7 +12,6 @@
 
 mod assembler;
 mod bytecode;
-mod instruction;
 mod semantics;
 mod state;
 /// Functionality related to contracts adhering to the _EVM Object
@@ -28,6 +27,9 @@ pub mod execution;
 /// EVM.  This includes mechanisms for identifying what EIPs are
 /// active in the current execution.
 pub mod fork;
+/// Functionality related to individual bytecode instructions, such as
+/// their _semantics_.
+pub mod instruction;
 /// Functionality related to _legacy_ (i.e. pre-EOF) contracts.  For
 /// example, disassembling a legacy contract, assembling a legacy
 /// contract, etc.
@@ -39,6 +41,5 @@ pub mod opcode;
 
 pub use assembler::{AssembleError,AssemblyError};
 pub use bytecode::*;
-pub use instruction::*;
 pub use semantics::*;
 pub use state::*;
