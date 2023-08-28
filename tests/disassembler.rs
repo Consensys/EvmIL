@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{PathBuf};
 use evmil::util::{FromHexString};
 use evmil::legacy;
-use evmil::bytecode::{Assembly};
+use evmil::asm::{Assembly};
 
 pub static TESTS_DIR: &str = "tests/files";
 

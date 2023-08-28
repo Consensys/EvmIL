@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::{PathBuf};
-use evmil::bytecode::{Assembly};
+use evmil::asm::{Assembly};
 use evmil::legacy;
 use evmil::util::{FromHexString};
 

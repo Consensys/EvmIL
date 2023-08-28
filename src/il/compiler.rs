@@ -10,8 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
-use crate::bytecode::{Assembly,Bytecode,Section};
-use crate::instruction::{AssemblyInstruction,Instruction};
+use crate::bytecode::{Bytecode,Section};
+use crate::asm::{Assembly,AssemblyInstruction};
+use crate::instruction::{Instruction};
 use crate::instruction::AbstractInstruction::*;
 use crate::util::*;
 
