@@ -12,8 +12,9 @@
 use std::fmt;
 use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
+use crate::asm::{AssemblyInstruction};
 use crate::bytecode::{Bytecode,Section};
-use crate::instruction::{AssemblyInstruction,Instruction,ToInstructions};
+use crate::instruction::{Instruction,ToInstructions};
 use crate::instruction::AbstractInstruction::*;
 
 /// The EOF magic prefix as dictated in EIP3540.

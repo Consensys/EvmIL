@@ -1,4 +1,6 @@
-mod assembler;
+/// Functionality for working with contracts represented in assembly
+/// language.
+pub mod asm;
 /// Functionality related to bytecode containers.
 pub mod bytecode;
 /// Functionality related to contracts adhering to the _EVM Object
@@ -28,5 +30,3 @@ pub mod legacy;
 /// Abstractions of EVM state, such as stack, memory and storage.
 pub mod state;
 pub mod util;
-//
-pub use assembler::{AssembleError,AssemblyError};

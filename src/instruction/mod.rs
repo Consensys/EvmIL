@@ -10,11 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 mod r#abstract;
-mod assembly;
 mod concrete;
 mod opcode;
 
 pub use r#abstract::*;
-pub use assembly::*;
 pub use concrete::*;
 pub use opcode::*;

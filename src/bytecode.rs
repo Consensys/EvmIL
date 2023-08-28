@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::slice::{Iter};
-use crate::{assembler};
-use crate::{AssembleError,AssemblyError};
-use crate::instruction::{AssemblyInstruction,Instruction};
+use crate::asm;
+use crate::asm::{AssembleError,AssemblyInstruction,AssemblyError};
+use crate::instruction::{Instruction};
 
 // ============================================================================
 // Bytecode Contract
@@ -98,51 +98,5 @@ impl Section<Instruction> {
                 }
             }
         }
-    }
-}
-
-
-// ============================================================================
-// Assembly
-// ============================================================================
-
-/// An assembly represents one or more sections contained assembly
-/// instructions (that is, instructions which uses labels instead of
-/// explicit jump targets).
-pub type Assembly = Bytecode<AssemblyInstruction>;
-
-/// An assembly section represents a section as found within an
-/// `Assembly`.
-pub type AssemblySection = Section<AssemblyInstruction>;
-
-impl Assembly {
-    /// Assemble an assembly into a `Bytecode` object containing
-    /// concrete EVM instructions.  This requires resolving any labels
-    /// contained within the assembly into known jump destinations.
-    /// As such, this can fail if an instruction attempts to branch to
-    /// a label which does not exist.
-    pub fn assemble(&self) -> Result<Bytecode<Instruction>,AssembleError> {
-        let mut sections = Vec::new();
-        // Map each assemply section to a compiled section.
-        for s in &self.sections {
-            match s {
-                Section::Code(insns) => {
-                    let ninsns = assembler::assemble(insns)?;
-                    sections.push(Section::Code(ninsns));
-                }
-                Section::Data(bytes) => {
-                    sections.push(Section::Data(bytes.clone()));
-                }
-            }
-        }
-        // Done
-        Ok(Bytecode::new(sections))
-    }
-
-    /// Parse some assembly language into an `Assembly`.  This can
-    /// fail for a variety of reasons, such as an unknown instruction
-    /// is used or there is some unexpected junk in the file.
-    pub fn from_str(input: &str) -> Result<Assembly,AssemblyError> {
-        assembler::parse(input)
     }
 }
