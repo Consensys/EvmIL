@@ -11,7 +11,8 @@
 // limitations under the License.
 use std::ops;
 use crate::util::{Bottom,Top};
-use super::{EvmState,Instruction,Section};
+use super::{EvmState,Section};
+use crate::evm::instruction::Instruction;
 use super::semantics::{execute,Outcome};
 
 /// Simple alias since we're always dealing with concrete executions

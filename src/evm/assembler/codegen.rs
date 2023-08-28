@@ -1,6 +1,6 @@
 use std::fmt;
 use std::collections::{HashMap};
-use crate::evm::{AssemblyInstruction,Instruction};
+use crate::evm::instruction::{AssemblyInstruction,Instruction};
 
 // =============================================================================
 // Assemble Error

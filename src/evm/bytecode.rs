@@ -11,7 +11,8 @@
 // limitations under the License.
 use std::slice::{Iter};
 use crate::evm::{assembler};
-use crate::evm::{AssembleError,AssemblyError,AssemblyInstruction,Instruction};
+use crate::evm::{AssembleError,AssemblyError};
+use crate::evm::instruction::{AssemblyInstruction,Instruction};
 
 // ============================================================================
 // Bytecode Contract
