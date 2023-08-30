@@ -9,14 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-mod r#abstract;
 mod contract;
-mod concrete;
+mod instruction;
+mod operands;
 pub mod eof;  // For now.  Should be deprecated
 pub mod legacy; // For now.  Should be deprecated
-mod opcode;
+pub mod opcode;
 
-pub use r#abstract::*;
-pub use concrete::*;
 pub use contract::*;
-pub use opcode::*;
+pub use instruction::*;
+pub use operands::{Operands};

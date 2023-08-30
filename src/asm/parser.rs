@@ -12,7 +12,7 @@
 use super::{Assembly,AssemblyError,AssemblyInstruction};
 use super::lexer::{Lexer,Token};
 use crate::bytecode::{Section};
-use crate::bytecode::AbstractInstruction::*;
+use crate::bytecode::Instruction::*;
 use crate::util::{FromHexString};
 
 // ===================================================================

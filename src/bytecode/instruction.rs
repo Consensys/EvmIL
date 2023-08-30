@@ -9,55 +9,172 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use super::{AbstractInstruction,InstructionOperands,VoidOperand};
+use std::fmt;
+use std::fmt::{Debug};
+use crate::util::{ToHexString};
 use super::opcode;
+use super::operands::{BytecodeOperands,Operands};
 
-// ============================================================================
-// Errors
-// ============================================================================
-
-#[derive(Debug)]
-pub enum Error {
-    /// A push instruction cannot push zero bytes and, likewise,
-    /// cannot push more than 32 bytes.
-    InvalidPush,
-    /// A dup `n` instruction requires `n > 0` and `n <= 32`.
-    InvalidDup,
-    /// A label cannot exceed the 24Kb limit imposed by the EVM.
-    InvalidLabelOffset,
+/// An abstract instruction is parameterised over the type of _control
+/// flow_ it supports.  In particular, _concrete_ instructions are
+/// fully instantiated with specific branch targets.  In contract,
+/// _labelled_ instructions employ symbolic labels instead of concrete
+/// target information.  The primary purpose here is to distinguish
+/// between instructions originating from bytes, versus those
+/// originating from assembly language.
+///
+/// The intention is that all known instructions are represented here
+/// in one place, rather than e.g. being separated (somehow) by fork.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Instruction<T:Operands = BytecodeOperands> {
+    // ===============================================================
+    // 0s: Stop and Arithmetic Operations
+    // ===============================================================    
+    /// Halts execution.
+    STOP,
+    /// Arithmetic addition modulo `2^256`.
+    ADD,
+    /// Arithmetic multiplication modulo `2^256`.    
+    MUL,
+    /// Arithmetic subtraction modulo `2^256`.
+    SUB,
+    /// Arithmetic division which rounds towards zero.
+    DIV,
+    /// Signed arithmetic division which rounds towards zero (i.e. it
+    /// is non-Euclidian).
+    SDIV,
+    /// Arithmetic modulus operator.
+    MOD,
+    /// Signed arithmetic remainder operator.    
+    SMOD,
+    /// Arithmetic addition modulo a given value `n`.
+    ADDMOD,
+    /// Arithmetic multiplication modulo a given value `n`.
+    MULMOD,
+    /// Arithmetic exponentiation modulo `2^256`.
+    EXP,
+    /// Extend a two's complement signed integer.
+    SIGNEXTEND,
+    // 10s: Comparison & Bitwise Logic Operations
+    LT,
+    GT,
+    SLT,
+    SGT,
+    EQ,
+    ISZERO,
+    AND,
+    OR,
+    XOR,
+    NOT,
+    BYTE,
+    SHL,
+    SHR,
+    SAR,
+    // 20s: Keccak256
+    KECCAK256,
+    // 30s: Environmental Information
+    ADDRESS,
+    BALANCE,
+    ORIGIN,
+    CALLER,
+    CALLVALUE,
+    CALLDATALOAD,
+    CALLDATASIZE,
+    CALLDATACOPY,
+    CODESIZE,
+    CODECOPY,
+    GASPRICE,
+    EXTCODESIZE,
+    EXTCODECOPY,
+    RETURNDATASIZE,
+    RETURNDATACOPY,
+    EXTCODEHASH,
+    // 40s: Block Information
+    BLOCKHASH,
+    COINBASE,
+    TIMESTAMP,
+    NUMBER,
+    DIFFICULTY,
+    GASLIMIT,
+    CHAINID,
+    SELFBALANCE,
+    // 50s: Stack, Memory, Storage and Flow Operations
+    POP,
+    MLOAD,
+    MSTORE,
+    MSTORE8,
+    SLOAD,
+    SSTORE,
+    JUMP,
+    JUMPI,
+    PC,
+    MSIZE,
+    GAS,
+    JUMPDEST,
+    RJUMP(T::RelOffset16),  // EIP4200
+    RJUMPI(T::RelOffset16), // EIP4200
+    // 60 & 70s: Push Operations
+    PUSH(Vec<u8>),
+    PUSHL(bool,T::PushLabel),
+    LABEL(T::Label),
+    // 80s: Duplicate Operations
+    DUP(u8),
+    // 90s: Exchange Operations
+    SWAP(u8),
+    // a0s: Logging Operations
+    LOG(u8),
+    // f0s: System Operations
+    CREATE,
+    CALL,
+    CALLCODE,
+    RETURN,
+    DELEGATECALL,
+    CREATE2,
+    STATICCALL,
+    REVERT,
+    INVALID,
+    SELFDESTRUCT,
+    // Signals arbitrary data in the contract, rather than bytecode
+    // instructions.
+    DATA(Vec<u8>),
 }
 
-use AbstractInstruction::*;
+use Instruction::*;
 
-// ============================================================================
-// Concrete Instructions
-// ============================================================================
+impl<T:Operands> Instruction<T> {
+    /// Determine whether or not control can continue to the next
+    /// instruction.
+    pub fn fallthru(&self) -> bool {
+        match self {
+            DATA(_) => false,
+            INVALID => false,
+            JUMP => false,
+            RJUMP(_) => false,
+            STOP => false,
+            RETURN => false,
+            REVERT => false,
+            SELFDESTRUCT => false,
+            _ => true,
+        }
+    }
 
-/// Representation of instruction operands (more specifically, _branch
-/// offsets_) as appropriate for _concrete bytecode instructions_.  In
-/// legacy contracts, branch targets are implemented using _absolute
-/// offsets_.  In EOF contracts, branch targets can also be
-/// implemented using _relative offsets_.
-#[derive(Clone,Debug,PartialEq)]
-pub struct ConcreteOperands();
-
-impl InstructionOperands for ConcreteOperands {
-    type RelOffset16 = i16;
-    /// We do not permit the `PUSHL` instruction here, since it is
-    /// already represented by `PUSH`.
-    type PushLabel = VoidOperand;
-    /// Likewise, we do not permit the `LABEL` instruction here, since
-    /// it has no concrete meaning.
-    type Label = VoidOperand;
+    /// Determine whether or not this instruction can branch.  That
+    /// is, whether or not it is a `JUMP` or `JUMPI` instruction.
+    pub fn can_branch(&self) -> bool {
+        match self {
+            JUMP => true,
+            JUMPI => true,
+            RJUMP(_) => true,
+            RJUMPI(_) => true,
+            _ => false,
+        }
+    }
 }
 
-/// An EVM instruction is an abstract instruction with concrete operands.
-pub type Instruction = AbstractInstruction<ConcreteOperands>;
-
-impl Instruction {
+impl Instruction<BytecodeOperands> {
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
-    pub fn encode(&self, bytes: &mut Vec<u8>) -> Result<(), Error> {
+    pub fn encode(&self, bytes: &mut Vec<u8>) {
         // Push operands (if applicable)
         match self {
             DATA(args) => {
@@ -66,29 +183,27 @@ impl Instruction {
             }
             RJUMP(target) => {
                 // Push opcode
-                bytes.push(self.opcode()?);
+                bytes.push(self.opcode());
                 // Push operands
                 bytes.extend(&target.to_be_bytes());
             }
             RJUMPI(target) => {
                 // Push opcode
-                bytes.push(self.opcode()?);
+                bytes.push(self.opcode());
                 // Push operands
                 bytes.extend(&target.to_be_bytes());
             }
             PUSH(args) => {
                 // Push opcode
-                bytes.push(self.opcode()?);
+                bytes.push(self.opcode());
                 // Push operands
                 bytes.extend(args);
             }
             _ => {
                 // All other instructions have no operands.
-                bytes.push(self.opcode()?);
+                bytes.push(self.opcode());
             }
         }
-        //
-        Ok(())
     }
 
     /// Determine the length of this instruction (in bytes) assuming a
@@ -110,7 +225,7 @@ impl Instruction {
     /// this is a straightforward mapping.  However, in other cases,
     /// its slightly more involved as a calculation involving the
     /// operands is required.
-    pub fn opcode(&self) -> Result<u8, Error> {
+    pub fn opcode(&self) -> u8 {
         let op = match self {
             // 0s: Stop and Arithmetic Operations
             STOP => opcode::STOP,
@@ -186,7 +301,7 @@ impl Instruction {
             // 60s & 70s: Push Operations
             PUSH(bs) => {
                 if bs.len() == 0 || bs.len() > 32 {
-                    return Err(Error::InvalidPush);
+                    panic!("invalid push");
                 } else {
                     let n = (bs.len() as u8) - 1;
                     opcode::PUSH1 + n
@@ -194,23 +309,17 @@ impl Instruction {
             }
             // 80s: Duplication Operations
             DUP(n) => {
-                if *n == 0 || *n > 32 {
-                    return Err(Error::InvalidDup);
-                }
+                if *n == 0 || *n > 32 { panic!("invalid dup"); }
                 opcode::DUP1 + (n-1)
             }
             // 90s: Swap Operations
             SWAP(n) => {
-                if *n == 0 || *n > 32 {
-                    return Err(Error::InvalidDup);
-                }
+                if *n == 0 || *n > 32 { panic!("invalid swap"); }
                 opcode::SWAP1 + (n-1)
             }
             // a0s: Log Operations
             LOG(n) => {
-                if *n > 4 {
-                    return Err(Error::InvalidDup);
-                }
+                if *n > 4 { panic!("invalid log"); }
                 opcode::LOG0 + n
             }
             // f0s: System Operations
@@ -230,12 +339,13 @@ impl Instruction {
                 // concrete.
                 unreachable!();
             }
+            //
             DATA(_) => {
                 panic!("Invalid instruction ({:?})", self);
             }
         };
         //
-        Ok(op)
+        op
     }
 
     /// Decode the next instruction in a given sequence of bytes.
@@ -364,8 +474,50 @@ impl Instruction {
         };
         //
         insn
+    }    
+}
+
+impl<T:Operands+Debug> fmt::Display for Instruction<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Use the default (debug) formatter.  Its only for certain
+        // instructions that we need to do anything different.
+        match self {
+            DATA(bytes) => {
+                // Print bytes as hex string
+                write!(f, "db {}", bytes.to_hex_string())
+            }
+            DUP(n) => {
+                write!(f, "dup{}",n)
+            }
+            LOG(n) => {
+                write!(f, "log{n}")
+            }
+            JUMPDEST => {
+                write!(f, "jumpdest")
+            }
+            PUSH(bytes) => {
+                // Convert bytes into hex string
+                let hex = bytes.to_hex_string();
+                // Print!
+                write!(f, "push {}", hex)
+            }
+            RJUMP(offset) => {
+                write!(f, "rjump {offset}")
+            }
+            RJUMPI(offset) => {
+                write!(f, "rjumpi {offset}")
+            }
+            SWAP(n) => {
+                write!(f, "swap{n}")
+            }
+            _ => {
+                let s = format!("{:?}",self).to_lowercase();
+                write!(f, "{s}")
+            }
+        }
     }
 }
+
 
 // ============================================================================
 // Traits

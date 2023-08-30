@@ -91,11 +91,7 @@ impl Section<Instruction> {
                 bytes.extend(bs);
             }
             Section::Code(insns) => {
-                for b in insns {
-                    // NOTE: unwrap safe as instructions validated on
-                    // entry to the container.
-                    b.encode(bytes).unwrap();
-                }
+                for b in insns { b.encode(bytes); }
             }
         }
     }

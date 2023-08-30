@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
 use crate::bytecode::{Contract,Instruction,Section,ToInstructions};
-use crate::bytecode::AbstractInstruction::*;
+use crate::bytecode::Instruction::*;
 use crate::analysis::{Execution,ExecutionSection};
 use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 
@@ -95,8 +95,7 @@ fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction
     for insn in insns {
         if pc != 0 && analysis[pc].is_bottom() {
             let mut bytes = Vec::new();
-            // Following is safe because ... ?
-            insn.encode(&mut bytes).unwrap();
+            insn.encode(&mut bytes);
             asm.push(AssemblyInstruction::DATA(bytes));
         } else {
             // Check whether this is a databyte or not.

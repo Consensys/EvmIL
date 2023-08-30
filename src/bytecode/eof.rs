@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
 use crate::asm::{AssemblyInstruction};
 use crate::bytecode::{Contract,Instruction,Section,ToInstructions};
-use crate::bytecode::AbstractInstruction::*;
+use crate::bytecode::Instruction::*;
 
 /// The EOF magic prefix as dictated in EIP3540.
 pub const EOF_MAGIC : u16 = 0xEF00;
