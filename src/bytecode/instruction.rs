@@ -15,45 +15,105 @@ use crate::util::{ToHexString};
 use super::opcode;
 use super::operands::{BytecodeOperands,Operands};
 
-/// An abstract instruction is parameterised over the type of _control
-/// flow_ it supports.  In particular, _concrete_ instructions are
-/// fully instantiated with specific branch targets.  In contract,
-/// _labelled_ instructions employ symbolic labels instead of concrete
-/// target information.  The primary purpose here is to distinguish
-/// between instructions originating from bytes, versus those
-/// originating from assembly language.
+/// Instructions correspond (roughly speaking) to EVM bytecodes.  There are a few points to make about this:
+///
+/// 1. A single instruction can represent an entire _class_ of related
+/// bytecodes.  For example, the `PUSH(bytes)` instruction corresponds
+/// to the various push bytecodes (e.g. `PUSH1`, `PUSH2`, etc).
+///
+/// 2. Instructions do not necessarily represent actual EVM bytecodes.
+/// For example, the `LABEL` instruction has no concrete bytecode
+/// representation.[^label_note] Such instructions are typically
+/// relevant only at a higher level (e.g. for assembly language).
+///
+/// 3. Instructions are parameterised over the type of _control flow_
+/// they support (i.e. their `Operand`s).  This allows
+/// `Instruction<T>` to be reused for representing actual bytecodes as
+/// well as assembly language instructions.
+///
+/// 4. All concrete bytecodes (past and present) are represented by an
+/// instruction.  Thus, depending on the fork, some instructions may
+/// not be considered valid in a given context.
 ///
 /// The intention is that all known instructions are represented here
 /// in one place, rather than e.g. being separated (somehow) by fork.
+///
+/// [^label_note]: **NOTE:** One might consider `JUMPDEST` as the
+/// appropriate representation.  However, since this is a no-operation
+/// under the EVM Object Format, it is represented by its own
+/// instruction.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction<T:Operands = BytecodeOperands> {
     // ===============================================================
     // 0s: Stop and Arithmetic Operations
     // ===============================================================    
-    /// Halts execution.
+    /// Halt execution successfully with empty return data.
     STOP,
-    /// Arithmetic addition modulo `2^256`.
+    /// Arithmetic addition modulo 2<sup>256</sup>.
     ADD,
-    /// Arithmetic multiplication modulo `2^256`.    
+    /// Arithmetic multiplication modulo 2<sup>256</sup>.    
     MUL,
-    /// Arithmetic subtraction modulo `2^256`.
+    /// Arithmetic subtraction modulo 2<sup>256</sup>.
     SUB,
-    /// Arithmetic division which rounds towards zero.
+    /// Arithmetic division which rounds towards zero and where
+    /// _division by zero_ returns zero.  For example, `3 / 2` gives
+    /// `1`.
     DIV,
     /// Signed arithmetic division which rounds towards zero (i.e. it
-    /// is non-Euclidian).
+    /// is
+    /// [non-Euclidian](https://en.wikipedia.org/wiki/Euclidean_division))
+    /// and where _division by zero_ returns zero.  For example, `-1 /
+    /// 2` gives `0`.
     SDIV,
-    /// Arithmetic modulus operator.
+    /// Unsigned arithmetic _modulus_ operator.  Thus, for example, `3
+    /// % 2` gives `1`.
     MOD,
-    /// Signed arithmetic remainder operator.    
+    /// Signed arithmetic _remainder_ operator.  Thus, for example,
+    /// `-1 % 2` gives `-1`.
     SMOD,
-    /// Arithmetic addition modulo a given value `n`.
+    /// Arithmetic addition modulo a given value `n`.  This is
+    /// typically used as a cryptographic primitive, where `n` is the
+    /// order of a given [prime
+    /// field](https://en.wikipedia.org/wiki/Finite_field).
     ADDMOD,
-    /// Arithmetic multiplication modulo a given value `n`.
+    /// Arithmetic multiplication modulo a given value `n`.  This is
+    /// typically used as a cryptographic primitive, where `n` is the
+    /// order of a given [prime
+    /// field](https://en.wikipedia.org/wiki/Finite_field).
     MULMOD,
-    /// Arithmetic exponentiation modulo `2^256`.
+    /// Arithmetic exponentiation modulo 2<sup>256</sup>.
     EXP,
-    /// Extend a two's complement signed integer.
+    /// Sign extend a value using the _most significant bit (msb)_ of
+    /// its _kth_ byte.  Consider this example for v:
+    ///
+    /// ```text
+    ///      23    16 15     8 7      0
+    ///     +--------+--------+--------+
+    /// ... |10111010|10010101|01000101|
+    ///     +--------+--------+--------+
+    /// ```
+    ///
+    /// Then, perfoming a sign extend with `k=0` gives:
+    ///
+    /// ```text
+    ///      23    16 15     8 7      0
+    ///     +--------+--------+--------+
+    /// ... |00000000|00000000|01000101|
+    ///     +--------+--------+--------+
+    /// ```
+    ///
+    /// Since the msb of byte 0 is 0, everything above that is set to
+    /// zero.  In contrast, performing a sign extend of our original
+    /// input with `k=1` gives:
+    ///
+    /// ```text
+    ///      23    16 15     8 7      0
+    ///     +--------+--------+--------+
+    /// ... |11111111|10010101|01000101|
+    ///     +--------+--------+--------+
+    /// ```
+    ///
+    /// Since, in this case, the msb of byte 1 is 1.
     SIGNEXTEND,
     // 10s: Comparison & Bitwise Logic Operations
     LT,
