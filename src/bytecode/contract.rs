@@ -27,7 +27,7 @@ use crate::bytecode::{Instruction};
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
 pub struct Contract<T:PartialEq> {
-    sections: Vec<Section<T>>
+    sections: Vec<ContractSection<T>>
 }
 
 impl<T:PartialEq> Contract<T> {
@@ -37,7 +37,7 @@ impl<T:PartialEq> Contract<T> {
         }
     }
 
-    pub fn new(sections: Vec<Section<T>>) -> Self {
+    pub fn new(sections: Vec<ContractSection<T>>) -> Self {
         Self { sections }
     }
 
@@ -46,12 +46,12 @@ impl<T:PartialEq> Contract<T> {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a,Section<T>> {
+    pub fn iter<'a>(&'a self) -> Iter<'a,ContractSection<T>> {
         self.sections.iter()
     }
 
     /// Add a new section to this bytecode container
-    pub fn add(&mut self, section: Section<T>) {
+    pub fn add(&mut self, section: ContractSection<T>) {
         self.sections.push(section)
     }
 }
@@ -61,8 +61,8 @@ impl<T:PartialEq> Contract<T> {
 // ===================================================================
 
 impl<'a,T:PartialEq> IntoIterator for &'a Contract<T> {
-    type Item = &'a Section<T>;
-    type IntoIter = Iter<'a,Section<T>>;
+    type Item = &'a ContractSection<T>;
+    type IntoIter = Iter<'a,ContractSection<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
@@ -74,7 +74,7 @@ impl<'a,T:PartialEq> IntoIterator for &'a Contract<T> {
 // ============================================================================
 
 #[derive(Clone,Debug,PartialEq)]
-pub enum Section<T> {
+pub enum ContractSection<T> {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
@@ -82,15 +82,15 @@ pub enum Section<T> {
     Code(Vec<T>)
 }
 
-impl Section<Instruction> {
+impl ContractSection<Instruction> {
     /// Flattern this section into an appropriately formated byte
     /// sequence for the enclosing container type.
     pub fn encode(&self, bytes: &mut Vec<u8>) {
         match self {
-            Section::Data(bs) => {
+            ContractSection::Data(bs) => {
                 bytes.extend(bs);
             }
-            Section::Code(insns) => {
+            ContractSection::Code(insns) => {
                 for b in insns { b.encode(bytes); }
             }
         }

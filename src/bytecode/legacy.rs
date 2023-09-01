@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{Contract,Instruction,Section,ToInstructions};
+use crate::bytecode::{Contract,Instruction,ContractSection,ToInstructions};
 use crate::bytecode::Instruction::*;
 use crate::analysis::{Execution,ExecutionSection};
 use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
@@ -23,7 +23,7 @@ pub fn from_bytes(bytes: &[u8]) -> Contract<AssemblyInstruction> {
     // that we would be better of working directly with bytes.  It
     // certainly makes for some ugly repetition here.
     let insns = bytes.to_insns();
-    let bytecode = Contract::new(vec![Section::Code(insns)]);
+    let bytecode = Contract::new(vec![ContractSection::Code(insns)]);
     let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
     // Run execution (and for now hope it succeeds!)
     execution.execute(LegacyEvmState::new());
@@ -38,10 +38,10 @@ pub fn from_bytes(bytes: &[u8]) -> Contract<AssemblyInstruction> {
     // Done
     if pivot == bytes.len() {
         // No data section
-        Contract::new(vec![Section::Code(asm)])
+        Contract::new(vec![ContractSection::Code(asm)])
     } else {
         let databytes = bytes[pivot..].to_vec();
-        Contract::new(vec![Section::Code(asm),Section::Data(databytes)])
+        Contract::new(vec![ContractSection::Code(asm),ContractSection::Data(databytes)])
     }
 }
 

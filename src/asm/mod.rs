@@ -10,7 +10,7 @@ mod parser;
 pub use instruction::{AssemblyInstruction};
 
 use std::fmt;
-use crate::bytecode::{Contract,Instruction,Section};
+use crate::bytecode::{Contract,Instruction,ContractSection};
 
 // ============================================================================
 // Errors
@@ -71,7 +71,7 @@ pub type Assembly = Contract<AssemblyInstruction>;
 
 /// An assembly section represents a section as found within an
 /// `Assembly`.
-pub type AssemblySection = Section<AssemblyInstruction>;
+pub type AssemblySection = ContractSection<AssemblyInstruction>;
 
 impl Assembly {
     /// Assemble an assembly into a contract containing concrete EVM
@@ -84,12 +84,12 @@ impl Assembly {
         // Map each assemply section to a compiled section.
         for s in self {
             match s {
-                Section::Code(insns) => {
+                ContractSection::Code(insns) => {
                     let ninsns = codegen::assemble(insns)?;
-                    sections.push(Section::Code(ninsns));
+                    sections.push(ContractSection::Code(ninsns));
                 }
-                Section::Data(bytes) => {
-                    sections.push(Section::Data(bytes.clone()));
+                ContractSection::Data(bytes) => {
+                    sections.push(ContractSection::Data(bytes.clone()));
                 }
             }
         }
