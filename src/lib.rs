@@ -8,11 +8,15 @@
 /// operates over bytecode contracts (e.g. for [constant
 /// propagation](https://en.wikipedia.org/wiki/Constant_folding)).
 pub mod analysis;
-/// Functionality for working with contracts represented in assembly
-/// language.  For example, a contract written in assembly language
-/// can be parsed into an _assembly_ which, in turn, can be
-/// _assembled_ into a bytecode contract.  An example contract written
-/// in assembly language is:
+/// Functionality for working with contracts represented in [assembly
+/// language](https://en.wikipedia.org/wiki/Assembly_language).  For
+/// example, a contract written in assembly language can be parsed
+/// into an _assembly_ which, in turn, can be _assembled_ into a
+/// bytecode contract.
+///
+/// # Examples
+/// An example contract written in assembly language is:
+///
 /// ```text
 /// .code
 ///    push 0x02
@@ -28,6 +32,7 @@ pub mod analysis;
 /// The following example illustrates how to parse some assembly
 /// language into an assembly, and then assemble it into a bytecode
 /// contract.
+///
 /// ```
 /// use evmil::asm::Assembly;
 /// use evmil::bytecode::legacy;
