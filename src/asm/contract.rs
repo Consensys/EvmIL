@@ -15,7 +15,7 @@ use crate::asm::{AssemblyInstruction,AssemblyError};
 use crate::bytecode::{Instruction};
 
 // ============================================================================
-// Structured Contract
+// Bytecode Contract
 // ============================================================================
 
 /// A structured representation of an EVM bytecode contract which is
@@ -26,11 +26,11 @@ use crate::bytecode::{Instruction};
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
-pub struct StructuredContract<T:PartialEq> {
+pub struct Contract<T:PartialEq> {
     sections: Vec<ContractSection<T>>
 }
 
-impl<T:PartialEq> StructuredContract<T> {
+impl<T:PartialEq> Contract<T> {
     pub fn empty() -> Self {
         Self {
             sections: Vec::new()
@@ -60,7 +60,7 @@ impl<T:PartialEq> StructuredContract<T> {
 // Traits
 // ===================================================================
 
-impl<'a,T:PartialEq> IntoIterator for &'a StructuredContract<T> {
+impl<'a,T:PartialEq> IntoIterator for &'a Contract<T> {
     type Item = &'a ContractSection<T>;
     type IntoIter = Iter<'a,ContractSection<T>>;
 

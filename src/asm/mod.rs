@@ -10,7 +10,7 @@ mod parser;
 pub use instruction::{AssemblyInstruction};
 
 use std::fmt;
-use crate::bytecode::{Contract,Instruction,ContractSection};
+use crate::bytecode::{StructuredContract,Instruction,ContractSection};
 
 // ============================================================================
 // Errors
@@ -67,7 +67,7 @@ impl std::error::Error for AssemblyError {
 /// language instructions (that is, instructions which uses labels
 /// instead of explicit jump targets).  The intuition is that an
 /// _assembly_ can be _assembled_ into a bytecode contract.
-pub type Assembly = Contract<AssemblyInstruction>;
+pub type Assembly = StructuredContract<AssemblyInstruction>;
 
 /// An assembly section represents a section as found within an
 /// `Assembly`.
@@ -79,7 +79,7 @@ impl Assembly {
     /// within the assembly into known jump destinations.  As such,
     /// this can fail if an instruction attempts to branch to a label
     /// which does not exist.
-    pub fn assemble(&self) -> Result<Contract<Instruction>,AssemblyError> {
+    pub fn assemble(&self) -> Result<StructuredContract<Instruction>,AssemblyError> {
         let mut sections = Vec::new();
         // Map each assemply section to a compiled section.
         for s in self {
@@ -94,7 +94,7 @@ impl Assembly {
             }
         }
         // Done
-        Ok(Contract::new(sections))
+        Ok(StructuredContract::new(sections))
     }
 
     /// Parse some assembly language into an `Assembly`.  This can

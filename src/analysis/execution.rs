@@ -17,7 +17,7 @@ use super::semantics::{execute,Outcome};
 
 /// Simple alias since we're always dealing with concrete executions
 /// here.
-type Contract = crate::bytecode::Contract<Instruction>;
+type Contract = crate::bytecode::StructuredContract<Instruction>;
 
 pub struct Execution<'a,T:EvmState+Clone+PartialEq> {
     /// The bytecode being executed by this execution.
