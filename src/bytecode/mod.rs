@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 mod contract;
+mod eof;
 mod instruction;
 mod operands;
-pub mod eof;  // For now.  Should be deprecated
 pub mod legacy; // For now.  Should be deprecated
 pub mod opcode;
 
 pub use contract::*;
+pub use eof::EofContract;
 pub use instruction::*;
 pub use operands::{Operands};

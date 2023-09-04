@@ -19,8 +19,8 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::asm::{Assembly,AssemblyInstruction};
-use evmil::bytecode::{StructuredSection};
-use evmil::bytecode::{eof,legacy};
+use evmil::bytecode::{EofContract,StructuredSection};
+use evmil::bytecode::{legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
@@ -93,7 +93,8 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Translate container into bytes
     let bytes = if args.contains_id("eof") {
         // EVM Object Format
-        eof::to_bytes(bytecode).unwrap()
+        //eof::to_bytes(bytecode).unwrap()
+        todo!("implement compilation to EOF!");
     } else {
         // Legacy
         legacy::to_bytes(&bytecode)
@@ -124,7 +125,8 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
     let asm = if args.contains_id("eof") {
-        eof::from_bytes(&bytes)?
+        let eof = EofContract::from_bytes(&bytes)?;
+        todo!("Fix up diassembling EOF containers");
     } else {
         legacy::from_bytes(&bytes)
     };
@@ -166,7 +168,8 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Check whether EOF or legacy code generation
     let bytes = if args.contains_id("eof") {
         // EVM Object Format
-        eof::to_bytes(compiled).unwrap()
+        // eof::to_bytes(compiled).unwrap()
+        todo!("implement assembling to EOF!");
     } else {
         // Legacy
         legacy::to_bytes(&compiled)
