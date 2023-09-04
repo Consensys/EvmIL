@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::il::{BinOp, Region, Term};
 use crate::asm::{Assembly,AssemblyInstruction};
-use crate::bytecode::{StructuredContract,Instruction,ContractSection};
+use crate::bytecode::{StructuredContract,Instruction,StructuredSection};
 use crate::bytecode::Instruction::*;
 use crate::util::*;
 
@@ -49,7 +49,7 @@ impl Compiler {
 
     pub fn to_assembly(self) -> Assembly {
         let mut sections = Vec::new();
-        sections.push(ContractSection::Code(self.bytecode));
+        sections.push(StructuredSection::Code(self.bytecode));
         Assembly::new(sections)
     }
 

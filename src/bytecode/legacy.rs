@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{StructuredContract,Instruction,ContractSection,ToInstructions};
+use crate::bytecode::{StructuredContract,Instruction,StructuredSection,ToInstructions};
 use crate::bytecode::Instruction::*;
 use crate::analysis::{Execution,ExecutionSection};
 use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
@@ -23,7 +23,7 @@ pub fn from_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
     // that we would be better of working directly with bytes.  It
     // certainly makes for some ugly repetition here.
     let insns = bytes.to_insns();
-    let bytecode = StructuredContract::new(vec![ContractSection::Code(insns)]);
+    let bytecode = StructuredContract::new(vec![StructuredSection::Code(insns)]);
     let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
     // Run execution (and for now hope it succeeds!)
     execution.execute(LegacyEvmState::new());
@@ -38,10 +38,10 @@ pub fn from_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
     // Done
     if pivot == bytes.len() {
         // No data section
-        StructuredContract::new(vec![ContractSection::Code(asm)])
+        StructuredContract::new(vec![StructuredSection::Code(asm)])
     } else {
         let databytes = bytes[pivot..].to_vec();
-        StructuredContract::new(vec![ContractSection::Code(asm),ContractSection::Data(databytes)])
+        StructuredContract::new(vec![StructuredSection::Code(asm),StructuredSection::Data(databytes)])
     }
 }
 

@@ -19,7 +19,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::asm::{Assembly,AssemblyInstruction};
-use evmil::bytecode::{ContractSection};
+use evmil::bytecode::{StructuredSection};
 use evmil::bytecode::{eof,legacy};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -131,7 +131,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Iterate bytecode sections
     for section in &asm {
         match section {
-            ContractSection::Code(insns) => {
+            StructuredSection::Code(insns) => {
                 println!(".code");
                 for insn in insns {
                     match insn {
@@ -145,7 +145,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 
                 }
             }
-            ContractSection::Data(bytes) => {
+            StructuredSection::Data(bytes) => {
                 println!(".data");
                 println!("\t{}",bytes.to_hex_string());
             }

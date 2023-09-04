@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::ops;
-use crate::bytecode::{ContractSection,Instruction};
+use crate::bytecode::{StructuredSection,Instruction};
 use crate::util::{Bottom,Top};
 use super::state::{EvmState};
 use super::semantics::{execute,Outcome};
@@ -32,10 +32,10 @@ where T::Word : Top {
         let mut states = Vec::new();
         for s in contract {
             match s {
-                ContractSection::Code(insns) => {
+                StructuredSection::Code(insns) => {
                     states.push(ExecutionSection::new(insns));
                 }
-                ContractSection::Data(_) => {
+                StructuredSection::Data(_) => {
                     // Essentially a dummy
                     states.push(ExecutionSection::new(&[]));
                 }
@@ -53,13 +53,13 @@ where T::Word : Top {
     }
 
     pub fn execute(&mut self, state: T) {
-        let root : &ContractSection<Instruction> = self.contract.iter().next().unwrap();
+        let root : &StructuredSection<Instruction> = self.contract.iter().next().unwrap();
         // Access first section and begin execution from there.
         match root {
-            ContractSection::Code(_) => {
+            StructuredSection::Code(_) => {
                 self.states[0].execute(state);
             }
-            ContractSection::Data(_) => {
+            StructuredSection::Data(_) => {
                 // Data only contract?
             }
         }

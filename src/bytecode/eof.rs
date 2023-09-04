@@ -13,7 +13,7 @@ use std::fmt;
 use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{StructuredContract,Instruction,ContractSection,ToInstructions};
+use crate::bytecode::{StructuredContract,Instruction,StructuredSection,ToInstructions};
 use crate::bytecode::Instruction::*;
 
 /// The EOF magic prefix as dictated in EIP3540.
@@ -182,12 +182,12 @@ pub fn from_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction
         // Convert byte sequence into an instruction sequence.
         let insns = disassemble(bytes);
         // Add code section
-        code.add(ContractSection::Code(insns));
+        code.add(StructuredSection::Code(insns));
         // Validate types information?
     }
     // parse data sectin (if present)
     let data = iter.decode_bytes(data_size)?.to_vec();
-    code.add(ContractSection::Data(data));
+    code.add(StructuredSection::Data(data));
     //
     iter.match_eof(DecodingError::ExpectedEndOfFile)?;
     // Done
@@ -204,7 +204,7 @@ pub fn to_bytes(bytecode: StructuredContract<Instruction>) -> Result<Vec<u8>,Enc
     // Count number of code contracts (to be deprecated?)
     for section in &bytecode {
         match section {
-            ContractSection::Code(_) => {
+            StructuredSection::Code(_) => {
                 if data_section != None {
                     return Err(EncodingError::DataSectionNotLast)
                 }
@@ -212,7 +212,7 @@ pub fn to_bytes(bytecode: StructuredContract<Instruction>) -> Result<Vec<u8>,Enc
                 section.encode(&mut code_bytes);
                 code_sections.push(code_bytes);
             }
-            ContractSection::Data(data_bytes) => {
+            StructuredSection::Data(data_bytes) => {
                 if data_section != None {
                     return Err(EncodingError::MultipleDataSections)
                 } else {
@@ -254,7 +254,7 @@ pub fn to_bytes(bytecode: StructuredContract<Instruction>) -> Result<Vec<u8>,Enc
     // Write types data
     for section in &bytecode {
         match section {
-            ContractSection::Code(_) => {
+            StructuredSection::Code(_) => {
                 // FIXME: infer necessary information.
                 bytes.encode_u8(0);
                 bytes.encode_u8(0);

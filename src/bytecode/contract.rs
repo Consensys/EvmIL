@@ -27,17 +27,18 @@ use crate::bytecode::{Instruction};
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
 pub struct StructuredContract<T:PartialEq> {
-    sections: Vec<ContractSection<T>>
+    sections: Vec<StructuredSection<T>>
 }
 
 impl<T:PartialEq> StructuredContract<T> {
+    
     pub fn empty() -> Self {
         Self {
             sections: Vec::new()
         }
     }
 
-    pub fn new(sections: Vec<ContractSection<T>>) -> Self {
+    pub fn new(sections: Vec<StructuredSection<T>>) -> Self {
         Self { sections }
     }
 
@@ -46,12 +47,12 @@ impl<T:PartialEq> StructuredContract<T> {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a,ContractSection<T>> {
+    pub fn iter<'a>(&'a self) -> Iter<'a,StructuredSection<T>> {
         self.sections.iter()
     }
 
     /// Add a new section to this bytecode container
-    pub fn add(&mut self, section: ContractSection<T>) {
+    pub fn add(&mut self, section: StructuredSection<T>) {
         self.sections.push(section)
     }
 }
@@ -61,8 +62,8 @@ impl<T:PartialEq> StructuredContract<T> {
 // ===================================================================
 
 impl<'a,T:PartialEq> IntoIterator for &'a StructuredContract<T> {
-    type Item = &'a ContractSection<T>;
-    type IntoIter = Iter<'a,ContractSection<T>>;
+    type Item = &'a StructuredSection<T>;
+    type IntoIter = Iter<'a,StructuredSection<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
@@ -74,7 +75,7 @@ impl<'a,T:PartialEq> IntoIterator for &'a StructuredContract<T> {
 // ============================================================================
 
 #[derive(Clone,Debug,PartialEq)]
-pub enum ContractSection<T> {
+pub enum StructuredSection<T> {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
@@ -82,15 +83,15 @@ pub enum ContractSection<T> {
     Code(Vec<T>)
 }
 
-impl ContractSection<Instruction> {
+impl StructuredSection<Instruction> {
     /// Flattern this section into an appropriately formated byte
     /// sequence for the enclosing container type.
     pub fn encode(&self, bytes: &mut Vec<u8>) {
         match self {
-            ContractSection::Data(bs) => {
+            StructuredSection::Data(bs) => {
                 bytes.extend(bs);
             }
-            ContractSection::Code(insns) => {
+            StructuredSection::Code(insns) => {
                 for b in insns { b.encode(bytes); }
             }
         }
