@@ -12,11 +12,12 @@
 mod contract;
 mod eof;
 mod instruction;
+mod legacy;
 mod operands;
-pub mod legacy; // For now.  Should be deprecated
 pub mod opcode;
 
 pub use contract::*;
 pub use eof::EofContract;
 pub use instruction::*;
+pub use legacy::LegacyContract;
 pub use operands::{Operands};

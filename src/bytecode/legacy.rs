@@ -17,78 +17,61 @@ use crate::bytecode::Instruction::*;
 use crate::analysis::{Execution,ExecutionSection};
 use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 
-pub fn from_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
-    // NOTE: currently, we begin by converting bytes into
-    // instructions.  Personally, I think this is a bad choice and
-    // that we would be better of working directly with bytes.  It
-    // certainly makes for some ugly repetition here.
-    let insns = bytes.to_insns();
-    let bytecode = StructuredContract::new(vec![StructuredSection::Code(insns)]);
-    let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
-    // Run execution (and for now hope it succeeds!)
-    execution.execute(LegacyEvmState::new());
-    // Extract analysis results for first section;
-    let analysis = &execution[0];
-    // Identify position where the data section starts.
-    let pivot = identify_data(analysis,bytes);
-    // Split instructions from data
-    let insns = (&bytes[..pivot]).to_insns();
-    // Translate instructions into assembly instructions.
-    let asm = disassemble(analysis,&insns);
-    // Done
-    if pivot == bytes.len() {
-        // No data section
-        StructuredContract::new(vec![StructuredSection::Code(asm)])
-    } else {
-        let databytes = bytes[pivot..].to_vec();
-        StructuredContract::new(vec![StructuredSection::Code(asm),StructuredSection::Data(databytes)])
-    }
+/// Represents a _legacy_ contract.
+pub struct LegacyContract {
+    /// Original length of the byte stream
+    length: usize,
+    /// Represents the instructions stored within this contract.
+    insns: Vec<Instruction>
 }
 
-/// Convert this bytecode contract into a byte sequence correctly
-/// formatted for legacy code.
-pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    //
-    for s in bytecode { s.encode(&mut bytes); }
-    // Done
-    bytes
+impl LegacyContract {
+    /// Construct a legacy contract from a byte sequence.
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        Self{insns: bytes.to_insns(), length: bytes.len()}
+    }
+
+    pub fn to_structured(&self) -> StructuredContract<AssemblyInstruction> {
+        let bytecode = StructuredContract::new(vec![StructuredSection::Code(self.insns.clone())]);
+        let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
+        // Run execution (and for now hope it succeeds!)
+        execution.execute(LegacyEvmState::new());
+        // Extract analysis results for first section;
+        let analysis = &execution[0];
+        // Translate instructions into assembly instructions.
+        let mut asm = disassemble(analysis,&self.insns,self.length);
+        // NOTE: this is something of a hack for now to retain
+        // backwards compatibility.
+        match asm.last() {
+            Some(Instruction::DATA(_)) => {
+                let Some(Instruction::DATA(bs)) = asm.pop() else { unreachable!(); };
+                StructuredContract::new(vec![StructuredSection::Code(asm),StructuredSection::Data(bs)])
+            }
+            _ => {
+                StructuredContract::new(vec![StructuredSection::Code(asm)])
+            }
+        }
+    }
+
+    /// Convert this bytecode contract into a byte sequence correctly
+    /// formatted for legacy code.
+    pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        //
+        for s in bytecode { s.encode(&mut bytes); }
+        // Done
+        bytes
+    }    
 }
 
 // ===================================================================
 // Helpers
 // ===================================================================
 
-/// Identify the data section within the instruction array.  That is,
-/// all contiguous unreachable bytes from the end of the instruction
-/// sequence.
-fn identify_data(analysis: &ExecutionSection<LegacyEvmState>, bytes: &[u8]) -> usize {
-    if bytes.len() == 0 {
-        0
-    } else {
-        // Seach backwards through the data for the first reachable
-        // instruction.  Everything after this instruction is
-        // considered to be part of the data section.
-        let mut pc = bytes.len() - 1;
-        loop {
-            // First instruction is always considered to be reachable,
-            // no matter what.
-            if pc == 0 || !analysis[pc].is_bottom() {
-                // Decode last reachable instruction so that we can
-                // figure out its length.
-                let insn = Instruction::decode(pc,bytes);
-                // Done!
-                return pc + insn.length();
-            }
-            pc -= 1;
-        }
-    }
-}
-
 /// Perform initial translation.  This just translates each concrete
 /// instruction into its corresponding assembly instruction, whilst
 /// identifying unreachable data bytes.
-fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction]) -> Vec<AssemblyInstruction> {
+fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction], len: usize) -> Vec<AssemblyInstruction> {
     let mut pc = 0;
     let mut asm = Vec::new();
     // Initialise translation
@@ -96,6 +79,9 @@ fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction
         if pc != 0 && analysis[pc].is_bottom() {
             let mut bytes = Vec::new();
             insn.encode(&mut bytes);
+            if pc+bytes.len() > len {
+                bytes.truncate(len-pc);
+            }            
             asm.push(AssemblyInstruction::DATA(bytes));
         } else {
             // Check whether this is a databyte or not.
@@ -107,7 +93,7 @@ fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction
     // labels.
     refine_instructions(analysis,insns,&mut asm);
     // Done
-    asm
+    merge_data(asm)
 }
 
 /// Refine instructions by converting concrete `PUSH` instructions
@@ -216,6 +202,23 @@ fn determine_insn_offsets(insns: &[Instruction]) -> Vec<usize> {
         pc += insn.length();
     }
     offsets
+}
+
+/// Merge consecutive data instructions.
+fn merge_data(asm: Vec<AssemblyInstruction>) -> Vec<AssemblyInstruction> {
+    let mut nasm = Vec::new();
+    for insn in asm {
+        match (nasm.last_mut(),&insn) {
+            (Some(Instruction::DATA(xs)),Instruction::DATA(ys)) => {
+                // Merge!
+                xs.extend(ys);
+            }
+            (_,_) => {
+                nasm.push(insn);
+            }
+        }
+    }
+    nasm
 }
 
 // ===================================================================
