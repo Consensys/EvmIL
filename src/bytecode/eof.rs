@@ -131,121 +131,6 @@ impl fmt::Display for DecodingError {
 
 impl std::error::Error for DecodingError {}
 
-
-
-// ============================================================================
-// EofContract
-// ============================================================================
-
-/// A decoded EOF byte sequence (see
-/// [EIP3540](https://eips.ethereum.org/EIPS/eip-3540)).  This
-/// provides a gateway for disassembling EOF contracts into assembly
-/// language and back again.
-///
-/// # Examples
-/// ```
-/// use evmil::bytecode::EofContract;
-/// use evmil::util::FromHexString;
-///
-/// // EOF bytecode contract
-/// let hex = "0xef00010100040200010001030000000000000000";
-/// // Conversion into bytes
-/// let bytes = hex.from_hex_string().unwrap();
-/// // Decode EOF bytecode (assuming no errors)
-/// let eof = EofContract::from_bytes(&bytes).unwrap();
-/// // Check version is `1`
-/// assert_eq!(eof.version(),1);
-/// // Check only one code section
-/// assert_eq!(eof.code_sections(),1);
-/// // Check that section contains one instruction
-/// // assert_eq!(eof.code_size(1),1);
-/// // Check no supplementary data provided
-/// assert_eq!(eof.data_size(),0);
-/// ```
-pub struct EofContract<'a> {
-    /// Databytes making up this contract.
-    bytes: &'a [u8],
-    /// EOF version
-    version: u8,
-    /// Number of code sections in this EOF contract.
-    num_sections: usize,
-    /// Size of the data section.
-    data_size: usize
-}
-
-impl<'a> EofContract<'a> {
-    /// Returns the version byte used within this EOF contract (see
-    /// [EIP3540](https://eips.ethereum.org/EIPS/eip-3540)).
-    pub fn version(&self) -> u8 { self.version }
-
-    /// Return the number of code sections within the EOF contract.
-    pub fn code_sections(&self)  -> usize { self.num_sections }
-
-    /// Return the size of a given code section within an EOF
-    /// contract.
-    pub fn code_size(&self, index: usize) -> usize { todo!(); }
-
-    /// Extract the associated type information for a given code
-    /// section.
-    pub fn code_type(&self, index: usize) -> (u8,u8,u8) { todo!(); }
-
-    /// Determine amount of data supplied within this contract.
-    pub fn data_size(&self) -> usize { self.data_size }
-
-    /// Construct a bytecode container from an EOF formatted byte
-    /// sequence.  See EIP 3540 "EOF - EVM Object Format v1" for more
-    /// details on the format being parsed here.  Since the EOF format is
-    /// quite prescriptive, its possible that the incoming bytes are
-    /// malformed in some way --- in which case an error will be
-    /// generated.
-    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self,DecodingError> {
-        let mut iter = ByteDecoder::new(bytes);
-        iter.match_u16(EOF_MAGIC,|w| DecodingError::InvalidMagicNumber(w))?;
-        // Pull out static information
-        let version = iter.decode_u8()?;
-        // Sanity check version information
-        if version != 1 { return Err(DecodingError::UnsupportedEofVersion(version)); }
-        iter.match_u8(0x01,|w| DecodingError::InvalidKindType(w))?;
-        let type_len = iter.decode_u16()?;
-        iter.match_u8(0x02,|w| DecodingError::InvalidKindCode(w))?;
-        let num_sections = iter.decode_u16()? as usize;
-        // Sanity check length of type section
-        if (type_len as usize) != (num_sections * 4) {
-            return Err(DecodingError::InvalidTypeSize(type_len));
-        }
-        // TODO: get rid of this unnecessary heap allocation.  We
-        // really don't need it :)
-        let mut code_sizes : Vec<usize> = Vec::new();
-        // Extract code sizes
-        for _i in 0..num_sections {
-            code_sizes.push(iter.decode_u16()? as usize);
-        }
-        iter.match_u8(0x03,|w| DecodingError::InvalidKindData(w))?;
-        let data_size = iter.decode_u16()? as usize;
-        iter.match_u8(0x00,|w| DecodingError::InvalidTerminator(w))?;
-        // parse types section
-        let mut types = Vec::new();
-        for _i in 0..num_sections {
-            let inputs = iter.decode_u8()?;
-            let outputs = iter.decode_u8()?;
-            let max_stack = iter.decode_u16()?;
-            types.push((inputs,outputs,max_stack));
-        }
-        // parse code section(s)
-        for i in 0..num_sections {
-            let bytes = iter.decode_bytes(code_sizes[i])?;
-            // Recall type information
-            let (_inputs,_outputs,_max_stack) = types[i];
-        }
-        // parse data section (if present)
-        let _ = iter.decode_bytes(data_size)?;
-        //
-        iter.match_eof(DecodingError::ExpectedEndOfFile)?;
-        // Done
-        Ok(Self{bytes,version,num_sections,data_size})
-    }
-}
-
 // ============================================================================
 // Decoding (EOF)
 // ============================================================================
@@ -312,11 +197,11 @@ pub fn from_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction
 // Encoding (EOF)
 // ============================================================================
 
-pub fn to_bytes(bytecode: StructuredContract<Instruction>) -> Result<Vec<u8>,EncodingError> {
+pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Result<Vec<u8>,EncodingError> {
     let mut code_sections = Vec::new();
     let mut data_section : Option<Vec<u8>> = None;
     // Count number of code contracts (to be deprecated?)
-    for section in &bytecode {
+    for section in bytecode {
         match section {
             StructuredSection::Code(_) => {
                 if data_section != None {
@@ -366,7 +251,7 @@ pub fn to_bytes(bytecode: StructuredContract<Instruction>) -> Result<Vec<u8>,Enc
     // Header terminator
     bytes.encode_u8(0x00);
     // Write types data
-    for section in &bytecode {
+    for section in bytecode {
         match section {
             StructuredSection::Code(_) => {
                 // FIXME: infer necessary information.

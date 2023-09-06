@@ -17,6 +17,5 @@ mod operands;
 pub mod opcode;
 
 pub use contract::*;
-pub use eof::EofContract;
 pub use instruction::*;
 pub use operands::{Operands};
