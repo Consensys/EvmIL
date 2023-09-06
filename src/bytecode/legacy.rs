@@ -17,52 +17,38 @@ use crate::bytecode::Instruction::*;
 use crate::analysis::{Execution,ExecutionSection};
 use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 
-/// Represents a _legacy_ contract.
-pub struct LegacyContract {
-    /// Original length of the byte stream
-    length: usize,
-    /// Represents the instructions stored within this contract.
-    insns: Vec<Instruction>
-}
-
-impl LegacyContract {
-    /// Construct a legacy contract from a byte sequence.
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        Self{insns: bytes.to_insns(), length: bytes.len()}
-    }
-
-    pub fn to_structured(&self) -> StructuredContract<AssemblyInstruction> {
-        let bytecode = StructuredContract::new(vec![StructuredSection::Code(self.insns.clone())]);
-        let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
-        // Run execution (and for now hope it succeeds!)
-        execution.execute(LegacyEvmState::new());
-        // Extract analysis results for first section;
-        let analysis = &execution[0];
-        // Translate instructions into assembly instructions.
-        let mut asm = disassemble(analysis,&self.insns,self.length);
-        // NOTE: this is something of a hack for now to retain
-        // backwards compatibility.
-        match asm.last() {
-            Some(Instruction::DATA(_)) => {
-                let Some(Instruction::DATA(bs)) = asm.pop() else { unreachable!(); };
-                StructuredContract::new(vec![StructuredSection::Code(asm),StructuredSection::Data(bs)])
-            }
-            _ => {
-                StructuredContract::new(vec![StructuredSection::Code(asm)])
-            }
+pub fn from_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
+    let insns = bytes.to_insns();
+    let bytecode = StructuredContract::new(vec![StructuredSection::Code(insns.clone())]);
+    let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
+    // Run execution (and for now hope it succeeds!)
+    execution.execute(LegacyEvmState::new());
+    // Extract analysis results for first section;
+    let analysis = &execution[0];
+    // Translate instructions into assembly instructions.
+    let mut asm = disassemble(analysis,&insns,bytes.len());
+    // NOTE: this is something of a hack for now to retain
+    // backwards compatibility.
+    match asm.last() {
+        Some(Instruction::DATA(_)) => {
+            let Some(Instruction::DATA(bs)) = asm.pop() else { unreachable!(); };
+            StructuredContract::new(vec![StructuredSection::Code(asm),StructuredSection::Data(bs)])
+        }
+        _ => {
+            StructuredContract::new(vec![StructuredSection::Code(asm)])
         }
     }
-
-    /// Convert this bytecode contract into a byte sequence correctly
-    /// formatted for legacy code.
-    pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        //
-        for s in bytecode { s.encode(&mut bytes); }
-        // Done
-        bytes
-    }    
 }
+
+/// Convert this bytecode contract into a byte sequence correctly
+/// formatted for legacy code.
+pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    //
+    for s in bytecode { s.encode(&mut bytes); }
+    // Done
+    bytes
+}    
 
 // ===================================================================
 // Helpers

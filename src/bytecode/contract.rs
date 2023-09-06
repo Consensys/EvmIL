@@ -13,6 +13,8 @@ use std::slice::{Iter};
 use crate::asm;
 use crate::asm::{AssemblyInstruction,AssemblyError};
 use crate::bytecode::{Instruction};
+use super::{eof,legacy};
+pub use super::eof::DecodingError;    
 
 // ============================================================================
 // Structured Contract
@@ -31,6 +33,33 @@ pub struct StructuredContract<T:PartialEq> {
 }
 
 impl<T:PartialEq> StructuredContract<T> {
+
+    pub fn from_legacy_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
+        legacy::from_bytes(bytes)
+    }
+
+    /// A decoded EOF byte sequence (see
+    /// [EIP3540](https://eips.ethereum.org/EIPS/eip-3540)).  This
+    /// provides a gateway for disassembling EOF contracts into assembly
+    /// language and back again.
+    ///
+    /// # Examples
+    /// ```
+    /// use evmil::asm::Assembly;
+    /// use evmil::util::FromHexString;
+    ///
+    /// // EOF bytecode contract
+    /// let hex = "0xef00010100040200010001030000000000000000";
+    /// // Conversion into bytes
+    /// let bytes = hex.from_hex_string().unwrap();
+    /// // Decode EOF bytecode (assuming no errors)
+    /// let eof = Assembly::from_eof_bytes(&bytes).unwrap();
+    /// // Check that section contains one instruction
+    /// // assert_eq!(eof.sections.len(),1);
+    /// ```    
+    pub fn from_eof_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction>,DecodingError> {
+        eof::from_bytes(bytes)
+    }
     
     pub fn empty() -> Self {
         Self {
@@ -56,6 +85,17 @@ impl<T:PartialEq> StructuredContract<T> {
         self.sections.push(section)
     }
 }
+
+impl StructuredContract<Instruction> {
+    pub fn to_legacy_bytes(&self) -> Vec<u8> {
+        legacy::to_bytes(self)
+    }
+
+    pub fn to_eof_bytes(&self) -> Vec<u8> {
+        // FIXME: need to figure this out :)
+        eof::to_bytes(self).unwrap()
+    }    
+}    
 
 // ===================================================================
 // Traits

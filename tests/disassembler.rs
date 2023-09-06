@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::{PathBuf};
 use evmil::util::{FromHexString};
-use evmil::bytecode::LegacyContract;
 use evmil::asm::{Assembly};
 
 pub static TESTS_DIR: &str = "tests/files";
@@ -24,7 +23,7 @@ fn check(test: &str) {
     // Parse hex string into bytes
     let bytes = bin.trim().from_hex_string().unwrap();
     // // Construct disassembly
-    let disassembly = LegacyContract::from_bytes(&bytes).to_structured();
+    let disassembly = Assembly::from_legacy_bytes(&bytes);
     // // Disassemble bytes into instructions
     // let bin_insns = disasm.to_vec();
     // // Check they match
