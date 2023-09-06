@@ -11,8 +11,8 @@
 // limitations under the License.
 use super::{Assembly,AssemblyError,AssemblyInstruction};
 use super::lexer::{Lexer,Token};
-use crate::bytecode::{Section};
-use crate::bytecode::AbstractInstruction::*;
+use crate::bytecode::{StructuredSection};
+use crate::bytecode::Instruction::*;
 use crate::util::{FromHexString};
 
 // ===================================================================
@@ -36,7 +36,7 @@ pub fn parse(input: &str) -> Result<Assembly,AssemblyError> {
 }
 
 /// Parse a single line of assembly language.
-fn parse_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
+fn parse_section(lexer: &mut Lexer) -> Result<StructuredSection<AssemblyInstruction>,AssemblyError> {
     //
     match lexer.next()? {
         Token::Section("code") => {
@@ -52,7 +52,7 @@ fn parse_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,Assem
     }
 }
 
-fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
+fn parse_code_section(lexer: &mut Lexer) -> Result<StructuredSection<AssemblyInstruction>,AssemblyError> {
     let mut insns = Vec::new();
     //
     loop {
@@ -87,7 +87,7 @@ fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
                 insns.push(LABEL(s.to_string()));
             }
             Token::EOF|Token::Section(_) => {
-                return Ok(Section::Code(insns));
+                return Ok(StructuredSection::Code(insns));
             }
             _ => {
                 // Something went wrong
@@ -100,7 +100,7 @@ fn parse_code_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
 
 }
 
-fn parse_data_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,AssemblyError> {
+fn parse_data_section(lexer: &mut Lexer) -> Result<StructuredSection<AssemblyInstruction>,AssemblyError> {
     let mut bytes = Vec::new();
     loop {
         match lexer.lookahead()? {
@@ -109,7 +109,7 @@ fn parse_data_section(lexer: &mut Lexer) -> Result<Section<AssemblyInstruction>,
                 bytes.extend(parse_hex(s)?)
             }
             Token::EOF|Token::Section(_) => {
-                return Ok(Section::Data(bytes));
+                return Ok(StructuredSection::Data(bytes));
             }
             _ => {
                 // Something went wrong

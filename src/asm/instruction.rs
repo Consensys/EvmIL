@@ -9,7 +9,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::bytecode::{AbstractInstruction,Instruction,InstructionOperands};
+use crate::bytecode::{Instruction,Operands};
+use Instruction::*;
 
 // ============================================================================
 // Concrete Instructions
@@ -24,19 +25,17 @@ use crate::bytecode::{AbstractInstruction,Instruction,InstructionOperands};
 #[derive(Clone,Debug,PartialEq)]
 pub struct AssemblyOperands();
 
-impl InstructionOperands for AssemblyOperands {
+impl Operands for AssemblyOperands {
     type RelOffset16 = String;
     type PushLabel = String;
     type Label = String;
 }
 
-use AbstractInstruction::*;
-
 /// An individual assembly language instruction.  Assembly
 /// instructions do not have concrete information regarding branch
 /// targets.  Rather, branch target information is represented using
 /// _labels_.  Currently, a label is simply implemented as a `String`.
-pub type AssemblyInstruction = AbstractInstruction<AssemblyOperands>;
+pub type AssemblyInstruction = Instruction<AssemblyOperands>;
 
 impl AssemblyInstruction {
     /// Get the branch target label associated with this instruction

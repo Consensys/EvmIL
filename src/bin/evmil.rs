@@ -19,8 +19,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::asm::{Assembly,AssemblyInstruction};
-use evmil::bytecode::{Section};
-use evmil::bytecode::{eof,legacy};
+use evmil::bytecode::{EofContract,LegacyContract,StructuredSection};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
@@ -91,12 +90,13 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Assemble instructions into a bytecode container
     let bytecode = compiler.to_bytecode();
     // Translate container into bytes
-    let bytes = if args.contains_id("eof") {
+    let bytes : Vec<u8> = if args.contains_id("eof") {
         // EVM Object Format
-        eof::to_bytes(bytecode).unwrap()
+        //eof::to_bytes(bytecode).unwrap()
+        todo!("implement compilation to EOF!");
     } else {
         // Legacy
-        legacy::to_bytes(&bytecode)
+        LegacyContract::to_bytes(&bytecode)
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
@@ -124,14 +124,16 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
     let asm = if args.contains_id("eof") {
-        eof::from_bytes(&bytes)?
+        let eof = EofContract::from_bytes(&bytes)?;
+        todo!("Fix up diassembling EOF containers");
     } else {
-        legacy::from_bytes(&bytes)
+        let legacy = LegacyContract::from_bytes(&bytes);
+        legacy.to_structured()
     };
     // Iterate bytecode sections
     for section in &asm {
         match section {
-            Section::Code(insns) => {
+            StructuredSection::Code(insns) => {
                 println!(".code");
                 for insn in insns {
                     match insn {
@@ -145,7 +147,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 
                 }
             }
-            Section::Data(bytes) => {
+            StructuredSection::Data(bytes) => {
                 println!(".data");
                 println!("\t{}",bytes.to_hex_string());
             }
@@ -164,12 +166,13 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Convert assembly language into concrete instructions.
     let compiled = assembly.assemble().unwrap();
     // Check whether EOF or legacy code generation
-    let bytes = if args.contains_id("eof") {
+    let bytes : Vec<u8> = if args.contains_id("eof") {
         // EVM Object Format
-        eof::to_bytes(compiled).unwrap()
+        // eof::to_bytes(compiled).unwrap()
+        todo!("implement assembling to EOF!");
     } else {
         // Legacy
-        legacy::to_bytes(&compiled)
+        todo!("implement assembling legacy bytecode!");        
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());

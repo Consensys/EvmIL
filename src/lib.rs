@@ -8,11 +8,15 @@
 /// operates over bytecode contracts (e.g. for [constant
 /// propagation](https://en.wikipedia.org/wiki/Constant_folding)).
 pub mod analysis;
-/// Functionality for working with contracts represented in assembly
-/// language.  For example, a contract written in assembly language
-/// can be parsed into an _assembly_ which, in turn, can be
-/// _assembled_ into a bytecode contract.  An example contract written
-/// in assembly language is:
+/// Functionality for working with contracts represented in [assembly
+/// language](https://en.wikipedia.org/wiki/Assembly_language).  For
+/// example, a contract written in assembly language can be parsed
+/// into an _assembly_ which, in turn, can be _assembled_ into a
+/// bytecode contract.
+///
+/// # Examples
+/// An example contract written in assembly language is:
+///
 /// ```text
 /// .code
 ///    push 0x02
@@ -28,9 +32,10 @@ pub mod analysis;
 /// The following example illustrates how to parse some assembly
 /// language into an assembly, and then assemble it into a bytecode
 /// contract.
+///
 /// ```
 /// use evmil::asm::Assembly;
-/// use evmil::bytecode::legacy;
+/// use evmil::bytecode::LegacyContract;
 /// use evmil::util::ToHexString;
 /// // Assembly language
 /// let asm = r#"
@@ -44,7 +49,7 @@ pub mod analysis;
 /// // Assemble into contract
 /// let contract = asm.assemble().unwrap();
 /// // Generate (legacy) bytecode
-/// let bytecode = legacy::to_bytes(&contract).to_hex_string();
+/// let bytecode = LegacyContract::to_bytes(&contract).to_hex_string();
 /// // Check output
 /// assert_eq!(bytecode,"0x6001600201");
 /// ```

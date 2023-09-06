@@ -15,7 +15,7 @@ use crate::asm::{AssemblyInstruction,AssemblyError};
 use crate::bytecode::{Instruction};
 
 // ============================================================================
-// Structured Contract
+// Bytecode Contract
 // ============================================================================
 
 /// A structured representation of an EVM bytecode contract which is
@@ -26,19 +26,18 @@ use crate::bytecode::{Instruction};
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
-pub struct StructuredContract<T:PartialEq> {
-    sections: Vec<StructuredSection<T>>
+pub struct Contract<T:PartialEq> {
+    sections: Vec<ContractSection<T>>
 }
 
-impl<T:PartialEq> StructuredContract<T> {
-    
+impl<T:PartialEq> Contract<T> {
     pub fn empty() -> Self {
         Self {
             sections: Vec::new()
         }
     }
 
-    pub fn new(sections: Vec<StructuredSection<T>>) -> Self {
+    pub fn new(sections: Vec<ContractSection<T>>) -> Self {
         Self { sections }
     }
 
@@ -47,12 +46,12 @@ impl<T:PartialEq> StructuredContract<T> {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a,StructuredSection<T>> {
+    pub fn iter<'a>(&'a self) -> Iter<'a,ContractSection<T>> {
         self.sections.iter()
     }
 
     /// Add a new section to this bytecode container
-    pub fn add(&mut self, section: StructuredSection<T>) {
+    pub fn add(&mut self, section: ContractSection<T>) {
         self.sections.push(section)
     }
 }
@@ -61,9 +60,9 @@ impl<T:PartialEq> StructuredContract<T> {
 // Traits
 // ===================================================================
 
-impl<'a,T:PartialEq> IntoIterator for &'a StructuredContract<T> {
-    type Item = &'a StructuredSection<T>;
-    type IntoIter = Iter<'a,StructuredSection<T>>;
+impl<'a,T:PartialEq> IntoIterator for &'a Contract<T> {
+    type Item = &'a ContractSection<T>;
+    type IntoIter = Iter<'a,ContractSection<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
@@ -75,7 +74,7 @@ impl<'a,T:PartialEq> IntoIterator for &'a StructuredContract<T> {
 // ============================================================================
 
 #[derive(Clone,Debug,PartialEq)]
-pub enum StructuredSection<T> {
+pub enum ContractSection<T> {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
@@ -83,15 +82,15 @@ pub enum StructuredSection<T> {
     Code(Vec<T>)
 }
 
-impl StructuredSection<Instruction> {
+impl ContractSection<Instruction> {
     /// Flattern this section into an appropriately formated byte
     /// sequence for the enclosing container type.
     pub fn encode(&self, bytes: &mut Vec<u8>) {
         match self {
-            StructuredSection::Data(bs) => {
+            ContractSection::Data(bs) => {
                 bytes.extend(bs);
             }
-            StructuredSection::Code(insns) => {
+            ContractSection::Code(insns) => {
                 for b in insns { b.encode(bytes); }
             }
         }
