@@ -19,7 +19,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::asm::{Assembly,AssemblyInstruction};
-use evmil::bytecode::{EofContract,LegacyContract,StructuredSection};
+use evmil::bytecode::{EofContract,StructuredContract,StructuredSection};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
@@ -96,7 +96,7 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         todo!("implement compilation to EOF!");
     } else {
         // Legacy
-        LegacyContract::to_bytes(&bytecode)
+        bytecode.to_legacy_bytes()
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
@@ -127,8 +127,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         let eof = EofContract::from_bytes(&bytes)?;
         todo!("Fix up diassembling EOF containers");
     } else {
-        let legacy = LegacyContract::from_bytes(&bytes);
-        legacy.to_structured()
+        Assembly::from_legacy_bytes(&bytes)
     };
     // Iterate bytecode sections
     for section in &asm {

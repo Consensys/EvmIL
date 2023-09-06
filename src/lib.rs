@@ -35,7 +35,6 @@ pub mod analysis;
 ///
 /// ```
 /// use evmil::asm::Assembly;
-/// use evmil::bytecode::LegacyContract;
 /// use evmil::util::ToHexString;
 /// // Assembly language
 /// let asm = r#"
@@ -49,7 +48,7 @@ pub mod analysis;
 /// // Assemble into contract
 /// let contract = asm.assemble().unwrap();
 /// // Generate (legacy) bytecode
-/// let bytecode = LegacyContract::to_bytes(&contract).to_hex_string();
+/// let bytecode = contract.to_legacy_bytes().to_hex_string();
 /// // Check output
 /// assert_eq!(bytecode,"0x6001600201");
 /// ```

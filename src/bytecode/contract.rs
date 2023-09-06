@@ -13,6 +13,7 @@ use std::slice::{Iter};
 use crate::asm;
 use crate::asm::{AssemblyInstruction,AssemblyError};
 use crate::bytecode::{Instruction};
+use super::legacy;
 
 // ============================================================================
 // Structured Contract
@@ -31,6 +32,10 @@ pub struct StructuredContract<T:PartialEq> {
 }
 
 impl<T:PartialEq> StructuredContract<T> {
+
+    pub fn from_legacy_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
+        legacy::from_bytes(bytes)
+    }
     
     pub fn empty() -> Self {
         Self {
@@ -56,6 +61,12 @@ impl<T:PartialEq> StructuredContract<T> {
         self.sections.push(section)
     }
 }
+
+impl StructuredContract<Instruction> {
+    pub fn to_legacy_bytes(&self) -> Vec<u8> {
+        legacy::to_bytes(self)
+    }
+}    
 
 // ===================================================================
 // Traits
