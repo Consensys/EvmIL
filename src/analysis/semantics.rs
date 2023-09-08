@@ -12,7 +12,7 @@
 use crate::util::{Concretizable,w256,Top};
 use crate::bytecode::{Instruction};
 use crate::bytecode::Instruction::*;
-use super::state::{EvmState,EvmStack,EvmMemory,EvmStorage};
+use super::{EvmState,EvmStack,EvmMemory,EvmStorage};
 
 /// Represents the possible outcomes from executing a given
 /// instruction in a given state.

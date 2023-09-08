@@ -10,7 +10,7 @@ mod parser;
 pub use instruction::{AssemblyInstruction};
 
 use std::fmt;
-use crate::bytecode::{StructuredContract,Instruction,StructuredSection};
+use crate::bytecode::{Assembly,Instruction,StructuredSection};
 
 // ============================================================================
 // Errors
@@ -67,19 +67,19 @@ impl std::error::Error for AssemblyError {
 /// language instructions (that is, instructions which uses labels
 /// instead of explicit jump targets).  The intuition is that an
 /// _assembly_ can be _assembled_ into a bytecode contract.
-pub type Assembly = StructuredContract<AssemblyInstruction>;
+pub type AssemblyContract = Assembly<AssemblyInstruction>;
 
 /// An assembly section represents a section as found within an
-/// `Assembly`.
+/// `AssemblyContract`.
 pub type AssemblySection = StructuredSection<AssemblyInstruction>;
 
-impl Assembly {
+impl AssemblyContract {
     /// Assemble an assembly into a contract containing concrete EVM
     /// instructions.  This requires resolving any labels contained
     /// within the assembly into known jump destinations.  As such,
     /// this can fail if an instruction attempts to branch to a label
     /// which does not exist.
-    pub fn assemble(&self) -> Result<StructuredContract<Instruction>,AssemblyError> {
+    pub fn assemble(&self) -> Result<Assembly<Instruction>,AssemblyError> {
         let mut sections = Vec::new();
         // Map each assemply section to a compiled section.
         for s in self {
@@ -94,13 +94,13 @@ impl Assembly {
             }
         }
         // Done
-        Ok(StructuredContract::new(sections))
+        Ok(Assembly::new(sections))
     }
 
     /// Parse some assembly language into an `Assembly`.  This can
     /// fail for a variety of reasons, such as an unknown instruction
     /// is used or there is some unexpected junk in the file.
-    pub fn from_str(input: &str) -> Result<Assembly,AssemblyError> {
+    pub fn from_str(input: &str) -> Result<AssemblyContract,AssemblyError> {
         parser::parse(input)
     }
 }

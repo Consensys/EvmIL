@@ -10,11 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::slice::{Iter};
-use crate::asm;
-use crate::asm::{AssemblyInstruction,AssemblyError};
-use crate::bytecode::{Instruction};
-use super::{eof,legacy};
-pub use super::eof::DecodingError;    
+use super::{Instruction};
+//use super::{eof,legacy};
+use super::legacy;
+//pub use super::eof::DecodingError;
+use super::ParseError;
 
 // ============================================================================
 // Structured Contract
@@ -28,13 +28,13 @@ pub use super::eof::DecodingError;
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
-pub struct StructuredContract<T:PartialEq> {
+pub struct Assembly<T:PartialEq = Instruction> {
     sections: Vec<StructuredSection<T>>
 }
 
-impl<T:PartialEq> StructuredContract<T> {
+impl<T:PartialEq> Assembly<T> {
 
-    pub fn from_legacy_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
+    pub fn from_legacy_bytes(bytes: &[u8]) -> Assembly {
         legacy::from_bytes(bytes)
     }
 
@@ -45,7 +45,7 @@ impl<T:PartialEq> StructuredContract<T> {
     ///
     /// # Examples
     /// ```
-    /// use evmil::asm::Assembly;
+    /// use evmil::asm::AssemblyContract;
     /// use evmil::util::FromHexString;
     ///
     /// // EOF bytecode contract
@@ -53,13 +53,13 @@ impl<T:PartialEq> StructuredContract<T> {
     /// // Conversion into bytes
     /// let bytes = hex.from_hex_string().unwrap();
     /// // Decode EOF bytecode (assuming no errors)
-    /// let eof = Assembly::from_eof_bytes(&bytes).unwrap();
+    /// let eof = AssemblyContract::from_eof_bytes(&bytes).unwrap();
     /// // Check that section contains one instruction
     /// // assert_eq!(eof.sections.len(),1);
     /// ```    
-    pub fn from_eof_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction>,DecodingError> {
-        eof::from_bytes(bytes)
-    }
+    // pub fn from_eof_bytes(bytes: &[u8]) -> Result<Assembly,DecodingError> {
+    //     eof::from_bytes(bytes)
+    // }
     
     pub fn empty() -> Self {
         Self {
@@ -84,24 +84,32 @@ impl<T:PartialEq> StructuredContract<T> {
     pub fn add(&mut self, section: StructuredSection<T>) {
         self.sections.push(section)
     }
+
+    /// Parse some assembly language into an `Assembly`.  This can
+    /// fail for a variety of reasons, such as an unknown instruction
+    /// is used or there is some unexpected junk in the file.
+    pub fn from_str(input: &str) -> Result<Assembly,ParseError> {
+        let parser = super::parser::Parser::new(input);
+        parser.parse()
+    }    
 }
 
-impl StructuredContract<Instruction> {
+impl Assembly<Instruction> {
     pub fn to_legacy_bytes(&self) -> Vec<u8> {
         legacy::to_bytes(self)
     }
 
-    pub fn to_eof_bytes(&self) -> Vec<u8> {
-        // FIXME: need to figure this out :)
-        eof::to_bytes(self).unwrap()
-    }    
+    // pub fn to_eof_bytes(&self) -> Vec<u8> {
+    //     // FIXME: need to figure this out :)
+    //     eof::to_bytes(self).unwrap()
+    // }    
 }    
 
 // ===================================================================
 // Traits
 // ===================================================================
 
-impl<'a,T:PartialEq> IntoIterator for &'a StructuredContract<T> {
+impl<'a,T:PartialEq> IntoIterator for &'a Assembly<T> {
     type Item = &'a StructuredSection<T>;
     type IntoIter = Iter<'a,StructuredSection<T>>;
 
@@ -121,19 +129,4 @@ pub enum StructuredSection<T> {
     /// A code section is a sequence of zero or more instructions
     /// along with appropriate _metadata_.
     Code(Vec<T>)
-}
-
-impl StructuredSection<Instruction> {
-    /// Flattern this section into an appropriately formated byte
-    /// sequence for the enclosing container type.
-    pub fn encode(&self, bytes: &mut Vec<u8>) {
-        match self {
-            StructuredSection::Data(bs) => {
-                bytes.extend(bs);
-            }
-            StructuredSection::Code(insns) => {
-                for b in insns { b.encode(bytes); }
-            }
-        }
-    }
 }

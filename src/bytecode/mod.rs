@@ -9,13 +9,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-mod contract;
-mod eof;
+mod assembly;
+mod builder;
+// mod eof;
 mod instruction;
 mod legacy;
-mod operands;
+mod lexer;
 pub mod opcode;
+mod parser;
 
-pub use contract::*;
+pub use assembly::*;
+pub use builder::*;
 pub use instruction::*;
-pub use operands::{Operands};
+pub use parser::ParseError;

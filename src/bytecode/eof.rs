@@ -13,7 +13,7 @@ use std::fmt;
 use std::collections::HashMap;
 use crate::util::{ByteEncoder,ByteDecoder};
 use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{StructuredContract,Instruction,StructuredSection,ToInstructions};
+use crate::bytecode::{Assembly,Instruction,StructuredSection,ToInstructions};
 use crate::bytecode::Instruction::*;
 
 /// The EOF magic prefix as dictated in EIP3540.
@@ -141,7 +141,7 @@ impl std::error::Error for DecodingError {}
 /// quite prescriptive, its possible that the incoming bytes are
 /// malformed in some way --- in which case an error will be
 /// generated.
-pub fn from_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction>,DecodingError> {
+pub fn from_bytes(bytes: &[u8]) -> Result<Assembly<AssemblyInstruction>,DecodingError> {
     let mut iter = ByteDecoder::new(bytes);
     iter.match_u16(EOF_MAGIC,|w| DecodingError::InvalidMagicNumber(w))?;
     // Pull out static information
@@ -172,7 +172,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction
         let max_stack = iter.decode_u16()?;
         types.push((inputs,outputs,max_stack));
     }
-    let mut code = StructuredContract::new(Vec::new());
+    let mut code = Assembly::new(Vec::new());
     // parse code section(s)
     for i in 0..num_code_sections {
         let bytes = iter.decode_bytes(code_sizes[i])?;
@@ -197,7 +197,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<StructuredContract<AssemblyInstruction
 // Encoding (EOF)
 // ============================================================================
 
-pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Result<Vec<u8>,EncodingError> {
+pub fn to_bytes(bytecode: &Assembly<Instruction>) -> Result<Vec<u8>,EncodingError> {
     let mut code_sections = Vec::new();
     let mut data_section : Option<Vec<u8>> = None;
     // Count number of code contracts (to be deprecated?)

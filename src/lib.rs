@@ -34,7 +34,7 @@ pub mod analysis;
 /// contract.
 ///
 /// ```
-/// use evmil::asm::Assembly;
+/// use evmil::asm::AssemblyContract;
 /// use evmil::util::ToHexString;
 /// // Assembly language
 /// let asm = r#"
@@ -44,7 +44,7 @@ pub mod analysis;
 ///  add
 /// "#;
 /// // Parse into assembly
-/// let asm = Assembly::from_str(&asm).unwrap();
+/// let asm = AssemblyContract::from_str(&asm).unwrap();
 /// // Assemble into contract
 /// let contract = asm.assemble().unwrap();
 /// // Generate (legacy) bytecode
@@ -52,7 +52,7 @@ pub mod analysis;
 /// // Check output
 /// assert_eq!(bytecode,"0x6001600201");
 /// ```
-pub mod asm;
+// pub mod asm;
 /// Functionality related to the encoding and representation of
 /// contract bytecode.  This includes abstractions for _contracts_ and
 /// _instructions_ and support for both _legacy_ and _EOF_ contracts

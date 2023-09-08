@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{PathBuf};
 use evmil::util::{FromHexString};
-use evmil::asm::{Assembly};
+use evmil::bytecode::{Assembly,Instruction};
 
 pub static TESTS_DIR: &str = "tests/files";
 
@@ -16,14 +16,14 @@ fn check(test: &str) {
     let asm = fs::read_to_string(asmfile).unwrap();
     let bin = fs::read_to_string(binfile).unwrap();
     // Construct assembly from input file
-    let assembly = match Assembly::from_str(&asm) {
+    let assembly = match Assembly::<Instruction>::from_str(&asm) {
         Ok(insns) => insns,
         Err(e) => panic!("{test}.asm: {e}")
     };
     // Parse hex string into bytes
     let bytes = bin.trim().from_hex_string().unwrap();
     // // Construct disassembly
-    let disassembly = Assembly::from_legacy_bytes(&bytes);
+    let disassembly = Assembly::<Instruction>::from_legacy_bytes(&bytes);
     // // Disassemble bytes into instructions
     // let bin_insns = disasm.to_vec();
     // // Check they match

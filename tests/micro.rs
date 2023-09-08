@@ -1,7 +1,7 @@
 use evmil::il::BinOp::*;
 use evmil::il::Term;
 use evmil::il::Term::*;
-use evmil::bytecode::{StructuredContract};
+use evmil::bytecode::{Assembly};
 use evmil::util::ToHexString;
 
 // ============================================================================
@@ -44,7 +44,7 @@ pub fn test_stmt_02() {
 /// hex string.
 fn check(terms: &[Term], hex: &str) {
     // Translate statements into bytecode instructions
-    let bytecode = StructuredContract::try_from(terms).unwrap();
+    let bytecode = Assembly::try_from(terms).unwrap();
     // Translate instructions into bytes
     let bytes: Vec<u8> = bytecode.to_legacy_bytes();
     // Check against expected hex string

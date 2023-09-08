@@ -11,201 +11,41 @@
 // limitations under the License.
 use std::collections::HashMap;
 use crate::util::{Concretizable,w256,IsBottom,Top};
-use crate::asm::{AssemblyInstruction};
-use crate::bytecode::{StructuredContract,Instruction,StructuredSection,ToInstructions};
+use crate::bytecode::{Assembly,Assemble,Disassemble,Instruction,StructuredSection};
 use crate::bytecode::Instruction::*;
-use crate::analysis::{Execution,ExecutionSection};
+use crate::analysis::{aw256,trace,AbstractState,ConcreteState,ConcreteStack,UnknownMemory,UnknownStorage};
 use crate::analysis::{EvmState,EvmMemory,EvmStack,EvmStorage,EvmWord};
 
-pub fn from_bytes(bytes: &[u8]) -> StructuredContract<AssemblyInstruction> {
-    let insns = bytes.to_insns();
-    let bytecode = StructuredContract::new(vec![StructuredSection::Code(insns.clone())]);
-    let mut execution : Execution<LegacyEvmState> = Execution::new(&bytecode);
-    // Run execution (and for now hope it succeeds!)
-    execution.execute(LegacyEvmState::new());
-    // Extract analysis results for first section;
-    let analysis = &execution[0];
-    // Translate instructions into assembly instructions.
-    let mut asm = disassemble(analysis,&insns,bytes.len());
-    // NOTE: this is something of a hack for now to retain
-    // backwards compatibility.
-    match asm.last() {
-        Some(Instruction::DATA(_)) => {
-            let Some(Instruction::DATA(bs)) = asm.pop() else { unreachable!(); };
-            StructuredContract::new(vec![StructuredSection::Code(asm),StructuredSection::Data(bs)])
-        }
-        _ => {
-            StructuredContract::new(vec![StructuredSection::Code(asm)])
-        }
-    }
+type LegacyConcreteState = ConcreteState<ConcreteStack<aw256>,UnknownMemory<aw256>,UnknownStorage<aw256>>;
+type LegacyState = AbstractState<LegacyConcreteState>;
+
+pub fn from_bytes(bytes: &[u8]) -> Assembly {
+    let asm = bytes.disassemble();
+    // Run analysis (and for now hope it succeeds!)    
+    let mut analysis : Vec<LegacyState> = trace(&asm,AbstractState::new());
+    // ???
+    Assembly::new(vec![StructuredSection::Code(asm)])
 }
 
 /// Convert this bytecode contract into a byte sequence correctly
 /// formatted for legacy code.
-pub fn to_bytes(bytecode: &StructuredContract<Instruction>) -> Vec<u8> {
+pub fn to_bytes(bytecode: &Assembly) -> Vec<u8> {
     let mut bytes = Vec::new();
     //
-    for s in bytecode { s.encode(&mut bytes); }
+    for s in bytecode {
+        match s {
+            StructuredSection::Data(bs) => {
+                bytes.extend(bs);
+            }
+            StructuredSection::Code(insns) => {
+                let is : &[Instruction] = &insns;
+                bytes.extend(is.assemble())
+            }
+        }        
+    }
     // Done
     bytes
 }    
-
-// ===================================================================
-// Helpers
-// ===================================================================
-
-/// Perform initial translation.  This just translates each concrete
-/// instruction into its corresponding assembly instruction, whilst
-/// identifying unreachable data bytes.
-fn disassemble(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction], len: usize) -> Vec<AssemblyInstruction> {
-    let mut pc = 0;
-    let mut asm = Vec::new();
-    // Initialise translation
-    for insn in insns {
-        if pc != 0 && analysis[pc].is_bottom() {
-            let mut bytes = Vec::new();
-            insn.encode(&mut bytes);
-            if pc+bytes.len() > len {
-                bytes.truncate(len-pc);
-            }            
-            asm.push(AssemblyInstruction::DATA(bytes));
-        } else {
-            // Check whether this is a databyte or not.
-            asm.push(translate_insn(insn));
-        }
-        pc += insn.length();
-    }
-    // Refine translation by identifying instructions which push
-    // labels.
-    refine_instructions(analysis,insns,&mut asm);
-    // Done
-    merge_data(asm)
-}
-
-/// Refine instructions by converting concrete `PUSH` instructions
-/// into labelled `PUSHL` instructions, whilst inserting labels as
-/// appropriate.
-fn refine_instructions(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction], asm: &mut Vec<AssemblyInstruction>) {
-    // Construct labels
-    let labels = determine_labels(analysis,insns);
-    // Initialise instruction offsets
-    let offsets = determine_insn_offsets(insns);
-    //
-    let mut pc = 0;
-    //
-    for insn in insns {
-        let info = &analysis[pc];
-        // Check whether instruction is reachable.
-        if pc == 0 || !info.is_bottom() {
-            match insn {
-                Instruction::JUMP|Instruction::JUMPI => {
-                    for s in info.iter() {
-                        // Identify byte offset for instruction (the
-                        // "dependency") which gave rise to the item
-                        // on top of the stack.
-                        let dep_pc = s.stack.source(0);
-                        // Convert our byte offset into an instruction
-                        // offset.
-                        let dep_i = offsets[dep_pc];
-                        // See what that instruction is.
-                        match &insns[dep_i] {
-                            Instruction::PUSH(bytes) => {
-                                // Extract destination.
-                                let n = w256::from_be_bytes(&bytes);
-                                // Sanity check.
-                                assert_eq!(n,s.stack.peek(0).constant());
-                                // Construct label
-                                let label = labels.get(&n.into()).unwrap().clone();
-                                // Check for a "large push"
-                                let large = bytes.len() > 1 && bytes[0] == 0x00;
-                                // Convert concrete instruction to
-                                // labelled instruction.
-                                asm[dep_i] = AssemblyInstruction::PUSHL(large,label);
-                            }
-                            _ => {
-                                // This indicates an usual case,
-                                // where the jump destination has
-                                // been constructed in an unusual
-                                // manner.  For example, it might
-                                // have been constructed by adding
-                                // two numbers together, or it might
-                                // have been stored in memory.  For
-                                // now, I just don't handle this
-                                // case.
-                                panic!("Complex dependency encountered!");
-                            }
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        pc += insn.length();
-    }
-    // Finally, insert labels at all reachable JUMPDEST instructions.
-    let mut delta = 0;
-    for i in 0..pc {
-        let j = i as u16;
-        match labels.get(&j) {
-            Some(lab) => {
-                let index = offsets[i] + delta;
-                asm.insert(index,AssemblyInstruction::LABEL(lab.clone()));
-                delta += 1;
-            }
-            None => {}
-        }
-    }
-}
-
-/// Map every reachable `JUMPDEST` instruction to a fresh label.
-fn determine_labels(analysis: &ExecutionSection<LegacyEvmState>, insns: &[Instruction]) -> HashMap<u16,String> {
-    let mut pc = 0;
-    let mut labels = HashMap::new();
-    for insn in insns {
-        let info = &analysis[pc];
-        if pc == 0 || !info.is_bottom() {
-            match insn {
-                Instruction::JUMPDEST => {
-                    // Construct label
-                    let label = format!("lab{:#}",labels.len());
-                    labels.insert(pc as u16,label);
-                }
-                _ => {}
-            }
-        }
-        pc += insn.length();
-    }
-    labels
-}
-
-/// Construct a map from byte offsets to instruction offsets.
-fn determine_insn_offsets(insns: &[Instruction]) -> Vec<usize> {
-    let mut pc = 0;
-    let mut offsets = Vec::new();
-    for (i,insn) in insns.iter().enumerate() {
-        offsets.resize(pc+1,0);
-        offsets[pc] = i;
-        pc += insn.length();
-    }
-    offsets
-}
-
-/// Merge consecutive data instructions.
-fn merge_data(asm: Vec<AssemblyInstruction>) -> Vec<AssemblyInstruction> {
-    let mut nasm = Vec::new();
-    for insn in asm {
-        match (nasm.last_mut(),&insn) {
-            (Some(Instruction::DATA(xs)),Instruction::DATA(ys)) => {
-                // Merge!
-                xs.extend(ys);
-            }
-            (_,_) => {
-                nasm.push(insn);
-            }
-        }
-    }
-    nasm
-}
 
 // ===================================================================
 // Legacy State
@@ -214,14 +54,15 @@ fn merge_data(asm: Vec<AssemblyInstruction>) -> Vec<AssemblyInstruction> {
 #[derive(Clone,Debug,PartialEq)]
 pub struct LegacyEvmState {
     stack: LegacyEvmStack,
-    memory: LegacyEvmMemory,
-    storage: LegacyEvmStorage}
+    memory: UnknownMemory<aw256>,
+    storage: UnknownStorage<aw256>
+}
 
 impl LegacyEvmState {
     pub fn new() -> Self {
         let stack = LegacyEvmStack::new();
-        let memory = LegacyEvmMemory{};
-        let storage = LegacyEvmStorage{};
+        let memory = UnknownMemory::new();
+        let storage = UnknownStorage::new();
         Self{stack,memory,storage}
     }
 }
@@ -229,8 +70,8 @@ impl LegacyEvmState {
 impl EvmState for LegacyEvmState {
     type Word = aw256;
     type Stack = LegacyEvmStack;
-    type Memory = LegacyEvmMemory;
-    type Storage = LegacyEvmStorage;
+    type Memory = UnknownMemory<aw256>;
+    type Storage = UnknownStorage<aw256>;
 
     fn pc(&self) -> usize {
         self.stack.pc
@@ -337,189 +178,3 @@ impl EvmStack for LegacyEvmStack {
     }
 }
 
-// ===================================================================
-// Legacy Memory
-// ===================================================================
-
-#[derive(Clone,Debug,PartialEq)]
-pub struct LegacyEvmMemory { }
-
-impl EvmMemory for LegacyEvmMemory {
-    type Word = aw256;
-
-    fn read(&mut self, _address: Self::Word) -> Self::Word {
-        aw256::Unknown
-    }
-
-    fn write(&mut self, _address: Self::Word, _item: Self::Word) {
-        // no op (for now)
-    }
-
-    fn write8(&mut self, _address: Self::Word, _item: Self::Word) {
-        // no op (for now)
-    }
-}
-
-// ===================================================================
-// Legacy Storage
-// ===================================================================
-
-#[derive(Clone,Debug,PartialEq)]
-pub struct LegacyEvmStorage { }
-
-impl EvmStorage for LegacyEvmStorage {
-    type Word = aw256;
-
-    fn get(&mut self, _address: Self::Word) -> Self::Word {
-        aw256::Unknown
-    }
-
-    fn put(&mut self, _address: Self::Word, _item: Self::Word) {
-        // no op (for now)
-    }
-}
-
-// ===================================================================
-// Abstract Word
-// ===================================================================
-
-#[derive(Copy,Clone,Debug,PartialEq)]
-pub enum aw256 {
-    Word(w256),
-    Unknown
-}
-
-impl From<w256> for aw256 {
-    fn from(word: w256) -> aw256 {
-        aw256::Word(word)
-    }
-}
-
-impl Top for aw256 {
-    const TOP : aw256 = aw256::Unknown;
-}
-
-impl Concretizable for aw256 {
-    type Item = w256;
-
-    fn is_constant(&self) -> bool {
-        match self {
-            aw256::Word(_) => true,
-            aw256::Unknown => false
-        }
-    }
-
-    fn constant(&self) -> w256 {
-        match self {
-            aw256::Word(w) => *w,
-            aw256::Unknown => {
-                panic!();
-            }
-        }
-    }
-}
-
-impl EvmWord for aw256 {
-
-}
-
-// ===================================================================
-// Disassembler
-// ===================================================================
-
-fn translate_insn(insn: &Instruction) -> AssemblyInstruction {
-    match insn {
-        // 0s: Stop and Arithmetic Operations
-        STOP => STOP,
-        ADD => ADD,
-        MUL => MUL,
-        SUB => SUB,
-        DIV => DIV,
-        SDIV => SDIV,
-        MOD => MOD,
-        SMOD => SMOD,
-        ADDMOD => ADDMOD,
-        MULMOD => MULMOD,
-        EXP => EXP,
-        SIGNEXTEND => SIGNEXTEND,
-        // 10s: Comparison & Bitwise Logic Operations
-        LT => LT,
-        GT => GT,
-        SLT => SLT,
-        SGT => SGT,
-        EQ => EQ,
-        ISZERO => ISZERO,
-        AND => AND,
-        OR => OR,
-        XOR => XOR,
-        NOT => NOT,
-        BYTE => BYTE,
-        SHL => SHL,
-        SHR => SHR,
-        SAR => SAR,
-        // 20s: Keccak256
-        KECCAK256 => KECCAK256,
-        // 30s: Environmental Information
-        ADDRESS => ADDRESS,
-        BALANCE => BALANCE,
-        ORIGIN => ORIGIN,
-        CALLER => CALLER,
-        CALLVALUE => CALLVALUE,
-        CALLDATALOAD => CALLDATALOAD,
-        CALLDATASIZE => CALLDATASIZE,
-        CALLDATACOPY => CALLDATACOPY,
-        CODESIZE => CODESIZE,
-        CODECOPY => CODECOPY,
-        GASPRICE => GASPRICE,
-        EXTCODESIZE => EXTCODESIZE,
-        EXTCODECOPY => EXTCODECOPY,
-        RETURNDATASIZE => RETURNDATASIZE,
-        RETURNDATACOPY => RETURNDATACOPY,
-        EXTCODEHASH => EXTCODEHASH,
-        // 40s: Block Information
-        BLOCKHASH => BLOCKHASH,
-        COINBASE => COINBASE,
-        TIMESTAMP => TIMESTAMP,
-        NUMBER => NUMBER,
-        DIFFICULTY => DIFFICULTY,
-        GASLIMIT => GASLIMIT,
-        CHAINID => CHAINID,
-        SELFBALANCE => SELFBALANCE,
-        // 50s: Stack, Memory, Storage and Flow Operations
-        POP => POP,
-        MLOAD => MLOAD,
-        MSTORE => MSTORE,
-        MSTORE8 => MSTORE8,
-        SLOAD => SLOAD,
-        SSTORE => SSTORE,
-        JUMP => JUMP,
-        JUMPI => JUMPI,
-        PC => PC,
-        MSIZE => MSIZE,
-        GAS => GAS,
-        JUMPDEST => JUMPDEST,
-        // 60s & 70s: Push Operations
-        PUSH(bs) => PUSH(bs.clone()),
-        // 80s: Duplication Operations
-        DUP(n) => DUP(*n),
-        // 90s: Swap Operations
-        SWAP(n) => SWAP(*n),
-        // a0s: Log Operations
-        LOG(n) => LOG(*n),
-        // f0s: System Operations
-        CREATE => CREATE,
-        CALL => CALL,
-        CALLCODE => CALLCODE,
-        RETURN => RETURN,
-        DELEGATECALL => DELEGATECALL,
-        CREATE2 => CREATE2,
-        STATICCALL => STATICCALL,
-        REVERT => REVERT,
-        INVALID => INVALID,
-        SELFDESTRUCT => SELFDESTRUCT,
-        DATA(bs) => DATA(bs.clone()),
-        //
-        PUSHL(..)|LABEL(_) => unreachable!(),
-        RJUMP(_)|RJUMPI(_) => unreachable!()
-    }
-}

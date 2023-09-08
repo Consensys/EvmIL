@@ -18,8 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::asm::{Assembly,AssemblyInstruction};
-use evmil::bytecode::{StructuredContract,StructuredSection};
+use evmil::bytecode::{Assembly,Instruction,StructuredSection};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
 
@@ -87,15 +86,16 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         // FIXME: need better error handling!!
         compiler.translate(t).unwrap();
     }
-    // Assemble instructions into a bytecode container
-    let bytecode = compiler.to_bytecode();
+    // Compiler terms into a bytecode assembly
+    let assembly = compiler.to_assembly();
     // Translate container into bytes
     let bytes : Vec<u8> = if args.contains_id("eof") {
         // EVM Object Format
-        bytecode.to_eof_bytes()
+        todo!()
+        //assembly.to_eof_bytes()
     } else {
         // Legacy
-        bytecode.to_legacy_bytes()
+        assembly.to_legacy_bytes()
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
@@ -122,10 +122,11 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let asm = if args.contains_id("eof") {
-        Assembly::from_eof_bytes(&bytes)?
+    let asm : Assembly<Instruction> = if args.contains_id("eof") {
+        todo!()
+        //Assembly::from_eof_bytes(&bytes)?
     } else {
-        Assembly::from_legacy_bytes(&bytes)
+        Assembly::<Instruction>::from_legacy_bytes(&bytes)
     };
     // Iterate bytecode sections
     for section in &asm {
@@ -133,15 +134,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
             StructuredSection::Code(insns) => {
                 println!(".code");
                 for insn in insns {
-                    match insn {
-                        AssemblyInstruction::LABEL(_) => {
-                            println!("{insn}")
-                        }
-                        _ => {
-                            println!("\t{insn}")
-                        }
-                    }
-
+                    println!("\t{insn}")
                 }
             }
             StructuredSection::Data(bytes) => {
@@ -159,16 +152,15 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Read from asm file
     let context = fs::read_to_string(target)?;
     // Construct assembly from input file
-    let assembly = Assembly::from_str(&context)?;
-    // Convert assembly language into concrete instructions.
-    let compiled = assembly.assemble().unwrap();
+    let assembly = Assembly::<Instruction>::from_str(&context)?;
     // Check whether EOF or legacy code generation
     let bytes : Vec<u8> = if args.contains_id("eof") {
         // EVM Object Format
-        compiled.to_eof_bytes()
+        todo!()
+        //assembly.to_eof_bytes()
     } else {
         // Legacy
-        compiled.to_legacy_bytes()
+        assembly.to_legacy_bytes()
     };
     // Print the final hex string
     println!("{}", bytes.to_hex_string());
