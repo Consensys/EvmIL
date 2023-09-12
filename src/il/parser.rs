@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::il::lexer;
 use crate::il::{BinOp, Region, Term};
-use crate::il::{Lexer, Span, Token};
+use super::lexer::{Lexer, Span, Token};
 use std::fmt;
 
 /// Defines the set of tokens which are considered to identify logical

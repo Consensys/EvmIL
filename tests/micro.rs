@@ -27,13 +27,13 @@ pub fn test_binop_01() {
 #[test]
 pub fn test_stmt_01() {
     let s1 = Assert(Box::new(Int(vec![1])));
-    check(&[s1], "0x6001600657fe5b");
+    check(&[s1], "0x600161000b5760006000fd5b");
 }
 
 #[test]
 pub fn test_stmt_02() {
     let s1 = Assert(Box::new(Int(vec![1])));
-    check(&[s1.clone(), s1], "0x6001600657fe5b6001600d57fe5b");
+    check(&[s1.clone(), s1], "0x600161000b5760006000fd5b60016100175760006000fd5b");
 }
 
 // ============================================================================

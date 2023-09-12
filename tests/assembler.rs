@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::{PathBuf};
-use evmil::bytecode::{Assembly,Instruction};
+use evmil::bytecode::{Assembly};
 use evmil::util::{FromHexString};
 
 pub static TESTS_DIR: &str = "tests/files";
@@ -16,7 +16,7 @@ fn check(test: &str) {
     let asm = fs::read_to_string(asmfile).unwrap();
     let bin = fs::read_to_string(binfile).unwrap();
     // Parse assembly into instructions
-    let insns = match Assembly::<Instruction>::from_str(&asm) {
+    let insns = match Assembly::from_str(&asm) {
         Ok(insns) => insns,
         Err(e) => panic!("{test}.asm: {e}")
     };

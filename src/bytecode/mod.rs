@@ -11,7 +11,7 @@
 // limitations under the License.
 mod assembly;
 mod builder;
-// mod eof;
+mod eof;
 mod instruction;
 mod legacy;
 mod lexer;

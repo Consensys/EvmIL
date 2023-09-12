@@ -50,7 +50,9 @@ impl Compiler {
     }
 
     pub fn to_assembly(self) -> Assembly {
-        self.builder.to_assembly()
+        let insns = self.builder.to_insns();
+        let code = StructuredSection::Code(insns);
+        Assembly::new(vec![code])        
     }
 
     pub fn translate(&mut self, term: &Term) -> Result {
@@ -94,7 +96,9 @@ impl Compiler {
         // Translate conditional branch
         self.translate_conditional(expr, Some(&lab), None)?;
         // False branch
-        self.builder.push(INVALID);
+        self.builder.push(PUSH(vec![0x00]));
+        self.builder.push(PUSH(vec![0x00]));        
+        self.builder.push(REVERT);
         // True branch
         self.builder.mark_label(&lab).unwrap();
         self.builder.push(JUMPDEST);
@@ -146,10 +150,10 @@ impl Compiler {
         let name_index = self.builder.get_label(name);
         // Translate arguments
         for e in exprs { self.translate(e)?; }
-        // Push return address
-        self.builder.push(PUSHL(false,retlab_index));
-        // Push function address
-        self.builder.push(PUSHL(false,name_index));
+        // Push return address (as a label)
+        self.builder.push_labeled(PUSH(label_bytes(retlab_index)));
+        // Push function address (as a label)
+        self.builder.push_labeled(PUSH(label_bytes(name_index)));
         // Perform jump
         self.builder.push(JUMP);
         // Identify return point
@@ -159,14 +163,16 @@ impl Compiler {
     }
 
     fn translate_fail(&mut self) -> Result {
-        self.builder.push(INVALID);
+        self.builder.push(PUSH(vec![0x00]));
+        self.builder.push(PUSH(vec![0x00]));        
+        self.builder.push(REVERT);
         Ok(())
     }
 
     fn translate_goto(&mut self, label: &str) -> Result {
         let label_index = self.builder.get_label(label);        
         // Translate unconditional branch
-        self.builder.push(PUSHL(false,label_index));
+        self.builder.push_labeled(PUSH(label_bytes(label_index)));
         self.builder.push(JUMP);
         //
         Ok(())
@@ -321,13 +327,13 @@ impl Compiler {
         match (true_lab, false_lab) {
             (Some(lab), None) => {
                 let label_index = self.builder.get_label(lab);
-                self.builder.push(PUSHL(false,label_index));
+                self.builder.push_labeled(PUSH(label_bytes(label_index)));
                 self.builder.push(JUMPI);
             }
             (None, Some(lab)) => {
                 let label_index = self.builder.get_label(lab);
                 self.builder.push(ISZERO);
-                self.builder.push(PUSHL(false,label_index));
+                self.builder.push_labeled(PUSH(label_bytes(label_index)));
                 self.builder.push(JUMPI);
             }
             (_, _) => {
@@ -365,7 +371,7 @@ impl Compiler {
         // Allocate fresh label
         let lab = self.fresh_label();
         let lab_index = self.builder.get_label(&lab);
-        self.builder.push(PUSHL(false,lab_index));
+        self.builder.push_labeled(PUSH(label_bytes(lab_index)));
         self.builder.push(JUMPI);
         self.builder.push(POP);
         self.translate(rhs)?;
@@ -486,6 +492,11 @@ impl<const N: usize> TryFrom<&[Term; N]> for Assembly {
 // ===================================================================
 // Helpers
 // ===================================================================
+
+fn label_bytes(index: usize) -> Vec<u8> {
+    // Always generate a push2 instruction
+    vec![(index / 256) as u8, (index % 256) as u8]
+}
 
 fn try_from(terms: &[Term]) -> std::result::Result<Assembly, CompilerError> {
     let mut compiler = Compiler::new();

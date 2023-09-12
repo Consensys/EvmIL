@@ -10,8 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::Debug;
-use std::marker::PhantomData;
-use crate::util::{Concretizable,w256,JoinInto,Bottom};
+use crate::util::{JoinInto,Bottom};
 use super::{EvmWord,EvmMemory,EvmStack,EvmStorage};
 
 // ===================================================================
@@ -94,8 +93,8 @@ pub struct AbstractState<T:EvmState+Clone+PartialEq> {
 }
 
 impl<T:EvmState+Clone+PartialEq> AbstractState<T> {
-    pub fn new() -> Self {
-        Self{substates: Vec::new()}
+    pub fn new(substates: Vec<T>) -> Self {
+        Self{substates}
     }
     pub fn join(&mut self, state: T) -> bool {
         let n = self.substates.len();
@@ -116,7 +115,8 @@ impl<T:EvmState+Clone+PartialEq> Bottom for AbstractState<T> {
 }
 
 impl<T:EvmState+Clone+PartialEq> JoinInto for AbstractState<T> {
-    fn join_into(&mut self, other: &Self) -> bool {
+    fn join_into(&mut self, _other: &Self) -> bool {
+        // use join() above
         todo!()
     }
 }
@@ -147,29 +147,56 @@ impl<T:EvmState+Clone+PartialEq> EvmState for AbstractState<T> {
 impl<T:EvmState+Clone+PartialEq> EvmStack for AbstractState<T> {
     type Word = T::Word;
 
-    fn has_capacity(&self, n: usize) -> bool { todo!(); }
-    fn has_operands(&self, n: usize) -> bool { todo!(); }
+    fn has_capacity(&self, n: usize) -> bool {
+        // FIXME: this function is actually broken because it doesn't
+        // allow for an uncertain result.
+        let r = self.substates[0].stack().has_capacity(n);
+        // Sanity check they all match (for now)
+        for st in &self.substates {
+            let tr = st.stack().has_capacity(n);
+            if tr != r { panic!(); }
+        }
+        r
+    }
+    fn has_operands(&self, _n: usize) -> bool { todo!(); }
     fn size(&self) -> usize { todo!(); }
-    fn peek(&self, n: usize) -> &Self::Word { todo!(); }
-    fn push(&mut self, item: Self::Word) { todo!(); }
+    fn peek(&self, _n: usize) -> &Self::Word { todo!(); }
+    fn push(&mut self, item: Self::Word) {
+        for s in &mut self.substates {
+            s.stack_mut().push(item.clone());
+        }
+    }
     fn pop(&mut self) -> Self::Word { todo!(); }
-    fn swap(&mut self, n: usize) { todo!(); }
-    fn dup(&mut self, n: usize) { todo!(); }
+    fn swap(&mut self, n: usize) {
+        for s in &mut self.substates {
+            s.stack_mut().swap(n);
+        }
+    }
+    fn dup(&mut self, n: usize) {
+        for s in &mut self.substates {
+            s.stack_mut().dup(n);
+        }
+    }
 }
 
 impl<T:EvmState+Clone+PartialEq> EvmMemory for AbstractState<T> {
     type Word = T::Word;
 
-    fn read(&mut self, address: Self::Word) -> Self::Word { todo!() }
-    fn write(&mut self, address: Self::Word, item: Self::Word) { todo!() }
-    fn write8(&mut self, address: Self::Word, item: Self::Word) { todo!() }
+    fn read(&mut self, _address: Self::Word) -> Self::Word { todo!() }
+    fn write(&mut self, _address: Self::Word, _item: Self::Word) { todo!() }
+    fn write8(&mut self, _address: Self::Word, _item: Self::Word) { todo!() }
 }    
 
 impl<T:EvmState+Clone+PartialEq> EvmStorage for AbstractState<T> {
     type Word = T::Word;
 
-    fn get(&mut self, address: Self::Word) -> Self::Word { todo!() }
-    fn put(&mut self, address: Self::Word, item: Self::Word) { todo!() }
+    fn get(&mut self, _address: Self::Word) -> Self::Word { todo!(); }
+    
+    fn put(&mut self, address: Self::Word, item: Self::Word) {
+        for s in &mut self.substates {
+            s.storage_mut().put(address.clone(),item.clone());
+        }
+    }
 }    
 
 // ===================================================================

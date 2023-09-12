@@ -74,15 +74,15 @@ impl std::error::Error for ParseError {
 /// A simple assembly language parser.
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
-    builder: Builder
+    assembly: Assembly
 }
 
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str) -> Parser<'a> {
-        let mut lexer = Lexer::new(input);
-        let builder = Builder::new();
+        let lexer = Lexer::new(input);
+        let assembly = Assembly::new(vec![]);
         //
-        Self{lexer,builder}
+        Self{lexer,assembly}
     }
 
     /// Parse assembly language to form an assembly    
@@ -91,7 +91,7 @@ impl<'a> Parser<'a> {
         while self.lexer.lookahead()? != Token::EOF {
             self.parse_section()?;
         }
-        Ok(self.builder.to_assembly())
+        Ok(self.assembly)
     }
 
     /// Parse a single line of assembly language.
@@ -112,38 +112,30 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_code_section(&mut self) -> Result<(),ParseError> {
+        let mut builder = Builder::new();
         loop {
             match self.lexer.lookahead()? {
                 Token::Identifier("push"|"PUSH") => {
                     _ = self.lexer.next();
                     let operand = self.lexer.next()?;                    
-                    self.parse_push(false,operand)?;
-                }
-                Token::Identifier("pushl"|"PUSHL") => {
-                    _ = self.lexer.next();
-                    let operand = self.lexer.next()?;
-                    self.parse_push(true,operand)?;
+                    Self::parse_push(&mut builder,operand)?;
                 }
                 Token::Identifier("rjump"|"RJUMP") => {
                     _ = self.lexer.next();
-                    self.builder.push(parse_rjump(self.lexer.next()?)?);
+                    builder.push(parse_rjump(self.lexer.next()?)?);
                 }
                 Token::Identifier("rjumpi"|"RJUMPI") => {
                     _ = self.lexer.next();
-                    self.builder.push(parse_rjumpi(self.lexer.next()?)?);
-                }
-                Token::Identifier("db"|"DB") => {
-                    _ = self.lexer.next();
-                    self.builder.push(parse_data(self.lexer.next()?)?);
+                    builder.push(parse_rjumpi(self.lexer.next()?)?);
                 }
                 Token::Identifier(id) => {
                     _ = self.lexer.next();
-                    self.builder.push(parse_opcode(id)?);
+                    builder.push(parse_opcode(id)?);
                 }
                 Token::Label(s) => {
                     _ = self.lexer.next();
                     // Mark label in bytecode sequence
-                    match self.builder.mark_label(s) {
+                    match builder.mark_label(s) {
                         Ok(()) => {}
                         Err(()) => {
                             // Must be a duplicate label
@@ -152,6 +144,9 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Token::EOF|Token::Section(_) => {
+                    // Construct a code section
+                    self.assembly.add(StructuredSection::Code(builder.to_insns()));
+                    // Done
                     return Ok(());
                 }
                 _ => {
@@ -160,9 +155,6 @@ impl<'a> Parser<'a> {
                 }
             };
         }
-        //
-        // FIXME: zeros do not make sense here.
-
     }
 
     fn parse_data_section(&mut self) -> Result<(),ParseError> {
@@ -174,7 +166,7 @@ impl<'a> Parser<'a> {
                     bytes.extend(parse_hex(s)?)
                 }
                 Token::EOF|Token::Section(_) => {
-                    self.builder.push(Instruction::DATA(bytes));
+                    self.assembly.add(StructuredSection::Data(bytes));
                     return Ok(());
                 }
                 _ => {
@@ -187,19 +179,19 @@ impl<'a> Parser<'a> {
 
 
     /// Parse a push instruction with a given operand.
-    fn parse_push(&mut self,large: bool, operand: Token) -> Result<(),ParseError> {
+    fn parse_push(builder: &mut Builder, operand: Token) -> Result<(),ParseError> {
         // Push always expects an argument, though it could be a
         // label or a hexadecimal operand.
         match operand {
             Token::Hex(s) => {
-                self.builder.push(PUSH(parse_hex(s)?));
+                builder.push(PUSH(parse_hex(s)?));
                 Ok(())
             }
             Token::Identifier(s) => {
                 // Determine label index
-                let index = self.builder.get_label(s);
+                let index = builder.get_label(s);
                 // PUsh instruction
-                self.builder.push(PUSHL(large,index));
+                builder.push_labeled(PUSH(label_bytes(index)));
                 Ok(())
             }
             Token::EOF => Err(ParseError::ExpectedOperand),
@@ -211,7 +203,7 @@ impl<'a> Parser<'a> {
 /// Parse a rjump instruction with a given operand label.
 fn parse_rjump(operand: Token) -> Result<Instruction,ParseError> {
     match operand {
-        Token::Identifier(s) => {
+        Token::Identifier(_s) => {
             todo!();
             //Ok(RJUMP(s.to_string()))
         }
@@ -223,7 +215,7 @@ fn parse_rjump(operand: Token) -> Result<Instruction,ParseError> {
 /// Parse a rjumpi instruction with a given operand label.
 fn parse_rjumpi(operand: Token) -> Result<Instruction,ParseError> {
     match operand {
-        Token::Identifier(s) => {
+        Token::Identifier(_s) => {
             todo!();
             //Ok(RJUMPI(s.to_string()))
         }
@@ -232,13 +224,13 @@ fn parse_rjumpi(operand: Token) -> Result<Instruction,ParseError> {
     }
 }
 
-fn parse_data(operand: Token) -> Result<Instruction,ParseError> {
-    match operand {
-        Token::Hex(s) => Ok(DATA(parse_hex(s)?)),
-        Token::EOF => Err(ParseError::ExpectedOperand),
-        _ => Err(ParseError::UnexpectedToken)
-    }
-}
+// fn parse_data(operand: Token) -> Result<Instruction,ParseError> {
+//     match operand {
+//         Token::Hex(s) => Ok(DATA(parse_hex(s)?)),
+//         Token::EOF => Err(ParseError::ExpectedOperand),
+//         _ => Err(ParseError::UnexpectedToken)
+//     }
+// }
 
 // ===================================================================
 // Helpers
@@ -389,4 +381,9 @@ fn parse_opcode(insn: &str) -> Result<Instruction,ParseError> {
     };
     //
     Ok(insn)
+}
+
+fn label_bytes(index: usize) -> Vec<u8> {
+    // Always generate a push2 instruction
+    vec![(index / 256) as u8, (index % 256) as u8]
 }

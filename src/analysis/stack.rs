@@ -110,3 +110,9 @@ impl<T:EvmWord> EvmStack for ConcreteStack<T> {
         self.items.swap(i,j);
     }
 }
+
+impl<T:EvmWord> Default for ConcreteStack<T> {
+    fn default() -> Self {
+        Self::new()
+    }                         
+}

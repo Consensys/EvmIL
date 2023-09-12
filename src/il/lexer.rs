@@ -76,7 +76,7 @@ type ScannerResult = std::result::Result<Span<Token>, ()>;
 
 /// Scan an (unsigned) integer literal.
 fn scan_uint_literal(input: &[char]) -> ScannerResult {
-    scan_whilst(input, Token::Integer, |c| c.is_digit(10))
+    scan_whilst(input, Token::Integer, |c| c.is_ascii_digit())
 }
 
 /// Scan a hex literal (e.g. `0x12ffc`).
@@ -118,7 +118,7 @@ fn scan_keyword(input: &[char]) -> ScannerResult {
 /// underscore and subsequently contains zero or more alpha-number
 /// characters or underscores.
 fn scan_identifier(input: &[char]) -> ScannerResult {
-    if input.len() > 0 && is_identifier_start(input[0]) {
+    if !input.is_empty() && is_identifier_start(input[0]) {
         scan_whilst(input, Token::Identifier, is_identifier_middle)
     } else {
         Err(())
@@ -199,7 +199,7 @@ fn scan_newline(input: &[char]) -> ScannerResult {
 /// If there is nothing left to scan, then we've reached the
 /// End-Of-File.
 fn scan_eof(input: &[char]) -> ScannerResult {
-    if input.len() == 0 {
+    if input.is_empty() {
         Ok(Span::new(Token::EOF, 0..0))
     } else {
         Err(())
@@ -215,7 +215,7 @@ where
     let mut i = 0;
     // Continue whilst predicate matches
     while i < input.len() && pred(input[i]) {
-        i = i + 1;
+        i += 1;
     }
     // Check what happened
     if i == 0 {
@@ -228,7 +228,7 @@ where
 }
 
 fn scan_one(input: &[char], t: Token, c: char) -> ScannerResult {
-    if input.len() > 0 && input[0] == c {
+    if !input.is_empty() && input[0] == c {
         Ok(Span::new(t, 0..1))
     } else {
         Err(())
@@ -279,16 +279,12 @@ impl Lexer {
         // Parse to i32
         s.parse().unwrap()
     }
-
+    
     pub fn get_str(&self, t: Span<Token>) -> String {
         // Extract characters from token.
         let chars = self.lexer.get(t);
         // Convert to string
         chars.into_iter().collect()
-    }
-
-    pub fn get(&self, t: Span<Token>) -> &[char] {
-        self.lexer.get(t)
     }
 
     /// Pass through request to underlying lexer
@@ -315,7 +311,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::il::{Lexer, Token};
+    use crate::il::lexer::{Lexer, Token};
 
     /// Handy definition
     macro_rules! assert_ok {

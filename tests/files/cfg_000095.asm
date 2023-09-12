@@ -1,6 +1,7 @@
 .code
         push lab0
         jump
-        db 0x0102
+        add
+        mul
 lab0:
         jumpdest

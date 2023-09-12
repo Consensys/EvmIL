@@ -175,7 +175,6 @@ pub enum Instruction {
     RJUMPI(usize), // EIP4200
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
-    PUSHL(bool,usize),
     // 80s: Duplicate Operations
     DUP(u8),
     // 90s: Exchange Operations
@@ -231,79 +230,42 @@ impl Instruction {
     
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
-    pub fn encode(&self, pc: usize, offsets: &[usize], bytes: &mut Vec<u8>) {
+    pub fn encode(&self, pc: usize, bytes: &mut Vec<u8>) {
         // Push operands (if applicable)
         match self {
             DATA(args) => {
                 // Push operands
                 bytes.extend(args);
             }
-            RJUMP(insn_offset)|RJUMPI(insn_offset) => {
-                // Convert instruction offset into byte offset
-                let byte_offset = offsets[*insn_offset];
+            RJUMP(byte_offset)|RJUMPI(byte_offset) => {
                 // Convert absolute byte offset into relative offset.
-                let rel_offset = to_rel_offset(pc,byte_offset);
+                let rel_offset = to_rel_offset(pc,*byte_offset);
                 // Push opcode
-                bytes.push(self.opcode(offsets));
+                bytes.push(self.opcode());
                 // Push operands
                 bytes.extend(&rel_offset.to_be_bytes());
             }
-            PUSHL(large,insn_offset) => {
-                // Convert instruction offset into byte offset                
-                let byte_offset = offsets[*insn_offset];
-                // Convert absolute byte offset into variable bytes
-                let args = to_abs_bytes(*large,byte_offset);
-                // Push opcode
-                bytes.push(self.opcode(offsets));
-                // Push operands
-                bytes.extend(args);
-                
-            }
             PUSH(args) => {
                 // Push opcode
-                bytes.push(self.opcode(offsets));
+                bytes.push(self.opcode());
                 // Push operands
                 bytes.extend(args);
             }
             _ => {
                 // All other instructions have no operands.
-                bytes.push(self.opcode(offsets));
+                bytes.push(self.opcode());
             }
         }
     }
 
-    /// Determine the length of this instruction (in bytes) assuming a
-    /// given set of label offsets.
-    pub fn length(&self, offsets: &[usize]) -> usize {
+    /// Determine the length of this instruction (in bytes).
+    pub fn length(&self) -> usize {
         match self {
             DATA(bytes) => bytes.len(),
             // Static jumps
             RJUMP(_) => 3,
             RJUMPI(_) => 3,
             // Push instructions
-            PUSHL(large,insn_offset) => {
-                // Convert instruction offset into byte offset
-                let byte_offset = offsets[*insn_offset];                
-                // Convert absolute byte offset into variable bytes
-                let args = to_abs_bytes(*large,byte_offset);
-                1 + args.len()
-            }
-            PUSH(bs) => 1 + bs.len(),
-            // Default case
-            _ => 1,
-        }        
-    }
-
-    /// Determine the minimum length of this instruction (in bytes).
-    pub fn min_length(&self) -> usize {
-        match self {
-            DATA(bytes) => bytes.len(),
-            // Static jumps
-            RJUMP(_) => 3,
-            RJUMPI(_) => 3,
-            // Push instructions
-            PUSHL(false,_) => 2,
-            PUSHL(true,_) => 3,
             PUSH(bs) => 1 + bs.len(),
             // Default case
             _ => 1,
@@ -314,7 +276,7 @@ impl Instruction {
     /// this is a straightforward mapping.  However, in other cases,
     /// its slightly more involved as a calculation involving the
     /// operands is required.
-    pub fn opcode(&self, offsets: &[usize]) -> u8 {
+    pub fn opcode(&self) -> u8 {
         let op = match self {
             // 0s: Stop and Arithmetic Operations
             STOP => opcode::STOP,
@@ -396,11 +358,6 @@ impl Instruction {
                     opcode::PUSH1 + n
                 }
             }
-            //
-            PUSHL(_,_) => {
-                let n = (self.length(offsets) as u8) - 2;
-                opcode::PUSH1 + n
-            }            
             // 80s: Duplication Operations
             DUP(n) => {
                 if *n == 0 || *n > 32 { panic!("invalid dup"); }
@@ -621,12 +578,12 @@ impl Disassemble for [u8] {
     fn disassemble(&self) -> Vec<Instruction> {
         // Initialise instruction offsets
         let mut insns = Vec::new();        
-        let mut offsets = init_insn_offsets(self);
         let mut byte_offset = 0;
         //
         while byte_offset < self.len() {
-            insns.push(Instruction::decode(byte_offset,self));
-            byte_offset += opcode_length(self[byte_offset]);
+            let insn = Instruction::decode(byte_offset,self);
+            byte_offset += insn.length();            
+            insns.push(insn);
         }
         // Done
         insns
@@ -645,19 +602,13 @@ pub trait Assemble {
 
 impl Assemble for [Instruction] {
     fn assemble(&self) -> Vec<u8> {
-        // Initialise byte offsets
-        let mut offsets = init_byte_offsets(self);
-        // Update offsets to a fixed point
-        while update_byte_offsets(self,&mut offsets) {
-            // keep going until no more changes!
-        }
         // Encode instructions
         let mut bytes : Vec<u8> = Vec::new();
         let mut pc = 0;
         //        
         for i in self {
-            i.encode(pc, &offsets, &mut bytes);
-            pc += i.length(&offsets);
+            i.encode(pc, &mut bytes);
+            pc += i.length();
         }
         // Done
         bytes
@@ -684,71 +635,5 @@ fn to_abs_bytes(large: bool, target: usize) -> Vec<u8> {
         vec![(target / 256) as u8, (target % 256) as u8]
     } else {
         vec![target as u8]
-    }
-}
-
-/// Compute the initial set of instruction offsets based on the
-/// _minimum length_ of each instruction.  For single byte
-/// instructions, the minimum length is always `1`.  However, for a
-/// variable length instruction (e.g. `PUSH`), its minimum length is
-/// `2`, etc.  Finally, artificial instructions (e.g. labels) have no
-/// length since they do not correspond to actual instructions in the
-/// final sequence.
-fn init_byte_offsets(insns: &[Instruction]) -> Vec<usize> {
-    let mut offsets = Vec::new();
-    let mut offset = 0;    
-    //
-    for i in insns {
-        offsets.push(offset);
-        offset += i.min_length();
-    }
-    //
-
-    offsets
-}
-
-/// Update the offset information, noting whether or not anything
-/// actually changed.  The key is that as we recalculate offsets
-/// we may find the width has changed.  If this happens, we have
-/// to recalculate all offsets again assuming the larger width(s).
-fn update_byte_offsets(insns: &[Instruction], offsets: &mut [usize]) -> bool {
-    let mut offset = 0;
-    let mut changed = false;
-    //
-    for (i,b) in insns.iter().enumerate() {
-        let old = offsets[i];
-        // Update instruction offset
-        offsets[i] = offset;
-        // Determine whether this changed (or not)
-        changed |= offset != old;
-        // Calculate next offset
-        offset += b.length(offsets);        
-    }
-    //
-    changed
-}
-
-fn init_insn_offsets(bytes: &[u8]) -> Vec<usize> {
-    let mut offsets = vec![0; bytes.len()];
-    let mut byte_offset = 0;
-    let mut insn_offset = 0;    
-    
-    while byte_offset < bytes.len() {
-        offsets[byte_offset] = insn_offset;
-        byte_offset += opcode_length(bytes[byte_offset]);
-        insn_offset += 1;        
-    }
-    // Done
-    offsets
-}
-
-/// Determine the length of an instruction based on its opcode.
-fn opcode_length(opcode: u8) -> usize {
-    match opcode {
-        opcode::RJUMP|opcode::RJUMPI => 3,
-        opcode::PUSH1..=opcode::PUSH32 => {
-            2 + (opcode - opcode::PUSH1) as usize
-        }
-        _ => 1
     }
 }

@@ -16,20 +16,22 @@ use crate::bytecode::Instruction;
 use semantics::{execute,Outcome};
 
 pub fn trace<T>(insns: &[Instruction], init: T) -> Vec<T>
-where T:EvmState+Clone+JoinInto+Bottom,
+where T:EvmState+Clone+PartialEq+JoinInto+Bottom,
       T::Word : Top {
     // initialise data
     let mut states = vec![T::BOTTOM; insns.len()];
+    // Initialise entry state
+    states[0] = init;
     // calculate byte offsets
     let offsets = determine_byte_offsets(insns);
     // Iterate until a fixed point is reached
-    while !update(insns, &offsets, &mut states) {}
+    while update(insns, &offsets, &mut states) {}
     //
     states
 }
 
 fn update<T>(insns: &[Instruction], offsets: &[usize], states: &mut [T]) -> bool
-where T:EvmState+Clone+JoinInto+Bottom,
+where T:EvmState+Clone+PartialEq+JoinInto+Bottom,
       T::Word : Top 
 {
     let mut changed = false;
@@ -37,6 +39,9 @@ where T:EvmState+Clone+JoinInto+Bottom,
     for i in 0..insns.len() {
         let insn = &insns[i];
         let st = states[i].clone();
+        // FIXME: this is currently necessary because (amongst others)
+        // EvmStack.has_capacity() cannot operate on an bottom state.
+        if st == T::BOTTOM { continue; }
         //
         match execute(insn,st) {
             Outcome::Return|Outcome::Exception(_) => {
@@ -65,14 +70,9 @@ where T:EvmState+Clone+JoinInto+Bottom,
 fn determine_byte_offsets(insns: &[Instruction]) -> Vec<usize> {
     let mut offsets = Vec::new();
 
-    for (i,insn) in insns.iter().enumerate() {
-        // FIXME: this is only works on the assumption that there are
-        // no PUSHL instructions.        
-        let len = insn.min_length();
-        //
-        for i in 0..len {
-            offsets.push(i);
-        }       
+    for insn in insns {
+        let len = insn.length();
+        for i in 0..len { offsets.push(i); }       
     }
     // Done
     offsets

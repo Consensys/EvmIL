@@ -26,7 +26,7 @@ lab3:
         push lab4
         jumpi
         jump
-        db 0x00
+        stop
 lab4:
         jumpdest
         push 0x00

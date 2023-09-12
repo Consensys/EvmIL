@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::Debug;
-use crate::util::{Concretizable,w256,IsBottom,Top};
+use crate::util::{Concretizable,w256,Top};
 
 /// Represents the fundamental unit of computation within the EVM,
 /// namely a word.  This is intentially left abstract, so that it

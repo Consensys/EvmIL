@@ -112,7 +112,7 @@ impl<'a> Lexer<'a> {
 
     fn scan_section_header(&self, mut start: usize) -> Result<Token<'a>,ParseError> {
         // Move passed "."
-        start = start + 1;
+        start += 1;
         // Scan all characters of this identifier or label
         let end = skip(&self.chars,start,|c| c.is_ascii_alphabetic());
         // Done
@@ -139,7 +139,7 @@ where P: Fn(char) -> bool {
     let mut i = index;
     // Continue matching
     while i < input.len() && pred(input[i]) {
-        i = i + 1;
+        i += 1;
     }
     // Done
     i

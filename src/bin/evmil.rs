@@ -122,19 +122,24 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let asm : Assembly<Instruction> = if args.contains_id("eof") {
+    let asm = if args.contains_id("eof") {
         todo!()
         //Assembly::from_eof_bytes(&bytes)?
     } else {
-        Assembly::<Instruction>::from_legacy_bytes(&bytes)
+        Assembly::from_legacy_bytes(&bytes)
     };
     // Iterate bytecode sections
     for section in &asm {
         match section {
             StructuredSection::Code(insns) => {
                 println!(".code");
+                let mut pc = 0;
                 for insn in insns {
-                    println!("\t{insn}")
+                    if insn == &Instruction::JUMPDEST {
+                        println!("_{pc:#06x}:");
+                    }
+                    println!("\t{insn}");
+                    pc += insn.length();
                 }
             }
             StructuredSection::Data(bytes) => {
@@ -152,7 +157,7 @@ fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Read from asm file
     let context = fs::read_to_string(target)?;
     // Construct assembly from input file
-    let assembly = Assembly::<Instruction>::from_str(&context)?;
+    let assembly = Assembly::from_str(&context)?;
     // Check whether EOF or legacy code generation
     let bytes : Vec<u8> = if args.contains_id("eof") {
         // EVM Object Format

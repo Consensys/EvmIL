@@ -63,3 +63,9 @@ impl<T:EvmWord+Top> EvmMemory for UnknownMemory<T> {
         // no op (for now)
     }
 }
+
+impl<T:EvmWord+Top> Default for UnknownMemory<T> {
+    fn default() -> Self {
+        Self::new()
+    }                         
+}

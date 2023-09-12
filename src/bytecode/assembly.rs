@@ -11,9 +11,8 @@
 // limitations under the License.
 use std::slice::{Iter};
 use super::{Instruction};
-//use super::{eof,legacy};
-use super::legacy;
-//pub use super::eof::DecodingError;
+use super::{eof,legacy};
+pub use super::eof::DecodingError;
 use super::ParseError;
 
 // ============================================================================
@@ -28,11 +27,11 @@ use super::ParseError;
 /// the _data section_ should also come last.  However, for legacy
 /// contracts, they can be interleaved.
 #[derive(Clone,Debug,PartialEq)]
-pub struct Assembly<T:PartialEq = Instruction> {
-    sections: Vec<StructuredSection<T>>
+pub struct Assembly {
+    sections: Vec<StructuredSection>
 }
 
-impl<T:PartialEq> Assembly<T> {
+impl Assembly {
 
     pub fn from_legacy_bytes(bytes: &[u8]) -> Assembly {
         legacy::from_bytes(bytes)
@@ -45,7 +44,7 @@ impl<T:PartialEq> Assembly<T> {
     ///
     /// # Examples
     /// ```
-    /// use evmil::asm::AssemblyContract;
+    /// use evmil::bytecode::Assembly;
     /// use evmil::util::FromHexString;
     ///
     /// // EOF bytecode contract
@@ -53,13 +52,13 @@ impl<T:PartialEq> Assembly<T> {
     /// // Conversion into bytes
     /// let bytes = hex.from_hex_string().unwrap();
     /// // Decode EOF bytecode (assuming no errors)
-    /// let eof = AssemblyContract::from_eof_bytes(&bytes).unwrap();
+    /// let eof = Assembly::from_eof_bytes(&bytes).unwrap();
     /// // Check that section contains one instruction
     /// // assert_eq!(eof.sections.len(),1);
     /// ```    
-    // pub fn from_eof_bytes(bytes: &[u8]) -> Result<Assembly,DecodingError> {
-    //     eof::from_bytes(bytes)
-    // }
+    pub fn from_eof_bytes(bytes: &[u8]) -> Result<Assembly,DecodingError> {
+        eof::from_bytes(bytes)
+    }
     
     pub fn empty() -> Self {
         Self {
@@ -67,7 +66,7 @@ impl<T:PartialEq> Assembly<T> {
         }
     }
 
-    pub fn new(sections: Vec<StructuredSection<T>>) -> Self {
+    pub fn new(sections: Vec<StructuredSection>) -> Self {
         Self { sections }
     }
 
@@ -76,12 +75,12 @@ impl<T:PartialEq> Assembly<T> {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a,StructuredSection<T>> {
+    pub fn iter<'a>(&'a self) -> Iter<'a,StructuredSection> {
         self.sections.iter()
     }
 
     /// Add a new section to this bytecode container
-    pub fn add(&mut self, section: StructuredSection<T>) {
+    pub fn add(&mut self, section: StructuredSection) {
         self.sections.push(section)
     }
 
@@ -94,24 +93,23 @@ impl<T:PartialEq> Assembly<T> {
     }    
 }
 
-impl Assembly<Instruction> {
+impl Assembly {
     pub fn to_legacy_bytes(&self) -> Vec<u8> {
         legacy::to_bytes(self)
     }
 
-    // pub fn to_eof_bytes(&self) -> Vec<u8> {
-    //     // FIXME: need to figure this out :)
-    //     eof::to_bytes(self).unwrap()
-    // }    
+    pub fn to_eof_bytes(&self) -> Vec<u8> {
+        eof::to_bytes(self).unwrap()
+    }    
 }    
 
 // ===================================================================
 // Traits
 // ===================================================================
 
-impl<'a,T:PartialEq> IntoIterator for &'a Assembly<T> {
-    type Item = &'a StructuredSection<T>;
-    type IntoIter = Iter<'a,StructuredSection<T>>;
+impl<'a> IntoIterator for &'a Assembly {
+    type Item = &'a StructuredSection;
+    type IntoIter = Iter<'a,StructuredSection>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
@@ -123,10 +121,10 @@ impl<'a,T:PartialEq> IntoIterator for &'a Assembly<T> {
 // ============================================================================
 
 #[derive(Clone,Debug,PartialEq)]
-pub enum StructuredSection<T> {
+pub enum StructuredSection {
     /// A data section is simply a sequence of zero or more bytes.
     Data(Vec<u8>),
     /// A code section is a sequence of zero or more instructions
     /// along with appropriate _metadata_.
-    Code(Vec<T>)
+    Code(Vec<Instruction>)
 }

@@ -5,7 +5,7 @@
 	push 0x04
 	calldatasize
 	lt
-	pushl lab0
+	push lab0
 	jumpi
 	push 0x00
 	calldataload
@@ -14,17 +14,17 @@
 	dup1
 	push 0x11610c25
 	eq
-	pushl lab1
+	push lab1
 	jumpi
 	dup1
 	push 0x310bd74b
 	eq
-	pushl lab3
+	push lab3
 	jumpi
 	dup1
 	push 0xd4b83992
 	eq
-	pushl lab6
+	push lab6
 	jumpi
 lab0:
 	jumpdest
@@ -33,8 +33,8 @@ lab0:
 	revert
 lab1:
 	jumpdest
-	pushl lab2
-	pushl lab9
+	push lab2
+	push lab9
 	jump
 lab2:
 	jumpdest
@@ -44,7 +44,7 @@ lab3:
 	callvalue
 	dup1
 	iszero
-	pushl lab4
+	push lab4
 	jumpi
 	push 0x00
 	dup1
@@ -52,22 +52,22 @@ lab3:
 lab4:
 	jumpdest
 	pop
-	pushl lab2
-	pushl lab5
+	push lab2
+	push lab5
 	calldatasize
 	push 0x04
 	push lab16
 	jump
 lab5:
 	jumpdest
-	pushl lab13
+	push lab13
 	jump
 lab6:
 	jumpdest
 	callvalue
 	dup1
 	iszero
-	pushl lab7
+	push lab7
 	jumpi
 	push 0x00
 	dup1
@@ -75,7 +75,7 @@ lab6:
 lab7:
 	jumpdest
 	pop
-	pushl lab8
+	push lab8
 	push 0x00
 	sload
 	dup2
@@ -103,7 +103,7 @@ lab9:
 	callvalue
 	gt
 	iszero
-	pushl lab10
+	push lab10
 	jumpi
 	push 0x00
 	dup1
@@ -121,7 +121,7 @@ lab10:
 	sstore
 	swap1
 	sub
-	pushl lab12
+	push lab12
 	jumpi
 	push 0x40
 	mload
@@ -149,7 +149,7 @@ lab10:
 	iszero
 	dup1
 	iszero
-	pushl lab11
+	push lab11
 	jumpi
 	returndatasize
 	push 0x00
@@ -170,7 +170,7 @@ lab13:
 	dup2
 	gt
 	iszero
-	pushl lab14
+	push lab14
 	jumpi
 	push 0x00
 	dup1
@@ -180,7 +180,7 @@ lab14:
 	push 0x00
 	sload
 	iszero
-	pushl lab15
+	push lab15
 	jumpi
 	push 0x00
 	dup1
@@ -213,4 +213,4 @@ lab17:
 	pop
 	jump
 .data
-	0xfea26469706673582212207b57e8eca1da96d5c0491373554b699c55b7dfcbe6779ae889f253ae5f8366cd64736f6c63430008110033
+	0xa26469706673582212207b57e8eca1da96d5c0491373554b699c55b7dfcbe6779ae889f253ae5f8366cd64736f6c63430008110033

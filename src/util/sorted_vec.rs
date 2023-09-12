@@ -29,21 +29,18 @@ impl<T:Ord> SortedVec<T> {
         self.items.get_mut(index)
     }
 
-    pub fn iter<'a>(&'a self) -> SortedVecIter<'a,T> {
+    pub fn iter(&self) -> SortedVecIter<'_,T> {
         self.items.iter()
     }
 
-    pub fn iter_mut<'a>(&'a mut self) -> SortedVecIterMut<'a,T> {
+    pub fn iter_mut(&mut self) -> SortedVecIterMut<'_,T> {
         self.items.iter_mut()
     }
 
     /// Check whether a given item is already contained in the sorted
     /// vector.
     pub fn contains(&self, item: T) -> bool {
-        match self.items.binary_search(&item) {
-            Ok(_) => true,
-            Err(_) => false
-        }
+        self.items.binary_search(&item).is_ok()
     }
 
     /// Insert a new item into this sorted vector, and indicate
@@ -106,7 +103,7 @@ impl<T:Ord+Clone> From<Vec<T>> for SortedVec<T> {
 
 impl<T:Ord+Clone> cmp::PartialEq<[T]> for SortedVec<T> {
     fn eq(&self, other: &[T]) -> bool {
-        &self.items == other
+        self.items == other
     }
 }
 

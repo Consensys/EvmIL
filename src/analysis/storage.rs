@@ -55,3 +55,9 @@ impl<T:EvmWord+Top> EvmStorage for UnknownStorage<T> {
         // no op (for now)
     }
 }
+
+impl<T:EvmWord+Top> Default for UnknownStorage<T> {
+    fn default() -> Self {
+        Self::new()
+    }                         
+}
