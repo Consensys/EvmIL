@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::Debug;
-use super::EvmWord;
+use crate::util::JoinInto;
+use super::{EvmState,EvmWord};
 
 /// Abstraction of the operand stack within an EVM.  This provides the
 /// minimal set of operations required to implement the semantics of a
@@ -50,7 +51,7 @@ pub trait EvmStack : Debug {
 }
 
 // ===================================================================
-// Legacy Stack
+// Concrete Stack
 // ===================================================================
 
 /// An implementation of `EvmStack` which gives a concrete view of the
