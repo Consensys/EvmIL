@@ -2,6 +2,6 @@
         push 0x07
         push 0x01
         dup1
-        invalid
+        stop
 .data
         0x56

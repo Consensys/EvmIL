@@ -13,9 +13,9 @@ use std::fmt;
 use std::fmt::{Debug};
 use crate::util::{ToHexString};
 use super::opcode;
-use super::operands::{BytecodeOperands,Operands};
 
-/// Instructions correspond (roughly speaking) to EVM bytecodes.  There are a few points to make about this:
+/// Instructions correspond (roughly speaking) to EVM bytecodes.
+/// There are a few points to make about this:
 ///
 /// 1. A single instruction can represent an entire _class_ of related
 /// bytecodes.  For example, the `PUSH(bytes)` instruction corresponds
@@ -43,7 +43,7 @@ use super::operands::{BytecodeOperands,Operands};
 /// under the EVM Object Format, it is represented by its own
 /// instruction.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Instruction<T:Operands = BytecodeOperands> {
+pub enum Instruction {
     // ===============================================================
     // 0s: Stop and Arithmetic Operations
     // ===============================================================    
@@ -171,12 +171,10 @@ pub enum Instruction<T:Operands = BytecodeOperands> {
     MSIZE,
     GAS,
     JUMPDEST,
-    RJUMP(T::RelOffset16),  // EIP4200
-    RJUMPI(T::RelOffset16), // EIP4200
+    RJUMP(usize),  // EIP4200
+    RJUMPI(usize), // EIP4200
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
-    PUSHL(bool,T::PushLabel),
-    LABEL(T::Label),
     // 80s: Duplicate Operations
     DUP(u8),
     // 90s: Exchange Operations
@@ -201,7 +199,7 @@ pub enum Instruction<T:Operands = BytecodeOperands> {
 
 use Instruction::*;
 
-impl<T:Operands> Instruction<T> {
+impl Instruction {
     /// Determine whether or not control can continue to the next
     /// instruction.
     pub fn fallthru(&self) -> bool {
@@ -229,29 +227,23 @@ impl<T:Operands> Instruction<T> {
             _ => false,
         }
     }
-}
-
-impl Instruction<BytecodeOperands> {
+    
     /// Encode an instruction into a byte sequence, assuming a given
     /// set of label offsets.
-    pub fn encode(&self, bytes: &mut Vec<u8>) {
+    pub fn encode(&self, pc: usize, bytes: &mut Vec<u8>) {
         // Push operands (if applicable)
         match self {
             DATA(args) => {
                 // Push operands
                 bytes.extend(args);
             }
-            RJUMP(target) => {
+            RJUMP(byte_offset)|RJUMPI(byte_offset) => {
+                // Convert absolute byte offset into relative offset.
+                let rel_offset = to_rel_offset(pc,*byte_offset);
                 // Push opcode
                 bytes.push(self.opcode());
                 // Push operands
-                bytes.extend(&target.to_be_bytes());
-            }
-            RJUMPI(target) => {
-                // Push opcode
-                bytes.push(self.opcode());
-                // Push operands
-                bytes.extend(&target.to_be_bytes());
+                bytes.extend(&rel_offset.to_be_bytes());
             }
             PUSH(args) => {
                 // Push opcode
@@ -266,8 +258,7 @@ impl Instruction<BytecodeOperands> {
         }
     }
 
-    /// Determine the length of this instruction (in bytes) assuming a
-    /// given set of label offsets.
+    /// Determine the length of this instruction (in bytes).
     pub fn length(&self) -> usize {
         match self {
             DATA(bytes) => bytes.len(),
@@ -279,8 +270,8 @@ impl Instruction<BytecodeOperands> {
             // Default case
             _ => 1,
         }
-    }
-
+    }    
+    
     /// Determine the opcode for a given instruction.  In many cases,
     /// this is a straightforward mapping.  However, in other cases,
     /// its slightly more involved as a calculation involving the
@@ -358,7 +349,7 @@ impl Instruction<BytecodeOperands> {
             JUMPDEST => opcode::JUMPDEST,
             RJUMP(_) => opcode::RJUMP,
             RJUMPI(_) => opcode::RJUMPI,
-            // 60s & 70s: Push Operations
+            // 60s & 70s: Push Operations            
             PUSH(bs) => {
                 if bs.len() == 0 || bs.len() > 32 {
                     panic!("invalid push");
@@ -393,12 +384,6 @@ impl Instruction<BytecodeOperands> {
             REVERT => opcode::REVERT,
             INVALID => opcode::INVALID,
             SELFDESTRUCT => opcode::SELFDESTRUCT,
-            //
-            PUSHL(..)|LABEL(_) => {
-                // Unreachable because these instructions are not
-                // concrete.
-                unreachable!();
-            }
             //
             DATA(_) => {
                 panic!("Invalid instruction ({:?})", self);
@@ -482,18 +467,18 @@ impl Instruction<BytecodeOperands> {
             opcode::MSIZE => MSIZE,
             opcode::GAS => GAS,
             opcode::JUMPDEST => JUMPDEST,
-            opcode::RJUMP => {
-                // NOTE: these instructions are not permitted to
-                // overflow, and therefore don't require padding.
-                let arg = [bytes[pc+1],bytes[pc+2]];
-                RJUMP(i16::from_be_bytes(arg))
-            }
-            opcode::RJUMPI => {
-                // NOTE: these instructions are not permitted to
-                // overflow, and therefore don't require padding.
-                let arg = [bytes[pc+1],bytes[pc+2]];
-                RJUMPI(i16::from_be_bytes(arg))
-            }
+            // opcode::RJUMP => {
+            //     // NOTE: these instructions are not permitted to
+            //     // overflow, and therefore don't require padding.
+            //     let arg = [bytes[pc+1],bytes[pc+2]];
+            //     RJUMP(i16::from_be_bytes(arg))
+            // }
+            // opcode::RJUMPI => {
+            //     // NOTE: these instructions are not permitted to
+            //     // overflow, and therefore don't require padding.
+            //     let arg = [bytes[pc+1],bytes[pc+2]];
+            //     RJUMPI(i16::from_be_bytes(arg))
+            // }
             // 60s & 70s: Push Operations
             opcode::PUSH1..=opcode::PUSH32 => {
                 let m = pc + 1;
@@ -537,7 +522,7 @@ impl Instruction<BytecodeOperands> {
     }    
 }
 
-impl<T:Operands+Debug> fmt::Display for Instruction<T> {
+impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Use the default (debug) formatter.  Its only for certain
         // instructions that we need to do anything different.
@@ -580,28 +565,75 @@ impl<T:Operands+Debug> fmt::Display for Instruction<T> {
 
 
 // ============================================================================
-// Traits
+// Disassemble
 // ============================================================================
 
 /// A trait for converting something (e.g. a byte sequence) into a
 /// vector of instructions.
-pub trait ToInstructions {
-    fn to_insns(&self) -> Vec<Instruction>;
+pub trait Disassemble {
+    fn disassemble(&self) -> Vec<Instruction>;
 }
 
-impl<'a> ToInstructions for &'a [u8] {
-    fn to_insns(&self) -> Vec<Instruction> {
-        let mut insns = Vec::new();
-        let mut index = 0;
+impl Disassemble for [u8] {
+    fn disassemble(&self) -> Vec<Instruction> {
+        // Initialise instruction offsets
+        let mut insns = Vec::new();        
+        let mut byte_offset = 0;
         //
-        while index < self.len() {
-            let insn = Instruction::decode(index, self);
-            // Shift us along
-            index += insn.length();
-            // Store the instruction!
+        while byte_offset < self.len() {
+            let insn = Instruction::decode(byte_offset,self);
+            byte_offset += insn.length();            
             insns.push(insn);
         }
-        //
+        // Done
         insns
+    }
+}
+
+// ============================================================================
+// Assemble
+// ============================================================================
+
+/// A trait for converting zero or more instructions into vector of
+/// bytes.
+pub trait Assemble {
+    fn assemble(&self) -> Vec<u8>;
+}
+
+impl Assemble for [Instruction] {
+    fn assemble(&self) -> Vec<u8> {
+        // Encode instructions
+        let mut bytes : Vec<u8> = Vec::new();
+        let mut pc = 0;
+        //        
+        for i in self {
+            i.encode(pc, &mut bytes);
+            pc += i.length();
+        }
+        // Done
+        bytes
+    }
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
+
+/// Calculate the relative offset for a given branch target expressed
+/// as an _abstolute byte offset_ from the program counter position
+/// where the instruction in question is being instantiated.
+fn to_rel_offset(pc: usize, target: usize) -> i16 {
+    let mut n = target as isize;
+    n -= pc as isize;
+    // Following should always be true!
+    n as i16
+}
+
+/// Calculate the variable bytes for an absolute branch target.
+fn to_abs_bytes(large: bool, target: usize) -> Vec<u8> {
+    if large || target > 255 {
+        vec![(target / 256) as u8, (target % 256) as u8]
+    } else {
+        vec![target as u8]
     }
 }

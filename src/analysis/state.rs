@@ -10,24 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt::Debug;
-use crate::util::{Concretizable,w256};
-
-/// Represents the fundamental unit of computation within the EVM,
-/// namely a word.  This is intentially left abstract, so that it
-/// could be reused across both _concrete_ and _abstract_ semantics.
-pub trait EvmWord : Sized + Clone + Debug +
-    From<w256> + // Allow conversion from 256 bit words
-    Concretizable<Item=w256> + // Allow conversion back to 256 words
-    PartialEq
-    // std::ops::Add<Output = Self> +
-    // std::ops::Sub<Output = Self> +
-    // std::ops::Mul<Output = Self> +
-    // std::ops::Rem<Output = Self> +
-    // std::ops::Not<Output = Self> +
-    // std::ops::Shl<Output = Self> +
-    // std::ops::Shr<Output = Self>
-{
-}
+use crate::util::{JoinInto,Bottom};
+use super::{EvmWord,EvmMemory,EvmStack,EvmStorage};
 
 // ===================================================================
 // State
@@ -96,91 +80,201 @@ pub trait EvmState : Debug {
     fn goto(&mut self, pc: usize);
 }
 
-// ===============================================================
-// Operand Stack
-// ===============================================================
+// ===================================================================
+// Abstract State
+// ===================================================================
 
-/// Abstraction of the operand stack within an EVM.  This provides the
-/// minimal set of operations required to implement the semantics of a
-/// given bytecode instruction.  For example, pushing / popping items
-/// from the stack.
-pub trait EvmStack {
-    /// Defines what constitutes a word in this EVM.  For example, a
-    /// concrete evm will use a `w256` here whilst an abstract evm
-    /// will use something that can, for example, describe unknown
-    /// values.
-    type Word : EvmWord;
+type EvmSuperIter<'a,T> = std::slice::Iter<'a,T>;
 
-    /// Check capacity for `n` additional items on the stack.
-    fn has_capacity(&self, n: usize) -> bool;
-
-    /// Check at least `n` operands on the stack.
-    fn has_operands(&self, n: usize) -> bool;
-
-    /// Get the size of the stack.
-    fn size(&self) -> usize;
-
-    /// Peek `nth` item from stack (where `n==0` is top element).
-    fn peek(&self, n: usize) -> &Self::Word;
-
-    /// Push an item onto the stack.
-    fn push(&mut self, item: Self::Word);
-
-    /// Pop an item from the stack.
-    fn pop(&mut self) -> Self::Word;
-
-    /// Swap top item on stack with nth item on stack (where `n>0`,
-    /// and `n==0` would be the top element).
-    fn swap(&mut self, n: usize);
-
-    /// Duplicate nth item on stack (where `n==0` is the top element).
-    fn dup(&mut self, n: usize);
+/// A state which decomposes into one or more _threads_ of execution.
+#[derive(Clone,Debug,PartialEq)]
+pub struct AbstractState<T:EvmState+Clone+PartialEq> {
+    substates: Vec<T>
 }
 
-// ===============================================================
-// Scratch Memory
-// ===============================================================
-
-/// Abstraction of memory within an EVM.  This provides the minimal
-/// set of operations required to implement the semantics of a given
-/// bytecode instruction.  For example, reading/writing to memory.
-pub trait EvmMemory {
-    /// Defines what constitutes a word in this EVM.  For example, a
-    /// concrete evm will use a `w256` here whilst an abstract evm
-    /// will use something that can, for example, describe unknown
-    /// values.
-    type Word;
-
-    /// Read a word Get the word at a given location in storage.
-    fn read(&mut self, address: Self::Word) -> Self::Word;
-
-    /// Write a given value at a given address in memory, expanding
-    /// memory as necessary.
-    fn write(&mut self, address: Self::Word, item: Self::Word);
-
-    /// Write a given value at a given address in memory, expanding
-    /// memory as necessary.
-    fn write8(&mut self, address: Self::Word, item: Self::Word);
+impl<T:EvmState+Clone+PartialEq> AbstractState<T> {
+    pub fn new(substates: Vec<T>) -> Self {
+        Self{substates}
+    }
+    pub fn join(&mut self, state: T) -> bool {
+        let n = self.substates.len();
+        // Simplest possible join operator (for now)
+        self.substates.push(state);
+        // Deduplicate
+        self.substates.dedup();
+        // Check whether anything actually changed.
+        n != self.substates.len()
+    }
+    pub fn iter<'a>(&'a self) -> EvmSuperIter<'a,T> {
+        self.substates.iter()
+    }
 }
 
-// ===============================================================
-// Peristent Storage
-// ===============================================================
+impl<T:EvmState+Clone+PartialEq> Bottom for AbstractState<T> {
+    const BOTTOM : Self = AbstractState{substates:Vec::new()};
+}
 
-/// Abstraction of peristent storage within an EVM.  This provides the
-/// minimal set of operations required to implement the semantics of a
-/// given bytecode instruction.  For example, reading/writing from
-/// storage.
-pub trait EvmStorage {
-    /// Defines what constitutes a word in this EVM.  For example, a
-    /// concrete evm will use a `w256` here whilst an abstract evm
-    /// will use something that can, for example, describe unknown
-    /// values.
-    type Word : EvmWord;
+impl<T:EvmState+Clone+PartialEq> JoinInto for AbstractState<T> {
+    fn join_into(&mut self, _other: &Self) -> bool {
+        // use join() above
+        todo!()
+    }
+}
 
-    /// Get the word at a given location in storage.
-    fn get(&mut self, address: Self::Word) -> Self::Word;
+impl<T:EvmState+Clone+PartialEq> EvmState for AbstractState<T> {
+    type Word = T::Word;
+    type Stack = Self;
+    type Memory = Self;
+    type Storage = Self;
+    
+    fn pc(&self) -> usize { todo!() }
+    fn stack(&self) -> &Self::Stack { self }
+    fn stack_mut(&mut self) -> &mut Self::Stack { self }
+    fn memory(&self) -> &Self::Memory { self }
+    fn memory_mut(&mut self) -> &mut Self::Memory { self }
+    fn storage(&self) -> &Self::Storage { self }
+    fn storage_mut(&mut self) -> &mut Self::Storage { self }
 
-    /// Put a given value at a given location in storage.
-    fn put(&mut self, address: Self::Word, item: Self::Word);
+    fn skip(&mut self, n: usize) {
+        for s in &mut self.substates { s.skip(n); }
+    }
+
+    fn goto(&mut self, pc: usize) {
+        for s in &mut self.substates { s.goto(pc); }
+    }
+}
+
+impl<T:EvmState+Clone+PartialEq> EvmStack for AbstractState<T> {
+    type Word = T::Word;
+
+    fn has_capacity(&self, n: usize) -> bool {
+        // FIXME: this function is actually broken because it doesn't
+        // allow for an uncertain result.
+        let r = self.substates[0].stack().has_capacity(n);
+        // Sanity check they all match (for now)
+        for st in &self.substates {
+            let tr = st.stack().has_capacity(n);
+            if tr != r { panic!(); }
+        }
+        r
+    }
+    fn has_operands(&self, _n: usize) -> bool { todo!(); }
+    fn size(&self) -> usize { todo!(); }
+    fn peek(&self, _n: usize) -> &Self::Word { todo!(); }
+    fn push(&mut self, item: Self::Word) {
+        for s in &mut self.substates {
+            s.stack_mut().push(item.clone());
+        }
+    }
+    fn pop(&mut self) -> Self::Word { todo!(); }
+    fn swap(&mut self, n: usize) {
+        for s in &mut self.substates {
+            s.stack_mut().swap(n);
+        }
+    }
+    fn dup(&mut self, n: usize) {
+        for s in &mut self.substates {
+            s.stack_mut().dup(n);
+        }
+    }
+}
+
+impl<T:EvmState+Clone+PartialEq> EvmMemory for AbstractState<T> {
+    type Word = T::Word;
+
+    fn read(&mut self, _address: Self::Word) -> Self::Word { todo!() }
+    fn write(&mut self, _address: Self::Word, _item: Self::Word) { todo!() }
+    fn write8(&mut self, _address: Self::Word, _item: Self::Word) { todo!() }
+}    
+
+impl<T:EvmState+Clone+PartialEq> EvmStorage for AbstractState<T> {
+    type Word = T::Word;
+
+    fn get(&mut self, _address: Self::Word) -> Self::Word { todo!(); }
+    
+    fn put(&mut self, address: Self::Word, item: Self::Word) {
+        for s in &mut self.substates {
+            s.storage_mut().put(address.clone(),item.clone());
+        }
+    }
+}    
+
+// ===================================================================
+// Concrete State
+// ===================================================================
+
+/// An `EvmState` composed from three distinct (and potentially
+/// abstract) components: _stack_, _memory_ and _storage_.
+#[derive(Clone,Debug,PartialEq)]
+pub struct ConcreteState<S,M,T>
+where S:EvmStack,
+      M:EvmMemory<Word=S::Word>,
+      T:EvmStorage<Word=S::Word>    
+{
+    pc: usize,
+    stack: S,
+    memory: M,
+    storage: T
+}
+
+impl<S,M,T> ConcreteState<S,M,T>
+where S:EvmStack+Default,
+      M:EvmMemory<Word=S::Word>+Default,
+      T:EvmStorage<Word=S::Word>+Default   
+{
+    pub fn new() -> Self {
+        let stack = S::default();
+        let memory = M::default();
+        let storage = T::default();
+        Self{pc:0,stack,memory,storage}
+    }
+}
+
+impl<S,M,T> EvmState for ConcreteState<S,M,T>
+where S:EvmStack,
+      M:EvmMemory<Word=S::Word>,
+      T:EvmStorage<Word=S::Word>
+{
+    type Word = S::Word;
+    type Stack = S;
+    type Memory = M;
+    type Storage = T;
+
+    fn pc(&self) -> usize {
+        self.pc
+    }
+
+    fn stack(&self) -> &Self::Stack {
+        &self.stack
+    }
+
+    fn memory(&self) -> &Self::Memory {
+        &self.memory
+    }
+
+    fn storage(&self) -> &Self::Storage {
+        &self.storage
+    }
+
+    fn stack_mut(&mut self) -> &mut Self::Stack {
+        &mut self.stack
+    }
+
+    fn memory_mut(&mut self) -> &mut Self::Memory {
+        &mut self.memory
+    }
+
+    fn storage_mut(&mut self) -> &mut Self::Storage {
+        &mut self.storage
+    }
+
+    fn skip(&mut self, n: usize) {
+        self.pc += n
+    }
+
+    /// Move _program counter_ to a given (byte) offset within the
+    /// code section.
+    fn goto(&mut self, pc: usize) {
+        self.pc = pc;
+    }
 }

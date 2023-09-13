@@ -1,7 +1,7 @@
 .code
-        pushl lab0
+        push lab0
         jump
-        db 0xfe
+        stop
 lab0:
         jumpdest
         stop

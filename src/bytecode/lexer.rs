@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::AssemblyError;
+use super::ParseError;
 
 // ===================================================================
 // Token
@@ -59,7 +59,7 @@ impl<'a> Lexer<'a> {
         Self{input, chars, index: 0}
     }
 
-    pub fn lookahead(&self) -> Result<Token<'a>,AssemblyError> {
+    pub fn lookahead(&self) -> Result<Token<'a>,ParseError> {
         // Skip any whitespace
         let start = self.skip_whitespace(self.index);
         // Sanity check for end-of-file
@@ -71,12 +71,12 @@ impl<'a> Lexer<'a> {
                 '.' => self.scan_section_header(start),
                 '0'..='9' => self.scan_hex_literal(start),
                 'a'..='z'|'A'..='Z'|'_' => self.scan_id_or_label(start),
-                _ => Err(AssemblyError::UnexpectedCharacter(start))
+                _ => Err(ParseError::UnexpectedCharacter(start))
             }
         }
     }
 
-    pub fn next(&mut self) -> Result<Token<'a>,AssemblyError> {
+    pub fn next(&mut self) -> Result<Token<'a>,ParseError> {
         // Skip any whitespace
         self.index = self.skip_whitespace(self.index);
         // Determine next token
@@ -87,7 +87,7 @@ impl<'a> Lexer<'a> {
         Ok(tok)
     }
 
-    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,AssemblyError> {
+    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,ParseError> {
         // Sanity check literal starts with "0x"
         if self.chars[start..].starts_with(&['0','x']) {
             // Scan all digits of this hex literal
@@ -95,11 +95,11 @@ impl<'a> Lexer<'a> {
             // Construct token
             Ok(Token::Hex(&self.input[start..end]))
         } else {
-            Err(AssemblyError::InvalidHexString(start))
+            Err(ParseError::InvalidHexString(start))
         }
     }
 
-    fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,AssemblyError> {
+    fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,ParseError> {
         // Scan all characters of this identifier or label
         let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
         // Distinguish label versus identifier.
@@ -110,9 +110,9 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn scan_section_header(&self, mut start: usize) -> Result<Token<'a>,AssemblyError> {
+    fn scan_section_header(&self, mut start: usize) -> Result<Token<'a>,ParseError> {
         // Move passed "."
-        start = start + 1;
+        start += 1;
         // Scan all characters of this identifier or label
         let end = skip(&self.chars,start,|c| c.is_ascii_alphabetic());
         // Done
@@ -139,7 +139,7 @@ where P: Fn(char) -> bool {
     let mut i = index;
     // Continue matching
     while i < input.len() && pred(input[i]) {
-        i = i + 1;
+        i += 1;
     }
     // Done
     i

@@ -15,6 +15,5 @@ mod parser;
 mod term;
 
 pub use compiler::*;
-pub use lexer::*;
-pub use parser::*;
+pub use parser::Parser;
 pub use term::*;

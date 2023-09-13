@@ -12,6 +12,8 @@
         jumpi
 lab0:
         jumpdest
-        invalid
+        push 0x00
+        push 0x00
+        revert
 lab1:
         jumpdest
