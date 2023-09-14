@@ -1,0 +1,55 @@
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+use crate::bytecode::Instruction;
+use crate::util::JoinInto;
+use super::{aw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
+
+type ReachableStack = ConcreteStack<aw256>;
+type ReachableMem = UnknownMemory<aw256>;
+type ReachableStore = UnknownStorage<aw256>;
+type ReachableState = ConcreteState<ReachableStack,ReachableMem,ReachableStore>;
+
+/// For a given bytecode sequence, identify all _reachable_
+/// instructions.  An instruction is reachable if there exists a path
+/// from the first instruction in the sequence to the given
+/// instruction.  For example, consider this sequence:
+///
+/// ```txt
+///    push lab
+///    jumpi
+///    stop
+///    pop
+/// lab:
+///    stop
+/// ```
+///
+/// The reachability analysis would conclude that the `pop`
+/// instruction here is _unreachable_.  That is because there is no
+/// path through the control-flow graph which can lead to it.
+pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
+    // Construct initial state of EVM
+    let init : ReachableState = ReachableState::new();
+    // Run the abstract trace
+    let states : Vec<Vec<ReachableState>> = trace(insns,init);
+    // Convert output into boolean reachability info
+    let mut flags = Vec::new();
+    //
+    for st in states {
+        // Check whether corresponing instruction was reached during
+        // the trace.
+        let reached = st.len() > 0;
+        //
+        flags.push(reached);
+    }
+    // Done
+    flags
+}

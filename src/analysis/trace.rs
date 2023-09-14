@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::{Bottom,JoinInto,Top};
+use crate::util::{Bottom,Top};
 use crate::bytecode::Instruction;
 use super::{EvmState,EvmStateSet};
 use super::semantics::{execute,Outcome};
@@ -22,12 +22,19 @@ where T:EvmStateSet+Bottom,
     let mut states = Vec::new();
     for i in insns { states.push(T::BOTTOM); }
     // calculate byte offsets
-    let offsets = determine_byte_offsets(insns);    
+    let offsets = determine_byte_offsets(insns);
     // Initialise worklist
     let mut worklist = vec![init];
     // Iterate to a fixed point
     while !worklist.is_empty() {
         let st = worklist.pop().unwrap();
+        // Sanity check bytecode position
+        if st.pc() >= offsets.len() {
+            // Execution has fallen "of the end" of the bytecode
+            // sequence.  When this happens the EVM immediately
+            // executes a STOP instruction.
+            continue;
+        }
         // Determine instruction position
         let ipc = offsets[st.pc()];        
         // Join state into set
@@ -59,9 +66,9 @@ where T:EvmStateSet+Bottom,
 fn determine_byte_offsets(insns: &[Instruction]) -> Vec<usize> {
     let mut offsets = Vec::new();
 
-    for insn in insns {
+    for (i,insn) in insns.iter().enumerate() {
         let len = insn.length();
-        for i in 0..len { offsets.push(i); }       
+        for j in 0..len { offsets.push(i); }       
     }
     // Done
     offsets

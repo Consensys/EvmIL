@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 mod memory;
+mod reachability;
 mod semantics;
 mod state;
 mod state_set;
@@ -19,10 +20,10 @@ mod trace;
 mod word;
 
 pub use memory::*;
+pub use reachability::*;
 pub use state::*;
 pub use state_set::*;
 pub use stack::*;
 pub use storage::*;
 pub use trace::*;
 pub use word::*;
-

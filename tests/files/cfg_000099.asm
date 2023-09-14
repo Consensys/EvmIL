@@ -22,4 +22,5 @@ lab2:
 lab3:
         jumpdest
         jump
-        stop
+.data
+        0x00

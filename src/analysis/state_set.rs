@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::{JoinInto};
+use crate::util::{Bottom,JoinInto};
 use super::EvmState;
 
 /// An `EvmStateSet` represents a set of distinct states at a given
@@ -46,4 +46,8 @@ impl<T:Clone+EvmState+PartialEq> EvmStateSet for Vec<T> {
     fn iter(&self) -> std::slice::Iter<'_,T> {
         self.iter()
     }
+}
+
+impl<T> Bottom for Vec<T> {
+    const BOTTOM : Vec<T> = Vec::new();
 }

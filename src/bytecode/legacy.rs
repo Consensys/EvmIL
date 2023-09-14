@@ -9,31 +9,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use crate::analysis::find_reachable;
 use crate::bytecode::{Assembly,Assemble,Disassemble,Instruction,StructuredSection};
 
+//   This is defined as the point after the last reachable
+//   instruction.
 pub fn from_bytes(bytes: &[u8]) -> Assembly {
-    let insns = bytes.disassemble();
-    // Find start of data section, as determined by the first INVALID
-    // instruction encountered.
-    let mut fe = bytes.len();
-    let mut pc = 0;
-    //
-    for i in &insns {        
-        if i == &Instruction::INVALID {
-            fe = pc;
-            break;
-        }
-        pc += i.length();
-    }
-    //
-    if fe != bytes.len() {
-        // Split code from data.  Note that we could something more
-        // sophisticated here.  However, for contracts compiled from
-        // Solidity, I don't believe there is any need.
-        let code = bytes[..fe].disassemble();
+    // Disassemble bytes into instructions.
+    let mut insns = bytes.disassemble();
+    // Compute reachability information.
+    let reachable = find_reachable(&insns);
+    // Mark all unreachable instructions
+    mark_unreachable(&mut insns,bytes,&reachable);
+    // Determine start of data section using reachability infor.
+    let (i,pc) = find_data_start(&insns,bytes,&reachable);
+    // Split contract
+    if pc < bytes.len() {
+        // Split code from data.
+        insns.truncate(i);
         // Strip off invalid separator.
-        let data = bytes[fe+1..].to_vec();
-        Assembly::new(vec![StructuredSection::Code(code), StructuredSection::Data(data)])        
+        let data = bytes[pc..].to_vec();
+        Assembly::new(vec![StructuredSection::Code(insns), StructuredSection::Data(data)])        
     } else {
         Assembly::new(vec![StructuredSection::Code(insns)])
     }
@@ -47,8 +43,6 @@ pub fn to_bytes(bytecode: &Assembly) -> Vec<u8> {
     for s in bytecode {
         match s {
             StructuredSection::Data(bs) => {
-                // Signal start of data
-                bytes.push(0xfe);
                 // Copy data
                 bytes.extend(bs);
             }
@@ -60,4 +54,39 @@ pub fn to_bytes(bytecode: &Assembly) -> Vec<u8> {
     }
     // Done
     bytes
+}
+
+/// Convert every unreachable instruction into a `DATA` instruction to
+/// signal that this is not executable code.
+fn mark_unreachable(insns: &mut [Instruction], bytes: &[u8], reachable: &[bool]) {
+    let mut pc = 0;
+    
+    for i in 0..insns.len() {
+        let len = insns[i].length();
+        // Check if instruction is reachable
+        if !reachable[i] {
+            // Determine end of instruction bytes
+            let end = std::cmp::min(bytes.len(),pc + len);
+            // Extract instruction bytes
+            let data = bytes[pc..end].to_vec();
+            // Replace instruction
+            insns[i] = Instruction::DATA(data);
+        }
+        pc += len;
+    }    
+}
+
+/// Find the start of the data section by traversing backwards from
+/// the end of the instruction sequence until the first reachable
+/// instruction is encountered.
+fn find_data_start(insns: &[Instruction], bytes: &[u8], reachable: &[bool]) -> (usize,usize) {
+    let mut i = insns.len();
+    let mut pc = bytes.len();
+    //
+    while i > 0 && !reachable[i-1] {
+        i = i - 1;
+        pc = pc - insns[i].length();
+    }
+        //
+    (i,pc)
 }
