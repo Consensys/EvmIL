@@ -11,9 +11,9 @@
 // limitations under the License.
 
 /// An abstract value can be used to represent one or more concrete values.
-pub trait JoinInto {
+pub trait JoinInto<Rhs:?Sized = Self> {
     /// Merge another abstract value into this value.
-    fn join_into(&mut self, other: &Self) -> bool;
+    fn join_into(&mut self, other: &Rhs) -> bool;
 }
 
 pub trait Join {

@@ -128,6 +128,10 @@ impl<'a> Parser<'a> {
                     _ = self.lexer.next();
                     builder.push(parse_rjumpi(self.lexer.next()?)?);
                 }
+                Token::Identifier("db"|"DB") => {
+                    _ = self.lexer.next();
+                    builder.push(parse_data(self.lexer.next()?)?);
+                }                
                 Token::Identifier(id) => {
                     _ = self.lexer.next();
                     builder.push(parse_opcode(id)?);
@@ -224,13 +228,13 @@ fn parse_rjumpi(operand: Token) -> Result<Instruction,ParseError> {
     }
 }
 
-// fn parse_data(operand: Token) -> Result<Instruction,ParseError> {
-//     match operand {
-//         Token::Hex(s) => Ok(DATA(parse_hex(s)?)),
-//         Token::EOF => Err(ParseError::ExpectedOperand),
-//         _ => Err(ParseError::UnexpectedToken)
-//     }
-// }
+fn parse_data(operand: Token) -> Result<Instruction,ParseError> {
+    match operand {
+        Token::Hex(s) => Ok(DATA(parse_hex(s)?)),
+        Token::EOF => Err(ParseError::ExpectedOperand),
+        _ => Err(ParseError::UnexpectedToken)
+    }
+}
 
 // ===================================================================
 // Helpers

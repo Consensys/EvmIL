@@ -12,7 +12,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use crate::util::Top;
-use super::EvmWord;
+use super::{EvmState,EvmWord};
 
 /// Abstraction of memory within an EVM.  This provides the minimal
 /// set of operations required to implement the semantics of a given
@@ -35,6 +35,10 @@ pub trait EvmMemory : Debug {
     /// memory as necessary.
     fn write8(&mut self, address: Self::Word, item: Self::Word);
 }
+
+// ===================================================================
+// Unknown Memory
+// ===================================================================
 
 /// The simplest possible implementation of `EvmMemory` which simply
 /// returns "unknown" for every location.  In other words, it doesn't
@@ -69,3 +73,4 @@ impl<T:EvmWord+Top> Default for UnknownMemory<T> {
         Self::new()
     }                         
 }
+

@@ -12,7 +12,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use crate::util::Top;
-use super::EvmWord;
+use super::{EvmState,EvmWord};
 
 /// Abstraction of peristent storage within an EVM.  This provides the
 /// minimal set of operations required to implement the semantics of a
@@ -31,6 +31,10 @@ pub trait EvmStorage : Debug {
     /// Put a given value at a given location in storage.
     fn put(&mut self, address: Self::Word, item: Self::Word);
 }
+
+// ===================================================================
+// Unknown Storage
+// ===================================================================
 
 /// The simplest possible implementation of `EvmStorage` which simply
 /// returns "unknown" for every location.  In other words, it doesn't
