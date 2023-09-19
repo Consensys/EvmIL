@@ -122,7 +122,7 @@ impl<T> fmt::Display for ConcreteStack<T>
 where T:EvmWord+fmt::Display
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for (i,w) in self.items.iter().enumerate() {
+        for (i,w) in self.items.iter().rev().enumerate() {
             if i != 0 { write!(f,",")?; }
             write!(f,"{}",w)?;
         }
