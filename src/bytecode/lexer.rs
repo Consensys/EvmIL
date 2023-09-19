@@ -101,7 +101,7 @@ impl<'a> Lexer<'a> {
 
     fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,ParseError> {
         // Scan all characters of this identifier or label
-        let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
+        let end = skip(&self.chars,start,|c| c == '_' || c.is_ascii_alphanumeric());
         // Distinguish label versus identifier.
         if end < self.chars.len() && self.chars[end] == ':' {
             Ok(Token::Label(&self.input[start..end]))

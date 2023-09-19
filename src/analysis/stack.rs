@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt::Debug;
+use std::fmt;
 use crate::util::JoinInto;
 use super::{EvmState,EvmWord};
 
@@ -17,7 +17,7 @@ use super::{EvmState,EvmWord};
 /// minimal set of operations required to implement the semantics of a
 /// given bytecode instruction.  For example, pushing / popping items
 /// from the stack.
-pub trait EvmStack : Debug {
+pub trait EvmStack : fmt::Debug {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
     /// will use something that can, for example, describe unknown
@@ -116,4 +116,16 @@ impl<T:EvmWord> Default for ConcreteStack<T> {
     fn default() -> Self {
         Self::new()
     }                         
+}
+
+impl<T> fmt::Display for ConcreteStack<T>
+where T:EvmWord+fmt::Display
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (i,w) in self.items.iter().enumerate() {
+            if i != 0 { write!(f,",")?; }
+            write!(f,"{}",w)?;
+        }
+        Ok(())
+    }
 }

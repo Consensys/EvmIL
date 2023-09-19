@@ -18,6 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
+use evmil::analysis::{aw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
 use evmil::bytecode::{Assembly,Instruction,StructuredSection};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -41,6 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .about("Disassemble a raw hex string into EVM bytecode")
                 .arg(Arg::new("code").short('c').long("code"))
                 .arg(Arg::new("eof").long("eof"))
+                .arg(Arg::new("debug").short('d').long("debug"))                
                 .arg(Arg::new("target").required(true))
                 .visible_alias("d")
         )
@@ -105,6 +107,8 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 
 /// Disassemble a given bytecode sequence.
 fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
+    // Check whether debug information enabled (or not)
+    let debug = args.contains_id("debug");
     // Extract hex string to be disassembled.
     let mut hex = String::new();
     // Determine disassembly target
@@ -133,13 +137,10 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         match section {
             StructuredSection::Code(insns) => {
                 println!(".code");
-                let mut pc = 0;
-                for insn in insns {
-                    if insn == &Instruction::JUMPDEST {
-                        println!("_{pc:#06x}:");
-                    }
-                    println!("\t{insn}");
-                    pc += insn.length();
+                if debug {
+                    disassemble_debug_code(insns);
+                } else {
+                    disassemble_code(insns);
                 }
             }
             StructuredSection::Data(bytes) => {
@@ -149,6 +150,41 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         }
     }
     Ok(true)
+}
+
+// Disassemble a code section _without_ debug information.  The reason
+// for separating out the two functions is that generating debug
+// information may fail.
+fn disassemble_code(insns: &[Instruction]) {
+    let mut pc = 0;
+    for insn in insns {
+        if insn == &Instruction::JUMPDEST {
+            println!("_{pc:#06x}:");
+        }
+        println!("\t{insn}");
+        pc += insn.length();
+    } 
+}
+
+type DebugState = ConcreteState<ConcreteStack<aw256>,UnknownMemory<aw256>,UnknownStorage<aw256>>;
+
+// Disassemble a code section _with_ debug information.  Note that
+// this can fail if the underlying static analysis fails.
+fn disassemble_debug_code(insns: &[Instruction]) {
+    // Run the static analysis
+    let states : Vec<Vec<DebugState>> = trace(&insns,DebugState::new());
+    // Print out info
+    let mut pc = 0;
+    for (i,insn) in insns.iter().enumerate() {
+        if insn == &Instruction::JUMPDEST {
+            println!("_{pc:#06x}:");
+        }
+        for st in &states[i] {
+            println!("\t;; {}",st);
+        }
+        println!("\t{insn}");
+        pc += insn.length();
+    } 
 }
 
 /// Assemble a given bytecode sequence.

@@ -9,13 +9,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt::Debug;
+use std::fmt;
 use crate::util::{Concretizable,w256,Top};
 
 /// Represents the fundamental unit of computation within the EVM,
 /// namely a word.  This is intentially left abstract, so that it
 /// could be reused across both _concrete_ and _abstract_ semantics.
-pub trait EvmWord : Sized + Clone + Debug +
+pub trait EvmWord : Sized + Clone + fmt::Debug +
     From<w256> + // Allow conversion from 256 bit words
     Concretizable<Item=w256> + // Allow conversion back to 256 words
     PartialEq
@@ -74,4 +74,18 @@ impl Concretizable for aw256 {
 
 impl EvmWord for aw256 {
 
+}
+
+impl fmt::Display for aw256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            aw256::Word(w) => {
+                write!(f,"{w:#x}")?;
+            }
+            aw256::Unknown => {
+                write!(f,"??")?;
+            }
+        }
+        Ok(())
+    }
 }

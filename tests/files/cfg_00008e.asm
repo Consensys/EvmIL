@@ -1,6 +1,6 @@
 .code
-        push lab0
+        push _lab0
         jump
         db 0x00
-lab0:
+_lab0:
         jumpdest
