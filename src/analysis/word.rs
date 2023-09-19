@@ -80,7 +80,7 @@ impl fmt::Display for aw256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             aw256::Word(w) => {
-                write!(f,"{w:x}")?;
+                write!(f,"{w:#x}")?;
             }
             aw256::Unknown => {
                 write!(f,"??")?;
