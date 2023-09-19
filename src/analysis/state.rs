@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt::Debug;
+use std::fmt;
 use crate::util::{JoinInto,Bottom};
 use super::{EvmWord,EvmMemory,EvmStack,EvmStorage};
 
@@ -28,7 +28,7 @@ use super::{EvmWord,EvmMemory,EvmStack,EvmStorage};
 /// analysis over a sequence of EVM bytecodes produces abstract states
 /// at each point which summarise the _set of all possible states_ at
 /// that point.
-pub trait EvmState : Debug {
+pub trait EvmState : fmt::Debug {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
     /// will use something that can, for example, describe unknown
@@ -157,5 +157,16 @@ where S:EvmStack,
     /// code section.
     fn goto(&mut self, pc: usize) {
         self.pc = pc;
+    }
+}
+
+impl<S,M,T> fmt::Display for ConcreteState<S,M,T>
+where S:EvmStack+Default+fmt::Display,
+      M:EvmMemory<Word=S::Word>+Default,
+      T:EvmStorage<Word=S::Word>+Default   
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"|{}|",self.stack)?;
+        Ok(())
     }
 }
