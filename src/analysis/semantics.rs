@@ -60,14 +60,14 @@ where T::Word : Top {
         // ===========================================================
         STOP => Outcome::Return,
         ADD => execute_binary(state,|l,r| l+r),
-        MUL => execute_binary(state, |_,_| T::Word::TOP),
+        MUL => execute_binary(state, |l,r| l*r),
         SUB => execute_binary(state, |l,r| l-r),
-        DIV => execute_binary(state,  |_,_| T::Word::TOP),
+        DIV => execute_binary(state,  |l,r| l/r),
         SDIV => execute_binary(state,  |_,_| T::Word::TOP),
-        MOD => execute_binary(state,  |_,_| T::Word::TOP),
+        MOD => execute_binary(state,  |l,r| l%r),
         SMOD => execute_binary(state,  |_,_| T::Word::TOP),
-        ADDMOD => execute_ternary(state,  |_,_,_| T::Word::TOP),
-        MULMOD => execute_ternary(state, |_,_,_| T::Word::TOP),
+        ADDMOD => execute_ternary(state,  |l,r,m| (l+r) % m),
+        MULMOD => execute_ternary(state, |l,r,m| (l*r) % m),
         EXP => execute_binary(state,  |_,_| T::Word::TOP),
         SIGNEXTEND => execute_binary(state,  |_,_| T::Word::TOP),
 
@@ -80,10 +80,10 @@ where T::Word : Top {
         SGT => execute_binary(state, |_,_| T::Word::TOP),
         EQ => execute_binary(state, |_,_| T::Word::TOP),
         ISZERO => execute_unary(state, |_| T::Word::TOP),
-        AND => execute_binary(state, |_,_| T::Word::TOP),
-        OR => execute_binary(state, |_,_| T::Word::TOP),
-        XOR => execute_binary(state, |_,_| T::Word::TOP),
-        NOT => execute_unary(state, |_| T::Word::TOP),
+        AND => execute_binary(state, |l,r| l&r),
+        OR => execute_binary(state, |l,r| l|r),
+        XOR => execute_binary(state, |l,r| l^r),
+        NOT => execute_unary(state, |w| !w),
         BYTE => execute_binary(state, |_,_| T::Word::TOP),
         SHL => execute_binary(state, |_,_| T::Word::TOP),
         SHR => execute_binary(state, |_,_| T::Word::TOP),
@@ -411,7 +411,6 @@ fn execute_jump<T:EvmState>(mut state: T) -> Outcome<T> {
         // Pop jump address
         let address = stack.pop();
         // Jump to the concrete address
-        println!("ADDRESS {address:?}");        
         state.goto(address.constant().to());
         // Done
         Outcome::Continue(state)

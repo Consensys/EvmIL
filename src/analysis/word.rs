@@ -21,8 +21,13 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
     PartialEq +
     std::ops::Add<Output = Self> +
     std::ops::Sub<Output = Self> +
-    std::ops::Mul<Output = Self>
-    // std::ops::Rem<Output = Self> +
+    std::ops::Mul<Output = Self> +
+    std::ops::Div<Output = Self> +    
+    std::ops::Rem<Output = Self> +
+    std::ops::BitAnd<Output = Self> +
+    std::ops::BitOr<Output = Self> +
+    std::ops::BitXor<Output = Self> +
+    std::ops::Not<Output = Self>
     // std::ops::Not<Output = Self> +
     // std::ops::Shl<Output = Self> +
     // std::ops::Shr<Output = Self>
@@ -46,7 +51,19 @@ impl fmt::Display for aw256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             aw256::Word(w) => {
-                write!(f,"{w:#x}")?;
+                let mut first = true;
+                write!(f,"0x")?;
+                // Following is necessary because ruint::Uint doesn't
+                // appear to play nicely with formatting hexadecimal.                
+                for l in w.as_limbs().iter().rev() {
+                    if *l != 0 || !first {
+                        write!(f,"{l:02x}")?;
+                        first = false;
+                    }
+                }
+                if first {
+                    write!(f,"00")?;
+                } 
             }
             aw256::Unknown => {
                 write!(f,"??")?;
@@ -121,7 +138,7 @@ impl std::ops::Mul for aw256 {
 
     fn mul(self, rhs: Self) -> Self {
         match (self, rhs) {
-            (aw256::Word(l),aw256::Word(r)) => aw256::Unknown,
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l*r),
             (_,_) => aw256::Unknown
         }
     }
@@ -132,8 +149,63 @@ impl std::ops::Div for aw256 {
 
     fn div(self, rhs: Self) -> Self {
         match (self, rhs) {
-            (aw256::Word(l),aw256::Word(r)) => aw256::Unknown,
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l/r),
             (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::Rem for aw256 {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l%r),
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::BitAnd for aw256 {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l&r),
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::BitOr for aw256 {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l|r),
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::BitXor for aw256 {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l^r),
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::Not for aw256 {
+    type Output = Self;
+
+    fn not(self) -> Self {
+        match self {
+            aw256::Word(l) => aw256::Word(!l),
+            _ => aw256::Unknown
         }
     }
 }
