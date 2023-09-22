@@ -18,8 +18,8 @@ use crate::util::{Concretizable,w256,Top};
 pub trait EvmWord : Sized + Clone + fmt::Debug +
     From<w256> + // Allow conversion from 256 bit words
     Concretizable<Item=w256> + // Allow conversion back to 256 words
-    PartialEq
-    // std::ops::Add<Output = Self> +
+    PartialEq +
+    std::ops::Add<Output = Self>
     // std::ops::Sub<Output = Self> +
     // std::ops::Mul<Output = Self> +
     // std::ops::Rem<Output = Self> +
@@ -40,6 +40,20 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
 pub enum aw256 {
     Word(w256),
     Unknown
+}
+
+impl fmt::Display for aw256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            aw256::Word(w) => {
+                write!(f,"{w:#x}")?;
+            }
+            aw256::Unknown => {
+                write!(f,"??")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl From<w256> for aw256 {
@@ -76,16 +90,17 @@ impl EvmWord for aw256 {
 
 }
 
-impl fmt::Display for aw256 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            aw256::Word(w) => {
-                write!(f,"{w:#x}")?;
-            }
-            aw256::Unknown => {
-                write!(f,"??")?;
-            }
+// ===================================================================
+// Arithmetic Operations
+// ===================================================================
+
+impl std::ops::Add for aw256 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l+r),
+            (_,_) => aw256::Unknown
         }
-        Ok(())
     }
 }

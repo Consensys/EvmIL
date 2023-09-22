@@ -59,7 +59,7 @@ where T::Word : Top {
         // 0s: Stop and Arithmetic Operations
         // ===========================================================
         STOP => Outcome::Return,
-        ADD => execute_binary(state,|_,_| T::Word::TOP),
+        ADD => execute_binary(state,|l,r| l+r),
         MUL => execute_binary(state, |_,_| T::Word::TOP),
         SUB => execute_binary(state, |_,_| T::Word::TOP),
         DIV => execute_binary(state,  |_,_| T::Word::TOP),
