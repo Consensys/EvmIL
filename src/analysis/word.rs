@@ -32,6 +32,9 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
     // std::ops::Shl<Output = Self> +
     // std::ops::Shr<Output = Self>
 {
+    fn less_than(self,rhs:Self)->Self;
+    fn equal(self,rhs:Self)->Self;
+    fn is_zero(self)->Self;    
 }
 
 // ===================================================================
@@ -104,7 +107,36 @@ impl Concretizable for aw256 {
 }
 
 impl EvmWord for aw256 {
-
+    fn less_than(self,rhs:Self)->Self {
+        match (self,rhs) {
+            (aw256::Word(l),aw256::Word(r)) => {
+                if l < r { aw256::Word(w256::from(1)) }
+                else { aw256::Word(w256::from(0)) }
+            }
+            (_,_) => aw256::Unknown
+        }
+    }
+    fn equal(self,rhs:Self)->Self {
+        match (self,rhs) {
+            (aw256::Word(l),aw256::Word(r)) => {
+                if l == r { aw256::Word(w256::from(1)) }
+                else { aw256::Word(w256::from(0)) }
+            }
+            (_,_) => aw256::Unknown
+        }        
+    }
+    fn is_zero(self) -> Self {
+        match self {
+            aw256::Word(w) => {
+                let zero = w256::from(0);
+                if w == zero { aw256::Word(w256::from(1)) }
+                else { aw256::Word(zero) }                                
+            }
+            aw256::Unknown => {               
+                aw256::Unknown                
+            }
+        }        
+    }
 }
 
 // ===================================================================

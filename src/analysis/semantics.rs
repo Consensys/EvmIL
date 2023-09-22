@@ -12,7 +12,7 @@
 use crate::util::{Concretizable,w256,Top};
 use crate::bytecode::{Instruction};
 use crate::bytecode::Instruction::*;
-use super::{EvmState,EvmStack,EvmMemory,EvmStorage};
+use super::{EvmState,EvmStack,EvmMemory,EvmStorage,EvmWord};
 
 /// Represents the possible outcomes from executing a given
 /// instruction in a given state.
@@ -54,6 +54,7 @@ use EvmException::*;
 /// more) output states.
 pub fn execute<T:EvmState+Clone>(insn: &Instruction, state: T) -> Outcome<T>
 where T::Word : Top {
+    
     match insn {
         // ===========================================================
         // 0s: Stop and Arithmetic Operations
@@ -74,12 +75,12 @@ where T::Word : Top {
         // ===========================================================
         // 10s: Comparison & Bitwise Logic Operations
         // ===========================================================
-        LT => execute_binary(state, |_,_| T::Word::TOP),
-        GT => execute_binary(state, |_,_| T::Word::TOP),
+        LT => execute_binary(state, |l,r| l.less_than(r)),
+        GT => execute_binary(state, |l,r| r.less_than(l)),
         SLT => execute_binary(state, |_,_| T::Word::TOP),
         SGT => execute_binary(state, |_,_| T::Word::TOP),
-        EQ => execute_binary(state, |_,_| T::Word::TOP),
-        ISZERO => execute_unary(state, |_| T::Word::TOP),
+        EQ => execute_binary(state, |l,r| r.equal(l)),
+        ISZERO => execute_unary(state, |l| l.is_zero()),
         AND => execute_binary(state, |l,r| l&r),
         OR => execute_binary(state, |l,r| l|r),
         XOR => execute_binary(state, |l,r| l^r),

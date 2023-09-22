@@ -16,7 +16,7 @@ use super::semantics::{execute,Outcome};
 
 pub fn trace<T>(insns: &[Instruction], init: T::State) -> Vec<T>
 where T:EvmStateSet+Bottom,
-      T::State: Clone, <T::State as EvmState>::Word: Top
+      T::State: Clone, <T::State as EvmState>::Word: Top 
 {
     // initialise state data
     let mut states = Vec::new();
