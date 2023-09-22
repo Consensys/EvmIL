@@ -19,9 +19,9 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
     From<w256> + // Allow conversion from 256 bit words
     Concretizable<Item=w256> + // Allow conversion back to 256 words
     PartialEq +
-    std::ops::Add<Output = Self>
-    // std::ops::Sub<Output = Self> +
-    // std::ops::Mul<Output = Self> +
+    std::ops::Add<Output = Self> +
+    std::ops::Sub<Output = Self> +
+    std::ops::Mul<Output = Self>
     // std::ops::Rem<Output = Self> +
     // std::ops::Not<Output = Self> +
     // std::ops::Shl<Output = Self> +
@@ -100,6 +100,39 @@ impl std::ops::Add for aw256 {
     fn add(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l+r),
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::Sub for aw256 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Word(l-r),
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::Mul for aw256 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Unknown,
+            (_,_) => aw256::Unknown
+        }
+    }
+}
+
+impl std::ops::Div for aw256 {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (aw256::Word(l),aw256::Word(r)) => aw256::Unknown,
             (_,_) => aw256::Unknown
         }
     }

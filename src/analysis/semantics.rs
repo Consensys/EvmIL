@@ -61,7 +61,7 @@ where T::Word : Top {
         STOP => Outcome::Return,
         ADD => execute_binary(state,|l,r| l+r),
         MUL => execute_binary(state, |_,_| T::Word::TOP),
-        SUB => execute_binary(state, |_,_| T::Word::TOP),
+        SUB => execute_binary(state, |l,r| l-r),
         DIV => execute_binary(state,  |_,_| T::Word::TOP),
         SDIV => execute_binary(state,  |_,_| T::Word::TOP),
         MOD => execute_binary(state,  |_,_| T::Word::TOP),
@@ -222,8 +222,8 @@ where F:Fn(T::Word,T::Word)->T::Word {
     if !stack.has_operands(2) {
         Outcome::Exception(StackUnderflow)
     } else {
-        let rhs = stack.pop();
         let lhs = stack.pop();
+        let rhs = stack.pop();
         stack.push(op(lhs,rhs));
         state.skip(1);
         Outcome::Continue(state)
@@ -411,7 +411,8 @@ fn execute_jump<T:EvmState>(mut state: T) -> Outcome<T> {
         // Pop jump address
         let address = stack.pop();
         // Jump to the concrete address
-        state.goto(address.constant().into());
+        println!("ADDRESS {address:?}");        
+        state.goto(address.constant().to());
         // Done
         Outcome::Continue(state)
     }
@@ -431,7 +432,7 @@ fn execute_jumpi<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
         // Current state moves to next instruction
         state.skip(1);
         // Branch state jumps to address
-        branch.goto(address.constant().into());
+        branch.goto(address.constant().to());
         // Done
         Outcome::Split(state,branch)
     }
@@ -442,11 +443,18 @@ fn execute_jumpi<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
 // ===================================================================
 
 fn execute_push<T:EvmState>(mut state: T, bytes: &[u8]) -> Outcome<T> {
+    assert!(bytes.len() <= 32);
     let stack = state.stack_mut();
     //
     if stack.has_capacity(1) {
         // Extract word from bytes
-        let n = w256::from_be_bytes(&bytes);
+        let mut bs = [0u8; 32];
+        let mut j = 32 - bytes.len();
+        for i in 0..bytes.len() {
+            bs[j] = bytes[i];
+            j += 1;
+        }
+        let n = w256::from_be_bytes(bs);
         // Push word on stack, and advance pc.
         stack.push(T::Word::from(n));
         // Advance program counter
