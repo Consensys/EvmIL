@@ -1,12 +1,12 @@
-use evmil::util::{w256, Interval, IntervalStack, Top};
+use evmil::util::{w256, Interval, IntervalStack, W256_ONE, W256_TWO, W256_THREE, Top};
 
 type Word = Interval<w256>;
 
-const ZERO: Word = Interval::new(w256::ZERO, w256::ZERO);
-const ONE: Word = Interval::new(w256::ONE, w256::ONE);
-const TWO: Word = Interval::new(w256::TWO, w256::TWO);
-const ONETWO: Word = Interval::new(w256::ONE, w256::TWO);
-const THREE: Word = Interval::new(w256::THREE, w256::THREE);
+const ZERO: Word = Interval::new(w256::ZERO,w256::ZERO);
+const ONE: Word = Interval::new(W256_ONE, W256_ONE);
+const TWO: Word = Interval::new(W256_TWO, W256_TWO);
+const ONETWO: Word = Interval::new(W256_ONE, W256_TWO);
+const THREE: Word = Interval::new(W256_THREE, W256_THREE);
 const UNKNOWN: Word = Interval::TOP;
 
 #[test]

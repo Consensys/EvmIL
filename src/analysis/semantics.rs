@@ -12,7 +12,7 @@
 use crate::util::{Concretizable,w256,Top};
 use crate::bytecode::{Instruction};
 use crate::bytecode::Instruction::*;
-use super::{EvmState,EvmStack,EvmMemory,EvmStorage};
+use super::{EvmState,EvmStack,EvmMemory,EvmStorage,EvmWord};
 
 /// Represents the possible outcomes from executing a given
 /// instruction in a given state.
@@ -54,36 +54,37 @@ use EvmException::*;
 /// more) output states.
 pub fn execute<T:EvmState+Clone>(insn: &Instruction, state: T) -> Outcome<T>
 where T::Word : Top {
+    
     match insn {
         // ===========================================================
         // 0s: Stop and Arithmetic Operations
         // ===========================================================
         STOP => Outcome::Return,
-        ADD => execute_binary(state,|_,_| T::Word::TOP),
-        MUL => execute_binary(state, |_,_| T::Word::TOP),
-        SUB => execute_binary(state, |_,_| T::Word::TOP),
-        DIV => execute_binary(state,  |_,_| T::Word::TOP),
+        ADD => execute_binary(state,|l,r| l+r),
+        MUL => execute_binary(state, |l,r| l*r),
+        SUB => execute_binary(state, |l,r| l-r),
+        DIV => execute_binary(state,  |l,r| l/r),
         SDIV => execute_binary(state,  |_,_| T::Word::TOP),
-        MOD => execute_binary(state,  |_,_| T::Word::TOP),
+        MOD => execute_binary(state,  |l,r| l%r),
         SMOD => execute_binary(state,  |_,_| T::Word::TOP),
-        ADDMOD => execute_ternary(state,  |_,_,_| T::Word::TOP),
-        MULMOD => execute_ternary(state, |_,_,_| T::Word::TOP),
+        ADDMOD => execute_ternary(state,  |l,r,m| (l+r) % m),
+        MULMOD => execute_ternary(state, |l,r,m| (l*r) % m),
         EXP => execute_binary(state,  |_,_| T::Word::TOP),
         SIGNEXTEND => execute_binary(state,  |_,_| T::Word::TOP),
 
         // ===========================================================
         // 10s: Comparison & Bitwise Logic Operations
         // ===========================================================
-        LT => execute_binary(state, |_,_| T::Word::TOP),
-        GT => execute_binary(state, |_,_| T::Word::TOP),
+        LT => execute_binary(state, |l,r| l.less_than(r)),
+        GT => execute_binary(state, |l,r| r.less_than(l)),
         SLT => execute_binary(state, |_,_| T::Word::TOP),
         SGT => execute_binary(state, |_,_| T::Word::TOP),
-        EQ => execute_binary(state, |_,_| T::Word::TOP),
-        ISZERO => execute_unary(state, |_| T::Word::TOP),
-        AND => execute_binary(state, |_,_| T::Word::TOP),
-        OR => execute_binary(state, |_,_| T::Word::TOP),
-        XOR => execute_binary(state, |_,_| T::Word::TOP),
-        NOT => execute_unary(state, |_| T::Word::TOP),
+        EQ => execute_binary(state, |l,r| r.equal(l)),
+        ISZERO => execute_unary(state, |l| l.is_zero()),
+        AND => execute_binary(state, |l,r| l&r),
+        OR => execute_binary(state, |l,r| l|r),
+        XOR => execute_binary(state, |l,r| l^r),
+        NOT => execute_unary(state, |w| !w),
         BYTE => execute_binary(state, |_,_| T::Word::TOP),
         SHL => execute_binary(state, |_,_| T::Word::TOP),
         SHR => execute_binary(state, |_,_| T::Word::TOP),
@@ -222,8 +223,8 @@ where F:Fn(T::Word,T::Word)->T::Word {
     if !stack.has_operands(2) {
         Outcome::Exception(StackUnderflow)
     } else {
-        let rhs = stack.pop();
         let lhs = stack.pop();
+        let rhs = stack.pop();
         stack.push(op(lhs,rhs));
         state.skip(1);
         Outcome::Continue(state)
@@ -411,7 +412,7 @@ fn execute_jump<T:EvmState>(mut state: T) -> Outcome<T> {
         // Pop jump address
         let address = stack.pop();
         // Jump to the concrete address
-        state.goto(address.constant().into());
+        state.goto(address.constant().to());
         // Done
         Outcome::Continue(state)
     }
@@ -431,7 +432,7 @@ fn execute_jumpi<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
         // Current state moves to next instruction
         state.skip(1);
         // Branch state jumps to address
-        branch.goto(address.constant().into());
+        branch.goto(address.constant().to());
         // Done
         Outcome::Split(state,branch)
     }
@@ -442,11 +443,18 @@ fn execute_jumpi<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
 // ===================================================================
 
 fn execute_push<T:EvmState>(mut state: T, bytes: &[u8]) -> Outcome<T> {
+    assert!(bytes.len() <= 32);
     let stack = state.stack_mut();
     //
     if stack.has_capacity(1) {
         // Extract word from bytes
-        let n = w256::from_be_bytes(&bytes);
+        let mut bs = [0u8; 32];
+        let mut j = 32 - bytes.len();
+        for i in 0..bytes.len() {
+            bs[j] = bytes[i];
+            j += 1;
+        }
+        let n = w256::from_be_bytes(bs);
         // Push word on stack, and advance pc.
         stack.push(T::Word::from(n));
         // Advance program counter
