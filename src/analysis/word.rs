@@ -18,23 +18,23 @@ use crate::util::{Concretizable,w256,Top};
 pub trait EvmWord : Sized + Clone + fmt::Debug +
     From<w256> + // Allow conversion from 256 bit words
     Concretizable<Item=w256> + // Allow conversion back to 256 words
-    PartialEq +
-    std::ops::Add<Output = Self> +
-    std::ops::Sub<Output = Self> +
-    std::ops::Mul<Output = Self> +
-    std::ops::Div<Output = Self> +    
-    std::ops::Rem<Output = Self> +
-    std::ops::BitAnd<Output = Self> +
-    std::ops::BitOr<Output = Self> +
-    std::ops::BitXor<Output = Self> +
-    std::ops::Not<Output = Self>
-    // std::ops::Not<Output = Self> +
-    // std::ops::Shl<Output = Self> +
-    // std::ops::Shr<Output = Self>
+    PartialEq
 {
+    // Comparators
     fn less_than(self,rhs:Self)->Self;
     fn equal(self,rhs:Self)->Self;
-    fn is_zero(self)->Self;    
+    fn is_zero(self)->Self;
+    // Arithmetic
+    fn add(self,rhs:Self)->Self;
+    fn sub(self,rhs:Self)->Self;
+    fn mul(self,rhs:Self)->Self;
+    fn div(self,rhs:Self)->Self;
+    fn rem(self,rhs:Self)->Self;
+    // Bitwise
+    fn and(self,rhs:Self)->Self;
+    fn or(self,rhs:Self)->Self;
+    fn xor(self,rhs:Self)->Self;
+    fn not(self)->Self;
 }
 
 // ===================================================================
@@ -43,7 +43,7 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
 
 /// Simplest possible (abstract) word which is either a _concrete_
 /// word or _unknown_.
-#[derive(Copy,Clone,Debug,PartialEq)]
+#[derive(Copy,Clone,PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum aw256 {
     Word(w256),
@@ -51,6 +51,12 @@ pub enum aw256 {
 }
 
 impl fmt::Display for aw256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{:?}",self)
+    }
+}
+
+impl fmt::Debug for aw256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             aw256::Word(w) => {
@@ -137,107 +143,60 @@ impl EvmWord for aw256 {
             }
         }        
     }
-}
-
-// ===================================================================
-// Arithmetic Operations
-// ===================================================================
-
-impl std::ops::Add for aw256 {
-    type Output = Self;
-
+    // Arithmetic
     fn add(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l+r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::Sub for aw256 {
-    type Output = Self;
-
     fn sub(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l-r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::Mul for aw256 {
-    type Output = Self;
-
     fn mul(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l*r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::Div for aw256 {
-    type Output = Self;
-
     fn div(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l/r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::Rem for aw256 {
-    type Output = Self;
-
     fn rem(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l%r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::BitAnd for aw256 {
-    type Output = Self;
-
-    fn bitand(self, rhs: Self) -> Self {
+    // bitwise
+    fn and(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l&r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::BitOr for aw256 {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self {
+    fn or(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l|r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::BitXor for aw256 {
-    type Output = Self;
-
-    fn bitxor(self, rhs: Self) -> Self {
+    fn xor(self, rhs: Self) -> Self {
         match (self, rhs) {
             (aw256::Word(l),aw256::Word(r)) => aw256::Word(l^r),
             (_,_) => aw256::Unknown
         }
     }
-}
-
-impl std::ops::Not for aw256 {
-    type Output = Self;
-
     fn not(self) -> Self {
         match self {
             aw256::Word(l) => aw256::Word(!l),
             _ => aw256::Unknown
         }
-    }
+    }   
 }

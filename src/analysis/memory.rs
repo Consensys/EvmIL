@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt::Debug;
+use std::fmt;
 use std::marker::PhantomData;
 use crate::util::Top;
 use super::{EvmState,EvmWord};
@@ -17,7 +17,7 @@ use super::{EvmState,EvmWord};
 /// Abstraction of memory within an EVM.  This provides the minimal
 /// set of operations required to implement the semantics of a given
 /// bytecode instruction.  For example, reading/writing to memory.
-pub trait EvmMemory : Debug {
+pub trait EvmMemory : fmt::Debug {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
     /// will use something that can, for example, describe unknown
@@ -43,7 +43,7 @@ pub trait EvmMemory : Debug {
 /// The simplest possible implementation of `EvmMemory` which simply
 /// returns "unknown" for every location.  In other words, it doesn't
 /// actually analyse memory at all.
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,PartialEq)]
 pub struct UnknownMemory<T:EvmWord+Top> {
     dummy: PhantomData<T>
 }
@@ -74,3 +74,18 @@ impl<T:EvmWord+Top> Default for UnknownMemory<T> {
     }                         
 }
 
+impl<T:EvmWord+Top> fmt::Display for UnknownMemory<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"???")?;
+        Ok(())
+    }
+}
+
+impl<T:EvmWord+Top> fmt::Debug for UnknownMemory<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"???")?;
+        Ok(())
+    }
+}

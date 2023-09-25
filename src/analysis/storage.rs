@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt::Debug;
+use std::fmt;
 use std::marker::PhantomData;
 use crate::util::Top;
 use super::{EvmState,EvmWord};
@@ -18,7 +18,7 @@ use super::{EvmState,EvmWord};
 /// minimal set of operations required to implement the semantics of a
 /// given bytecode instruction.  For example, reading/writing from
 /// storage.
-pub trait EvmStorage : Debug {
+pub trait EvmStorage : fmt::Debug {
     /// Defines what constitutes a word in this EVM.  For example, a
     /// concrete evm will use a `w256` here whilst an abstract evm
     /// will use something that can, for example, describe unknown
@@ -39,7 +39,7 @@ pub trait EvmStorage : Debug {
 /// The simplest possible implementation of `EvmStorage` which simply
 /// returns "unknown" for every location.  In other words, it doesn't
 /// actually analyse storage at all.
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,PartialEq)]
 pub struct UnknownStorage<T:EvmWord+Top> {
     dummy: PhantomData<T>
 }
@@ -64,4 +64,21 @@ impl<T:EvmWord+Top> Default for UnknownStorage<T> {
     fn default() -> Self {
         Self::new()
     }                         
+}
+
+
+impl<T:EvmWord+Top> fmt::Display for UnknownStorage<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"???")?;
+        Ok(())
+    }
+}
+
+impl<T:EvmWord+Top> fmt::Debug for UnknownStorage<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"???")?;
+        Ok(())
+    }
 }

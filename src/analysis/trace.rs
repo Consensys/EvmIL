@@ -9,13 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt::Debug;
 use crate::util::{Bottom,Top};
 use crate::bytecode::Instruction;
 use super::{EvmState,EvmStateSet};
 use super::semantics::{execute,Outcome};
 
 pub fn trace<T>(insns: &[Instruction], init: T::State) -> Vec<T>
-where T:EvmStateSet+Bottom,
+where T:EvmStateSet+Bottom+PartialEq+Debug,
       T::State: Clone, <T::State as EvmState>::Word: Top 
 {
     // initialise state data
@@ -36,7 +37,7 @@ where T:EvmStateSet+Bottom,
             continue;
         }
         // Determine instruction position
-        let ipc = offsets[st.pc()];        
+        let ipc = offsets[st.pc()];
         // Join state into set
         if states[ipc].join_into(&st) {
             // Something changed, therefore execute this state to
@@ -58,6 +59,8 @@ where T:EvmStateSet+Bottom,
                 }                
             }
         }
+        // Debug info
+        //println!("{:?}",states[ipc]);        
     }
     // Done
     states
