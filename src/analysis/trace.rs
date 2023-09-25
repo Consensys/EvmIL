@@ -60,7 +60,7 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
             }
         }
         // Debug info
-        println!("{:?}",states[ipc]);        
+        //println!("{:?}",states[ipc]);        
     }
     // Done
     states
