@@ -34,6 +34,9 @@ pub enum ParseError {
     /// When parsing some assembly language, an invalid hex literal
     /// was encountered.
     InvalidHexString(usize),
+    /// When parsing some assembly language, an invalid stack or
+    /// memory location was encountered.
+    InvalidLocation(usize),    
     /// When parsing some assembly language, an unexpected mnemonic
     /// was encountered.
     InvalidInstruction,
@@ -115,10 +118,15 @@ impl<'a> Parser<'a> {
         let mut builder = Builder::new();
         loop {
             match self.lexer.lookahead()? {
+                Token::Identifier("havoc"|"HAVOC") => {
+                    _ = self.lexer.next();
+                    let operand = self.lexer.next()?;                    
+                    parse_havoc(&mut builder,operand)?;
+                }                
                 Token::Identifier("push"|"PUSH") => {
                     _ = self.lexer.next();
                     let operand = self.lexer.next()?;                    
-                    Self::parse_push(&mut builder,operand)?;
+                    parse_push(&mut builder,operand)?;
                 }
                 Token::Identifier("rjump"|"RJUMP") => {
                     _ = self.lexer.next();
@@ -180,28 +188,38 @@ impl<'a> Parser<'a> {
             }
         };
     }
+}
 
-
-    /// Parse a push instruction with a given operand.
-    fn parse_push(builder: &mut Builder, operand: Token) -> Result<(),ParseError> {
-        // Push always expects an argument, though it could be a
-        // label or a hexadecimal operand.
-        match operand {
-            Token::Hex(s) => {
-                builder.push(PUSH(parse_hex(s)?));
-                Ok(())
-            }
-            Token::Identifier(s) => {
-                // Determine label index
-                let index = builder.get_label(s);
-                // PUsh instruction
-                builder.push_labeled(PUSH(label_bytes(index)));
-                Ok(())
-            }
-            Token::EOF => Err(ParseError::ExpectedOperand),
-            _ => Err(ParseError::UnexpectedToken)
+/// Parse a push instruction with a given operand.
+fn parse_push(builder: &mut Builder, operand: Token) -> Result<(),ParseError> {
+    // Push always expects an argument, though it could be a
+    // label or a hexadecimal operand.
+    match operand {
+        Token::Hex(s) => {
+            builder.push(PUSH(parse_hex(s)?));
+            Ok(())
         }
-    }    
+        Token::Identifier(s) => {
+            // Determine label index
+            let index = builder.get_label(s);
+            // PUsh instruction
+            builder.push_labeled(PUSH(label_bytes(index)));
+            Ok(())
+        }
+        Token::EOF => Err(ParseError::ExpectedOperand),
+        _ => Err(ParseError::UnexpectedToken)
+    }
+}
+
+fn parse_havoc(builder: &mut Builder, operand: Token) -> Result<(),ParseError> {
+    match operand {
+        Token::Loc(s) => {
+            builder.push(HAVOC(parse_loc(s)?));
+            Ok(())
+        }
+        Token::EOF => Err(ParseError::ExpectedOperand),
+        _ => Err(ParseError::UnexpectedToken)        
+    }
 }
 
 /// Parse a rjump instruction with a given operand label.
@@ -245,6 +263,14 @@ fn parse_hex(hex: &str) -> Result<Vec<u8>,ParseError> {
     match hex.from_hex_string() {
         Ok(bytes) => { Ok(bytes) }
         Err(_e) => Err(ParseError::InvalidHexString(0))
+    }
+}
+
+/// Parse a (stack or memory) location index
+fn parse_loc(loc: &str) -> Result<usize,ParseError> {
+    match loc.parse() {
+        Ok(val) => { Ok(val) }
+        Err(_e) => Err(ParseError::InvalidLocation(0))
     }
 }
 

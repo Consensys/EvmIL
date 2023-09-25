@@ -195,6 +195,9 @@ pub enum Instruction {
     // Signals arbitrary data in the contract, rather than bytecode
     // instructions.
     DATA(Vec<u8>),
+    // (Virtual) Indicates a specific location on the stack should be
+    // sent to *havoc*.  Here, `0` represents the top of the stack.
+    HAVOC(usize)
 }
 
 use Instruction::*;
@@ -250,6 +253,9 @@ impl Instruction {
                 bytes.push(self.opcode());
                 // Push operands
                 bytes.extend(args);
+            }
+            HAVOC(_) => {
+                // Virtial instruction, so ignore
             }
             _ => {
                 // All other instructions have no operands.
@@ -385,7 +391,7 @@ impl Instruction {
             INVALID => opcode::INVALID,
             SELFDESTRUCT => opcode::SELFDESTRUCT,
             //
-            DATA(_) => {
+            _ => {
                 panic!("Invalid instruction ({:?})", self);
             }
         };
