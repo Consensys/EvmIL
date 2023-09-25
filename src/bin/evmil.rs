@@ -53,6 +53,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .arg(Arg::new("target").required(true))
                 .visible_alias("a")
         )
+        .subcommand(
+            Command::new("infer")
+                .about("annotations on an assembly contract")
+                .arg(Arg::new("debug").short('d').long("debug"))                
+                .arg(Arg::new("target").required(true))
+                .visible_alias("i")
+        )
         .get_matches();
     // Extract top-level flags
     let verbose = matches.is_present("verbose");
@@ -65,12 +72,36 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(("assemble", args)) => assemble(args),
         Some(("compile", args)) => compile(args),
         Some(("disassemble", args)) => disassemble(args),
+        Some(("infer", args)) => infer(args),        
         _ => unreachable!(),
     }?;
     // Determine appropriate exit code
     let exitcode = if ok { 0 } else { 1 };
     // Done
     std::process::exit(exitcode);
+}
+
+
+/// Assemble a given bytecode sequence.
+fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
+    let target = args.get_one::<String>("target").unwrap();
+    // Read from asm file
+    let context = fs::read_to_string(target)?;
+    // Construct assembly from input file
+    let assembly = Assembly::from_str(&context)?;
+    // Check whether EOF or legacy code generation
+    let bytes : Vec<u8> = if args.contains_id("eof") {
+        // EVM Object Format
+        todo!()
+        //assembly.to_eof_bytes()
+    } else {
+        // Legacy
+        assembly.to_legacy_bytes()
+    };
+    // Print the final hex string
+    println!("{}", bytes.to_hex_string());
+    //
+    Ok(true)
 }
 
 /// Compile a given file.
@@ -132,8 +163,29 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     } else {
         Assembly::from_legacy_bytes(&bytes)
     };
-    // Iterate bytecode sections
-    for section in &asm {
+    //
+    disassemble_assembly(args,&asm);
+    //
+    Ok(true)
+}
+
+fn infer(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
+    let target = args.get_one::<String>("target").unwrap();
+    // Read from asm file
+    let context = fs::read_to_string(target)?;
+    // Construct assembly from input file
+    let asm = Assembly::from_str(&context)?;
+    //
+    disassemble_assembly(args,&asm);
+    //
+    Ok(true)
+}
+
+fn disassemble_assembly(args: &ArgMatches, asm: &Assembly) {
+    // Check whether debug information enabled (or not)
+    let debug = args.contains_id("debug");
+    //
+    for section in asm {
         match section {
             StructuredSection::Code(insns) => {
                 println!(".code");
@@ -149,7 +201,6 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
             }
         }
     }
-    Ok(true)
 }
 
 // Disassemble a code section _without_ debug information.  The reason
@@ -185,28 +236,6 @@ fn disassemble_debug_code(insns: &[Instruction]) {
         println!("\t{insn}");
         pc += insn.length();
     } 
-}
-
-/// Assemble a given bytecode sequence.
-fn assemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
-    let target = args.get_one::<String>("target").unwrap();
-    // Read from asm file
-    let context = fs::read_to_string(target)?;
-    // Construct assembly from input file
-    let assembly = Assembly::from_str(&context)?;
-    // Check whether EOF or legacy code generation
-    let bytes : Vec<u8> = if args.contains_id("eof") {
-        // EVM Object Format
-        todo!()
-        //assembly.to_eof_bytes()
-    } else {
-        // Legacy
-        assembly.to_legacy_bytes()
-    };
-    // Print the final hex string
-    println!("{}", bytes.to_hex_string());
-    //
-    Ok(true)
 }
 
 /// Initialise logging using a suitable pattern.
