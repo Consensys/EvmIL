@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt;
 use crate::util::{Bottom,JoinInto};
 use super::EvmState;
 
@@ -20,6 +21,8 @@ use super::EvmState;
 pub trait EvmStateSet : JoinInto<Self::State> {
     /// The underlying type of states stored in this set.
     type State : EvmState;
+    /// Determine the number of states represented in this state set.
+    fn size(&self) -> usize;
     /// Iterate over all distinct states in this set.
     fn iter(&self) -> std::slice::Iter<'_,Self::State>;
 }
@@ -43,6 +46,10 @@ impl<T:Clone+EvmState+PartialEq> JoinInto<T> for Vec<T> {
 impl<T:Clone+EvmState+PartialEq> EvmStateSet for Vec<T> {
     type State = T;
 
+    fn size(&self) -> usize {
+        self.len()
+    }
+    
     fn iter(&self) -> std::slice::Iter<'_,T> {
         self.iter()
     }

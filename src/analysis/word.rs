@@ -43,7 +43,7 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
 
 /// Simplest possible (abstract) word which is either a _concrete_
 /// word or _unknown_.
-#[derive(Copy,Clone,Debug,PartialEq)]
+#[derive(Copy,Clone,PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum aw256 {
     Word(w256),
@@ -51,6 +51,12 @@ pub enum aw256 {
 }
 
 impl fmt::Display for aw256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{:?}",self)
+    }
+}
+
+impl fmt::Debug for aw256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             aw256::Word(w) => {
