@@ -1,5 +1,6 @@
 .code
-        push 0x01
+        push 0x00
+        calldataload
         dup1
         push lab0
         jumpi

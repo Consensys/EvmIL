@@ -1,1 +1,1 @@
-if 1 || 0 goto lab; .lab
+if calldata[0] || 0 goto lab; .lab

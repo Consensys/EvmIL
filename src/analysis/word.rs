@@ -200,3 +200,94 @@ impl EvmWord for aw256 {
         }
     }   
 }
+
+// ===================================================================
+// Constant Word
+// ===================================================================
+
+/// A very simple abstract word which does not support any operations
+/// (e.g. arithmetic or comparators).  Thus, it typically becomes top.
+/// This is useful in some specific situations where we want to
+/// prevent the possibility of infinite ascending chains (i.e. prior
+/// to _havoc analysis_).
+#[derive(Copy,Clone,PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum cw256 {
+    Word(w256),
+    Unknown
+}
+
+impl fmt::Display for cw256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{:?}",self)
+    }
+}
+
+impl fmt::Debug for cw256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            cw256::Word(w) => {
+                let mut first = true;
+                write!(f,"0x")?;
+                // Following is necessary because ruint::Uint doesn't
+                // appear to play nicely with formatting hexadecimal.                
+                for l in w.as_limbs().iter().rev() {
+                    if *l != 0 || !first {
+                        write!(f,"{l:02x}")?;
+                        first = false;
+                    }
+                }
+                if first {
+                    write!(f,"00")?;
+                } 
+            }
+            cw256::Unknown => {
+                write!(f,"??")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl From<w256> for cw256 {
+    fn from(word: w256) -> cw256 { cw256::Word(word) }
+}
+
+impl Top for cw256 {
+    const TOP : cw256 = cw256::Unknown;
+}
+
+impl Concretizable for cw256 {
+    type Item = w256;
+
+    fn is_constant(&self) -> bool {
+        match self {
+            cw256::Word(_) => true,
+            cw256::Unknown => false
+        }
+    }
+
+    fn constant(&self) -> w256 {
+        match self {
+            cw256::Word(w) => *w,
+            cw256::Unknown => {
+                panic!();
+            }
+        }
+    }
+}
+
+impl EvmWord for cw256 {
+    fn less_than(self,rhs:Self)->Self { cw256::Unknown }
+    fn equal(self,rhs:Self)->Self { cw256::Unknown }
+    fn is_zero(self) -> Self { cw256::Unknown }
+    fn add(self, rhs: Self) -> Self { cw256::Unknown }
+    fn sub(self, rhs: Self) -> Self { cw256::Unknown }
+    fn mul(self, rhs: Self) -> Self { cw256::Unknown }
+    fn div(self, rhs: Self) -> Self { cw256::Unknown }
+    fn rem(self, rhs: Self) -> Self { cw256::Unknown }
+    fn and(self, rhs: Self) -> Self { cw256::Unknown }
+    fn or(self, rhs: Self) -> Self  { cw256::Unknown }
+    fn xor(self, rhs: Self) -> Self { cw256::Unknown }
+    fn not(self) -> Self { cw256::Unknown }
+}
