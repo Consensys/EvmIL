@@ -22,7 +22,8 @@ pub enum Token<'a> {
     Section(&'a str),
     Hex(&'a str),
     Identifier(&'a str),
-    Label(&'a str)
+    Label(&'a str),
+    Loc(&'a str) // stack (or memory) location
 }
 
 impl<'a> Token<'a> {
@@ -34,7 +35,8 @@ impl<'a> Token<'a> {
             Token::Section(s) => s.len() + 1,
             Token::Hex(s) => s.len(),
             Token::Identifier(s) => s.len(),
-            Token::Label(s) => s.len() + 1
+            Token::Label(s) => s.len() + 1,
+            Token::Loc(s) => s.len() + 7
         }
     }
 }
@@ -102,11 +104,17 @@ impl<'a> Lexer<'a> {
     fn scan_id_or_label(&self, start: usize) -> Result<Token<'a>,ParseError> {
         // Scan all characters of this identifier or label
         let end = skip(&self.chars,start,|c| c == '_' || c.is_ascii_alphanumeric());
+        // Extract slice
+        let id = &self.input[start..end];
         // Distinguish label versus identifier.
         if end < self.chars.len() && self.chars[end] == ':' {
-            Ok(Token::Label(&self.input[start..end]))
+            Ok(Token::Label(id))
+        } else if id == "stack" && end < self.chars.len() && self.chars[end] == '[' {
+            let start = end+1;
+            let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
+            Ok(Token::Loc(&self.input[start..end]))
         } else {
-            Ok(Token::Identifier(&self.input[start..end]))
+            Ok(Token::Identifier(id))
         }
     }
 

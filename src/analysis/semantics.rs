@@ -176,6 +176,11 @@ where T::Word : Top {
         REVERT => execute_consumer_outcome(state, 2, Outcome::Exception(Revert)),
         INVALID => Outcome::Exception(InvalidOpcode),
         SELFDESTRUCT => execute_consumer_outcome(state, 1, Outcome::Return),
+        // ===========================================================
+        // XXs: Virtual Instructions
+        // ===========================================================        
+        HAVOC(n) => execute_havoc(state, *n),
+        //
         _ => {
             Outcome::Exception(InvalidOpcode)
         }
@@ -426,15 +431,26 @@ fn execute_jumpi<T:EvmState+Clone>(mut state: T) -> Outcome<T> {
     } else {
         // Pop jump address & value
         let address = stack.pop();
-        let _value = stack.pop();
-        // Jump to the concrete address
-        let mut branch = state.clone();
-        // Current state moves to next instruction
-        state.skip(1);
-        // Branch state jumps to address
-        branch.goto(address.constant().to());
-        // Done
-        Outcome::Split(state,branch)
+        let value = stack.pop();
+        // Check for concrete execution
+        if value == T::Word::from(w256::from(0)) {
+            // Move to next instruction
+            state.skip(1);
+            Outcome::Continue(state)
+        } else if value == T::Word::from(w256::from(1)) {
+            // Jump to address            
+            state.goto(address.constant().to());
+            Outcome::Continue(state)            
+        } else {
+            // Jump to the concrete address
+            let mut branch = state.clone();
+            // Current state moves to next instruction
+            state.skip(1);
+            // Branch state jumps to address
+            branch.goto(address.constant().to());
+            // Done
+            Outcome::Split(state,branch)
+        }
     }
 }
 
@@ -502,4 +518,23 @@ fn execute_swap<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
         state.skip(1);
         Outcome::Continue(state)
     }
+}
+
+
+// ===================================================================
+// Havoc
+// ===================================================================
+
+fn execute_havoc<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
+    let stack = state.stack_mut();
+    // Ensure sufficient operands
+    assert!(k < stack.size());
+    // Havoc value at position k
+    let val = stack.set(k,T::Word::from(w256::from(0))).havoc();
+    // Assign it back
+    stack.set(k,val);
+    // Move to next instruction
+    state.skip(1);    
+    //    
+    Outcome::Continue(state)
 }

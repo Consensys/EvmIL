@@ -11,11 +11,11 @@
 // limitations under the License.
 use crate::bytecode::Instruction;
 use crate::util::JoinInto;
-use super::{aw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
+use super::{cw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
 
-type ReachableStack = ConcreteStack<aw256>;
-type ReachableMem = UnknownMemory<aw256>;
-type ReachableStore = UnknownStorage<aw256>;
+type ReachableStack = ConcreteStack<cw256>;
+type ReachableMem = UnknownMemory<cw256>;
+type ReachableStore = UnknownStorage<cw256>;
 type ReachableState = ConcreteState<ReachableStack,ReachableMem,ReachableStore>;
 
 /// For a given bytecode sequence, identify all _reachable_

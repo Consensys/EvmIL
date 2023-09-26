@@ -1,6 +1,7 @@
 .code
         push 0x02
-        push 0x01
+        push 0x00
+        calldataload
         div
         push lab0
         jumpi
