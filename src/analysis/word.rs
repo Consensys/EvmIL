@@ -35,6 +35,8 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
     fn or(self,rhs:Self)->Self;
     fn xor(self,rhs:Self)->Self;
     fn not(self)->Self;
+    // Misc
+    fn havoc(self)->Self;    
 }
 
 // ===================================================================
@@ -198,7 +200,10 @@ impl EvmWord for aw256 {
             aw256::Word(l) => aw256::Word(!l),
             _ => aw256::Unknown
         }
-    }   
+    }
+    fn havoc(self) -> Self {
+        aw256::Unknown
+    }
 }
 
 // ===================================================================
@@ -290,4 +295,5 @@ impl EvmWord for cw256 {
     fn or(self, rhs: Self) -> Self  { cw256::Unknown }
     fn xor(self, rhs: Self) -> Self { cw256::Unknown }
     fn not(self) -> Self { cw256::Unknown }
+    fn havoc(self) -> Self { cw256::Unknown }    
 }

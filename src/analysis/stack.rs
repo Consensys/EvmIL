@@ -25,11 +25,15 @@ pub trait EvmStack : fmt::Debug {
     type Word : EvmWord;
 
     /// Check capacity for `n` additional items on the stack.
-    fn has_capacity(&self, n: usize) -> bool;
-
+    fn has_capacity(&self, n: usize) -> bool {
+        (1024 - self.size()) >= n
+    }
+    
     /// Check at least `n` operands on the stack.
-    fn has_operands(&self, n: usize) -> bool;
-
+    fn has_operands(&self, n: usize) -> bool {
+        self.size() >= n
+    }
+    
     /// Get the size of the stack.
     fn size(&self) -> usize;
 
@@ -42,12 +46,25 @@ pub trait EvmStack : fmt::Debug {
     /// Pop an item from the stack.
     fn pop(&mut self) -> Self::Word;
 
+    /// Set `nth` item from stack (where `n==0` is top element),
+    /// whilst returning the item previously at that position.
+    fn set(&mut self, n: usize, item: Self::Word) -> Self::Word;
+    
     /// Swap top item on stack with nth item on stack (where `n>0`,
     /// and `n==0` would be the top element).
-    fn swap(&mut self, n: usize);
+    fn swap(&mut self, n: usize) {
+        assert!(n > 0);
+        assert!(self.has_operands(n+1));
+        let ith = self.pop();
+        let jth = self.set(n-1,ith);
+        self.push(jth);
+    }        
 
     /// Duplicate nth item on stack (where `n==0` is the top element).
-    fn dup(&mut self, n: usize);
+    fn dup(&mut self, n: usize) {
+        assert!(self.has_operands(n+1));
+        self.push(self.peek(n).clone());
+    }
 }
 
 // ===================================================================
@@ -70,14 +87,6 @@ impl<T:EvmWord> ConcreteStack<T> {
 impl<T:EvmWord> EvmStack for ConcreteStack<T> {
     type Word = T;
 
-    fn has_capacity(&self, n: usize) -> bool {
-        (1024 - self.items.len()) >= n
-    }
-
-    fn has_operands(&self, n: usize) -> bool {
-        self.items.len() >= n
-    }
-
     fn size(&self) -> usize {
         self.items.len()
     }
@@ -96,19 +105,13 @@ impl<T:EvmWord> EvmStack for ConcreteStack<T> {
         self.items.pop().unwrap()
     }
 
-    fn dup(&mut self, n: usize) {
-        assert!(self.has_operands(n+1));
+    fn set(&mut self, n: usize, item: Self::Word) -> Self::Word {
+        assert!(self.has_operands(n));
         let i = self.items.len() - (n+1);
-        self.items.push(self.items[i].clone());
-    }
-
-    fn swap(&mut self, n: usize) {
-        assert!(n > 0);
-        assert!(self.has_operands(n+1));
-        let i = self.items.len() - (n+1);
-        let j = self.items.len() - 1;
-        // Use slice swap to avoid cloning.
+        let j = self.items.len();        
+        self.items.push(item);
         self.items.swap(i,j);
+        self.items.pop().unwrap()
     }
 }
 
