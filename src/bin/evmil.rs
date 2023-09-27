@@ -234,7 +234,7 @@ fn disassemble_dep_code(insns: &[Instruction]) {
         if insn == &Instruction::JUMPDEST {
             println!("_{pc:#06x}:");
         }
-        print!("\t;; ");
+        print!("\t;; pc={pc:#02x} ");
         for f in 0..deps.frames(i) {
             let fth = deps.get_frame(i,f);
             if fth.len() > 0 {

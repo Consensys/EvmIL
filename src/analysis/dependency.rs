@@ -90,14 +90,16 @@ pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
     let mut deps = Dependencies::new(states.len());
     //
     for (i,insn) in insns.iter().enumerate() {
-        let nops = 0; // number of operands
+        let nops = insn.operands(); // number of operands
         for state in &states[i] {
-            let st_deps : &[usize] = &state.stack().deps;
+            let st_deps = &state.stack();
             // Calculate frame
-            let mut frame = st_deps[0..nops].to_vec();
+            let mut frame = st_deps.top_n(nops).to_vec();
             // Push frame
             deps.frames[i].push(frame);
         }
+        // Remove duplicates
+        deps.frames[i].dedup();
     }
     //
     deps
@@ -109,6 +111,7 @@ pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
 /// file.
 #[derive(Clone,Debug,PartialEq)]
 struct DependencyStack<T:EvmStack> {
+    pc: usize,
     /// Inner stack implementing stack functionality however it
     /// wishes.
     stack: T,
@@ -123,6 +126,12 @@ impl<T:EvmStack> DependencyStack<T> {
     /// underlying stack.
     fn is_valid(&self) -> bool {
         self.stack.size() == self.deps.len()
+    }
+
+    /// Return the top `n` items from the stack.
+    fn top_n(&self, n: usize) -> &[usize] {
+        let m = self.deps.len() - n;
+        &self.deps[m..]
     }
 }
 
@@ -142,7 +151,7 @@ impl<T:EvmStack> EvmStack for DependencyStack<T> {
     fn push(&mut self, item: Self::Word) {
         assert!(self.is_valid());         
         self.stack.push(item);
-        self.deps.push(0); // FIXME!!
+        self.deps.push(self.pc);
     }
 
     fn pop(&mut self) -> Self::Word {
@@ -154,11 +163,20 @@ impl<T:EvmStack> EvmStack for DependencyStack<T> {
     fn set(&mut self, n: usize, item: Self::Word) -> Self::Word {
         assert!(self.is_valid());        
         let i = self.deps.len() - (n+1);
-        let j = self.deps.len();        
-        self.deps.push(0); // FIXME!!
-        self.deps.swap(i,j);
-        self.deps.pop().unwrap();
+        self.deps[i] = self.pc;
         self.stack.set(n,item)
+    }
+
+    fn swap(&mut self, n: usize) {
+        let i = self.deps.len() - (n+1);
+        let j = self.deps.len() - 1;
+        self.stack.swap(n);
+        self.deps.swap(i,j);
+    }        
+
+    fn goto(&mut self, pc: usize) {
+        self.stack.goto(pc);
+        self.pc = pc;
     }
 }
 
@@ -166,7 +184,7 @@ impl<T:EvmStack+Default> Default for DependencyStack<T> {
     fn default() -> Self {
         let stack = T::default();
         let deps = Vec::new();
-        let me = Self{stack,deps};
+        let me = Self{pc:0,stack,deps};
         assert!(me.is_valid());
         me
     }                         

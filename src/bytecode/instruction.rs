@@ -277,6 +277,47 @@ impl Instruction {
             _ => 1,
         }
     }    
+
+    /// Determine how many stack operands this instruction consumes.
+    pub fn operands(&self) -> usize {
+        match self {
+            STOP => 0,
+            ADD|MUL|SUB|DIV|SDIV|MOD|SMOD|EXP|SIGNEXTEND => 2,
+            ADDMOD|MULMOD => 3,        
+            LT|GT|SLT|SGT|EQ|AND|OR|XOR => 2,
+            ISZERO|NOT => 1,
+            BYTE|SHL|SHR|SAR|KECCAK256 => 2,
+            // 30s: Environmental Information
+            ADDRESS|ORIGIN|CALLER|CALLVALUE|CALLDATASIZE|CODESIZE|RETURNDATASIZE|GASPRICE => 0,
+            BALANCE|CALLDATALOAD|EXTCODESIZE|EXTCODEHASH => 1,
+            CALLDATACOPY|CODECOPY|RETURNDATACOPY => 3,
+            EXTCODECOPY => 4,
+            // 40s: Block Information
+            BLOCKHASH => 1,
+            COINBASE|TIMESTAMP|NUMBER|DIFFICULTY|GASLIMIT|CHAINID|SELFBALANCE => 0,
+            // 50s: Stack, Memory, Storage and Flow Operations
+            MSIZE|PC|GAS|JUMPDEST|RJUMP(_) => 0,
+            MLOAD|SLOAD|JUMP|POP|RJUMPI(_) => 1,            
+            MSTORE|MSTORE8|SSTORE|JUMPI => 2,
+            // 60s & 70s: Push Operations            
+            PUSH(_) => 0,
+            // 80s: Duplication Operations
+            DUP(n) => 0,
+            // 90s: Swap Operations
+            SWAP(n) => 0,
+            // a0s: Log Operations
+            LOG(n) => (2+n) as usize,
+            // f0s: System Operations
+            INVALID => 0,
+            SELFDESTRUCT => 1,
+            RETURN|REVERT => 2,            
+            CREATE => 3,
+            CREATE2 => 4,            
+            DELEGATECALL|STATICCALL => 6,            
+            CALL|CALLCODE => 7,
+            _ => { unreachable!(); }
+        }
+    }
     
     /// Determine the opcode for a given instruction.  In many cases,
     /// this is a straightforward mapping.  However, in other cases,
