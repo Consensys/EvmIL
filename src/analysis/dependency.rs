@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::bytecode::Instruction;
+use super::{cw256,EvmStack,EvmState,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
 
 /// Identifies the dependency frames for each instruction in a given
 /// sequence of instructions.
@@ -18,6 +19,11 @@ pub struct Dependencies {
 }
 
 impl Dependencies {
+    fn new(width: usize) -> Self {
+        // Initially emtpy set of frames to the required width.
+        let frames = vec![Vec::new();width];
+        Self{frames}
+    }
     /// Determine the number of dependency frames for a given
     /// instruction.
     pub fn frames(&self, insn: usize) -> usize {
@@ -72,5 +78,96 @@ impl Dependencies {
 /// 0x2` (i.e. depending on which path was taken through the
 /// control-flow graph).
 pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
-    todo!()
+    type Stack = DependencyStack<ConcreteStack<cw256>>;
+    type Memory = UnknownMemory<cw256>;
+    type Storage = UnknownStorage<cw256>;
+    type State = ConcreteState<Stack,Memory,Storage>;
+    // Construct initial state of EVM
+    let init : State = State::new();
+    // Run the abstract trace
+    let states : Vec<Vec<State>> = trace(insns,init);
+    // Convert over
+    let mut deps = Dependencies::new(states.len());
+    //
+    for (i,insn) in insns.iter().enumerate() {
+        let nops = 0; // number of operands
+        for state in &states[i] {
+            let st_deps : &[usize] = &state.stack().deps;
+            // Calculate frame
+            let mut frame = st_deps[0..nops].to_vec();
+            // Push frame
+            deps.frames[i].push(frame);
+        }
+    }
+    //
+    deps
+}
+
+/// A special "stack" which wraps around an existing stack, but
+/// includes additional features.  In particular, it adds dependency
+/// information as required to implement the functionality in this
+/// file.
+#[derive(Clone,Debug,PartialEq)]
+struct DependencyStack<T:EvmStack> {
+    /// Inner stack implementing stack functionality however it
+    /// wishes.
+    stack: T,
+    /// Mirrors `stack` with dependency information.  Thus, every
+    /// entry matches an entry on `stack` and identifies the
+    /// instruction where that entry was pushed on the stack.
+    deps: Vec<usize>
+}
+
+impl<T:EvmStack> DependencyStack<T> {   
+    /// Check that this dependency stack is consistent with the
+    /// underlying stack.
+    fn is_valid(&self) -> bool {
+        self.stack.size() == self.deps.len()
+    }
+}
+
+impl<T:EvmStack> EvmStack for DependencyStack<T> {
+    type Word = T::Word;
+    
+    fn size(&self) -> usize {
+        assert!(self.is_valid()); 
+        self.stack.size()
+    }
+
+    fn peek(&self, n: usize) -> &Self::Word {
+        assert!(self.is_valid());         
+        self.stack.peek(n)
+    }
+
+    fn push(&mut self, item: Self::Word) {
+        assert!(self.is_valid());         
+        self.stack.push(item);
+        self.deps.push(0); // FIXME!!
+    }
+
+    fn pop(&mut self) -> Self::Word {
+        assert!(self.is_valid());
+        self.deps.pop().unwrap();
+        self.stack.pop()
+    }
+
+    fn set(&mut self, n: usize, item: Self::Word) -> Self::Word {
+        assert!(self.is_valid());        
+        let i = self.deps.len() - (n+1);
+        let j = self.deps.len();        
+        self.deps.push(0); // FIXME!!
+        self.deps.swap(i,j);
+        self.deps.pop().unwrap();
+        self.stack.set(n,item)
+    }
+}
+
+impl<T:EvmStack+Default> Default for DependencyStack<T> {
+    fn default() -> Self {
+        let stack = T::default();
+        let deps = Vec::new();
+        let me = Self{stack,deps};
+        assert!(me.is_valid());
+        me
+    }                         
 }
