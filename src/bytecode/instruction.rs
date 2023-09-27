@@ -273,6 +273,8 @@ impl Instruction {
             RJUMPI(_) => 3,
             // Push instructions
             PUSH(bs) => 1 + bs.len(),
+            // Virtual instructions
+            HAVOC(_) => 0,
             // Default case
             _ => 1,
         }
