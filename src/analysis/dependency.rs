@@ -87,14 +87,16 @@ pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
     // Run the abstract trace
     let states : Vec<Vec<State>> = trace(insns,init);
     // Convert over
+    let mut map = build_insn_map(insns);
     let mut deps = Dependencies::new(states.len());
     //
     for (i,insn) in insns.iter().enumerate() {
         let nops = insn.operands(); // number of operands
         for state in &states[i] {
-            let st_deps = &state.stack();
-            // Calculate frame
-            let mut frame = st_deps.top_n(nops).to_vec();
+            // Extract dependencies
+            let st_deps = &state.stack().top_n(nops);
+            // Convert byte offsets into instruction offsets
+            let mut frame = st_deps.iter().map(|x| map[*x]).collect();
             // Push frame
             deps.frames[i].push(frame);
         }
@@ -103,6 +105,16 @@ pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
     }
     //
     deps
+}
+
+fn build_insn_map(insns: &[Instruction]) -> Vec<usize> {
+    let mut map = Vec::new();
+    for (i,insn) in insns.iter().enumerate() {
+        for _ in 0..insn.length() {
+            map.push(i);
+        }
+    }
+    map
 }
 
 /// A special "stack" which wraps around an existing stack, but
