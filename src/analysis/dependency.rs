@@ -46,7 +46,7 @@ impl Dependencies {
 /// # Examples
 /// The following illustrates a minimal example:
 ///
-/// ```
+/// ```text
 /// [0]   push 0x1
 /// [1]   push 0x2
 /// [2]   add          ;; [0,1]
@@ -61,7 +61,7 @@ impl Dependencies {
 ///
 /// A more interesting example is:
 ///
-/// ```
+/// ```text
 /// [0]   calldatasize
 /// [1]   push lab0
 /// [2]   jumpi        ;; [1]
