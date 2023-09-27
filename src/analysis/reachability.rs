@@ -13,11 +13,6 @@ use crate::bytecode::Instruction;
 use crate::util::JoinInto;
 use super::{cw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
 
-type ReachableStack = ConcreteStack<cw256>;
-type ReachableMem = UnknownMemory<cw256>;
-type ReachableStore = UnknownStorage<cw256>;
-type ReachableState = ConcreteState<ReachableStack,ReachableMem,ReachableStore>;
-
 /// For a given bytecode sequence, identify all _reachable_
 /// instructions.  An instruction is reachable if there exists a path
 /// from the first instruction in the sequence to the given
@@ -36,10 +31,15 @@ type ReachableState = ConcreteState<ReachableStack,ReachableMem,ReachableStore>;
 /// instruction here is _unreachable_.  That is because there is no
 /// path through the control-flow graph which can lead to it.
 pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
+    // Configure analysis
+    type Stack = ConcreteStack<cw256>;
+    type Memory = UnknownMemory<cw256>;
+    type Storage = UnknownStorage<cw256>;
+    type State = ConcreteState<Stack,Memory,Storage>;    
     // Construct initial state of EVM
-    let init : ReachableState = ReachableState::new();
+    let init = State::new();
     // Run the abstract trace
-    let states : Vec<Vec<ReachableState>> = trace(insns,init);
+    let states : Vec<Vec<State>> = trace(insns,init);
     // Convert output into boolean reachability info
     let mut flags = Vec::new();
     //

@@ -150,13 +150,15 @@ where S:EvmStack,
     }
 
     fn skip(&mut self, n: usize) {
-        self.pc += n
+        self.pc += n;
+        self.stack.goto(self.pc);            
     }
 
     /// Move _program counter_ to a given (byte) offset within the
     /// code section.
     fn goto(&mut self, pc: usize) {
         self.pc = pc;
+        self.stack.goto(pc);
     }
 }
 

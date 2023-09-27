@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+mod dependency;
 mod memory;
 mod reachability;
 mod semantics;
@@ -19,6 +20,7 @@ mod storage;
 mod trace;
 mod word;
 
+pub use dependency::*;
 pub use memory::*;
 pub use reachability::*;
 pub use state::*;

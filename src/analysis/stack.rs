@@ -65,6 +65,9 @@ pub trait EvmStack : fmt::Debug {
         assert!(self.has_operands(n+1));
         self.push(self.peek(n).clone());
     }
+
+    /// Update internal position within code.
+    fn goto(&mut self, pc: usize);    
 }
 
 // ===================================================================
@@ -112,6 +115,11 @@ impl<T:EvmWord> EvmStack for ConcreteStack<T> {
         self.items.push(item);
         self.items.swap(i,j);
         self.items.pop().unwrap()
+    }
+
+    /// Update internal position within code.
+    fn goto(&mut self, pc: usize) {
+        // nop
     }
 }
 

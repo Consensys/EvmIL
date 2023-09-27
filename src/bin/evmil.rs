@@ -18,7 +18,8 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::analysis::{aw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
+use evmil::analysis::{aw256,ConcreteStack,ConcreteState,UnknownMemory,UnknownStorage};
+use evmil::analysis::{find_dependencies,trace};
 use evmil::bytecode::{Assembly,Instruction,StructuredSection};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -42,7 +43,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .about("Disassemble a raw hex string into EVM bytecode")
                 .arg(Arg::new("code").short('c').long("code"))
                 .arg(Arg::new("eof").long("eof"))
-                .arg(Arg::new("debug").short('d').long("debug"))                
+                .arg(Arg::new("debug").short('d').long("debug"))
+                .arg(Arg::new("deps").long("deps"))
                 .arg(Arg::new("target").required(true))
                 .visible_alias("d")
         )
@@ -56,7 +58,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subcommand(
             Command::new("infer")
                 .about("annotations on an assembly contract")
-                .arg(Arg::new("debug").short('d').long("debug"))                
+                .arg(Arg::new("debug").short('d').long("debug"))
+                .arg(Arg::new("deps").long("deps"))
                 .arg(Arg::new("target").required(true))
                 .visible_alias("i")
         )
@@ -184,6 +187,7 @@ fn infer(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 fn disassemble_assembly(args: &ArgMatches, asm: &Assembly) {
     // Check whether debug information enabled (or not)
     let debug = args.contains_id("debug");
+    let deps = args.contains_id("deps");    
     //
     for section in asm {
         match section {
@@ -191,6 +195,8 @@ fn disassemble_assembly(args: &ArgMatches, asm: &Assembly) {
                 println!(".code");
                 if debug {
                     disassemble_debug_code(insns);
+                } else if deps {
+                    disassemble_dep_code(insns);                    
                 } else {
                     disassemble_code(insns);
                 }
@@ -212,6 +218,30 @@ fn disassemble_code(insns: &[Instruction]) {
         if insn == &Instruction::JUMPDEST {
             println!("_{pc:#06x}:");
         }
+        println!("\t{insn}");
+        pc += insn.length();
+    } 
+}
+
+// Disassemble a code section _with_ dependency information.  Note
+// that this can fail if the underlying static analysis fails.
+fn disassemble_dep_code(insns: &[Instruction]) {
+    let mut pc = 0;
+    //
+    let deps = find_dependencies(insns);
+    //
+    for (i,insn) in insns.iter().enumerate() {    
+        if insn == &Instruction::JUMPDEST {
+            println!("_{pc:#06x}:");
+        }
+        print!("\t;; pc={pc:#02x} ");
+        for f in 0..deps.frames(i) {
+            let fth = deps.get_frame(i,f);
+            if fth.len() > 0 {
+                print!("{:?}",fth);
+            }
+        }
+        println!();
         println!("\t{insn}");
         pc += insn.length();
     } 
