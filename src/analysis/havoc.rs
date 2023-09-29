@@ -57,7 +57,7 @@ pub fn insert_havocs(mut insns: Vec<Instruction>) -> Vec<Instruction> {
     for i in 0..insns.len() {
         if detect_cycle(i,&deps, &mut visited) {
             havocs.push(i+1);
-        }
+        } 
     }
     // Insert havoc statements
     for (i,idx) in havocs.iter().enumerate() {
@@ -91,11 +91,11 @@ fn detect_cycle(i: usize, deps: &Dependencies, visited: &mut [bool]) -> bool {
                 // Check for match
                 if *dep == i { return true; }
                 //
-                if !visited[n] {
+                if !visited[*dep] {
                     // Mark as visited
-                    visited[n] = true;
+                    visited[*dep] = true;
                     // Mark for subsequent search
-                    worklist.push(n);
+                    worklist.push(*dep);
                 }
             }
         }

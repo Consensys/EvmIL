@@ -93,10 +93,18 @@ pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
     for (i,insn) in insns.iter().enumerate() {
         let nops = insn.operands(); // number of operands
         for state in &states[i] {
-            // Extract dependencies
-            let st_deps = &state.stack().top_n(nops);
+            // Extract dependencies            
+            let st_deps = &match insn {
+                // DUP is a special case
+                Instruction::DUP(n) => {
+                    let m = *n as usize;
+                    state.stack().top_n(m-1,m)
+                }
+                // All the rest treated same
+                _ => state.stack().top_n(0,nops)
+            };
             // Convert byte offsets into instruction offsets
-            let mut frame = st_deps.iter().map(|x| map[*x]).collect();
+            let frame = st_deps.iter().map(|x| map[*x]).collect();
             // Push frame
             deps.frames[i].push(frame);
         }
@@ -139,11 +147,12 @@ impl<T:EvmStack> DependencyStack<T> {
     fn is_valid(&self) -> bool {
         self.stack.size() == self.deps.len()
     }
-
-    /// Return the top `n` items from the stack.
-    fn top_n(&self, n: usize) -> &[usize] {
-        let m = self.deps.len() - n;
-        &self.deps[m..]
+    
+    /// Return the top `n..m` items from the stack.
+    fn top_n(&self, n: usize, m:usize) -> &[usize] {
+        let n0 = self.deps.len() - n;
+        let m0 = self.deps.len() - m;
+        &self.deps[m0..n0]
     }
 }
 
