@@ -317,6 +317,8 @@ impl Instruction {
             CREATE2 => 4,            
             DELEGATECALL|STATICCALL => 6,            
             CALL|CALLCODE => 7,
+            // Virtual instructions
+            HAVOC(_) => 0,
             _ => { unreachable!(); }
         }
     }
