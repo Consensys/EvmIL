@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 mod dependency;
+mod havoc;
 mod memory;
 mod reachability;
 mod semantics;
@@ -21,6 +22,7 @@ mod trace;
 mod word;
 
 pub use dependency::*;
+pub use havoc::*;
 pub use memory::*;
 pub use reachability::*;
 pub use state::*;

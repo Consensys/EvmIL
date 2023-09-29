@@ -31,12 +31,9 @@ pub enum ParseError {
     /// When parsing some assembly language, an invalid comment was
     /// encountered.
     InvalidComment(usize),
-    /// When parsing some assembly language, an invalid hex literal
-    /// was encountered.
-    InvalidHexString(usize),
-    /// When parsing some assembly language, an invalid stack or
-    /// memory location was encountered.
-    InvalidLocation(usize),    
+    /// When parsing some assembly language, an invalid literal was
+    /// encountered.
+    InvalidLiteralString(usize),
     /// When parsing some assembly language, an unexpected mnemonic
     /// was encountered.
     InvalidInstruction,
@@ -120,7 +117,7 @@ impl<'a> Parser<'a> {
             match self.lexer.lookahead()? {
                 Token::Identifier("havoc"|"HAVOC") => {
                     _ = self.lexer.next();
-                    let operand = self.lexer.next()?;                    
+                    let operand = self.lexer.next()?;
                     parse_havoc(&mut builder,operand)?;
                 }                
                 Token::Identifier("push"|"PUSH") => {
@@ -213,8 +210,8 @@ fn parse_push(builder: &mut Builder, operand: Token) -> Result<(),ParseError> {
 
 fn parse_havoc(builder: &mut Builder, operand: Token) -> Result<(),ParseError> {
     match operand {
-        Token::Loc(s) => {
-            builder.push(HAVOC(parse_loc(s)?));
+        Token::Num(s) => {
+            builder.push(HAVOC(parse_num(s)?));
             Ok(())
         }
         Token::EOF => Err(ParseError::ExpectedOperand),
@@ -262,15 +259,15 @@ fn parse_data(operand: Token) -> Result<Instruction,ParseError> {
 fn parse_hex(hex: &str) -> Result<Vec<u8>,ParseError> {
     match hex.from_hex_string() {
         Ok(bytes) => { Ok(bytes) }
-        Err(_e) => Err(ParseError::InvalidHexString(0))
+        Err(_e) => Err(ParseError::InvalidLiteralString(0))
     }
 }
 
 /// Parse a (stack or memory) location index
-fn parse_loc(loc: &str) -> Result<usize,ParseError> {
-    match loc.parse() {
+fn parse_num(num: &str) -> Result<usize,ParseError> {
+    match num.parse() {
         Ok(val) => { Ok(val) }
-        Err(_e) => Err(ParseError::InvalidLocation(0))
+        Err(_e) => Err(ParseError::InvalidLiteralString(0))
     }
 }
 

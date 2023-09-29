@@ -23,7 +23,7 @@ pub enum Token<'a> {
     Hex(&'a str),
     Identifier(&'a str),
     Label(&'a str),
-    Loc(&'a str) // stack (or memory) location
+    Num(&'a str) // decimal number    
 }
 
 impl<'a> Token<'a> {
@@ -36,7 +36,7 @@ impl<'a> Token<'a> {
             Token::Hex(s) => s.len(),
             Token::Identifier(s) => s.len(),
             Token::Label(s) => s.len() + 1,
-            Token::Loc(s) => s.len() + 7
+            Token::Num(s) => s.len()
         }
     }
 }
@@ -71,7 +71,7 @@ impl<'a> Lexer<'a> {
             // Determine what kind of token we have.
             match self.chars[start] {
                 '.' => self.scan_section_header(start),
-                '0'..='9' => self.scan_hex_literal(start),
+                '0'..='9' => self.scan_literal(start),
                 'a'..='z'|'A'..='Z'|'_' => self.scan_id_or_label(start),
                 _ => Err(ParseError::UnexpectedCharacter(start))
             }
@@ -89,7 +89,7 @@ impl<'a> Lexer<'a> {
         Ok(tok)
     }
 
-    fn scan_hex_literal(&self, start: usize) -> Result<Token<'a>,ParseError> {
+    fn scan_literal(&self, start: usize) -> Result<Token<'a>,ParseError> {
         // Sanity check literal starts with "0x"
         if self.chars[start..].starts_with(&['0','x']) {
             // Scan all digits of this hex literal
@@ -97,7 +97,14 @@ impl<'a> Lexer<'a> {
             // Construct token
             Ok(Token::Hex(&self.input[start..end]))
         } else {
-            Err(ParseError::InvalidHexString(start))
+            // Attempt to scan non-hex literal
+            let end = skip(&self.chars,start,|c| c.is_ascii_digit());
+            //
+            if end > start {
+                Ok(Token::Num(&self.input[start..end]))
+            } else {
+                Err(ParseError::InvalidLiteralString(start))
+            }
         }
     }
 
@@ -109,11 +116,13 @@ impl<'a> Lexer<'a> {
         // Distinguish label versus identifier.
         if end < self.chars.len() && self.chars[end] == ':' {
             Ok(Token::Label(id))
-        } else if id == "stack" && end < self.chars.len() && self.chars[end] == '[' {
-            let start = end+1;
-            let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
-            Ok(Token::Loc(&self.input[start..end]))
-        } else {
+        }
+        // else if id == "stack" && end < self.chars.len() && self.chars[end] == '[' {
+        //     let start = end+1;
+        //     let end = skip(&self.chars,start,|c| c.is_ascii_alphanumeric());
+        //     Ok(Token::Loc(&self.input[start..end]))
+        // }
+        else {
             Ok(Token::Identifier(id))
         }
     }

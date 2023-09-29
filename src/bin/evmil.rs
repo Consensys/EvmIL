@@ -19,7 +19,7 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
 use evmil::analysis::{aw256,ConcreteStack,ConcreteState,UnknownMemory,UnknownStorage};
-use evmil::analysis::{find_dependencies,trace};
+use evmil::analysis::{find_dependencies,insert_havocs,trace};
 use evmil::bytecode::{Assembly,Instruction,StructuredSection};
 use evmil::il::{Compiler,Parser};
 use evmil::util::{FromHexString, ToHexString};
@@ -44,6 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .arg(Arg::new("code").short('c').long("code"))
                 .arg(Arg::new("eof").long("eof"))
                 .arg(Arg::new("debug").short('d').long("debug"))
+                .arg(Arg::new("havoc").long("havoc"))                
                 .arg(Arg::new("deps").long("deps"))
                 .arg(Arg::new("target").required(true))
                 .visible_alias("d")
@@ -141,8 +142,8 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 
 /// Disassemble a given bytecode sequence.
 fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
-    // Check whether debug information enabled (or not)
-    let debug = args.contains_id("debug");
+    // Check whether to insert havocs (or not)
+    let havoc = args.contains_id("havoc");
     // Extract hex string to be disassembled.
     let mut hex = String::new();
     // Determine disassembly target
@@ -160,12 +161,14 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let asm = if args.contains_id("eof") {
+    let mut asm = if args.contains_id("eof") {
         todo!()
         //Assembly::from_eof_bytes(&bytes)?
     } else {
         Assembly::from_legacy_bytes(&bytes)
     };
+    //
+    if havoc { asm = infer_havoc_insns(asm); }
     //
     disassemble_assembly(args,&asm);
     //
@@ -266,6 +269,21 @@ fn disassemble_debug_code(insns: &[Instruction]) {
         println!("\t{insn}");
         pc += insn.length();
     } 
+}
+
+fn infer_havoc_insns(mut asm: Assembly) -> Assembly {
+    // This could probably be more efficient :)
+    let sections = asm.iter_mut().map(|section| {
+        match section {
+            StructuredSection::Code(ref mut insns) => {    
+                let ninsns = insert_havocs(insns.clone());
+	        StructuredSection::Code(ninsns)
+            }
+            _ => section.clone()
+        }
+    }).collect();
+    // 
+    Assembly::new(sections)
 }
 
 /// Initialise logging using a suitable pattern.
