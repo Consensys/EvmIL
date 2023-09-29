@@ -28,7 +28,7 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
     let mut worklist = vec![init];
     // Iterate to a fixed point
     while !worklist.is_empty() {
-        let st = worklist.pop().unwrap();
+        let mut st = worklist.pop().unwrap();
         // Sanity check bytecode position
         if st.pc() >= offsets.len() {
             // Execution has fallen "of the end" of the bytecode
@@ -37,30 +37,42 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
             continue;
         }
         // Determine instruction position
-        let ipc = offsets[st.pc()];
-        // Join state into set
-        if states[ipc].join_into(&st) {
-            // Something changed, therefore execute this state to
-            // produce an updated state.
-            match execute(&insns[ipc],st) {
+        let mut pc = st.pc();
+        let mut ipc = offsets[pc];
+        //
+        while ipc < states.len() && states[ipc].join_into(&st) {
+            let insn = &insns[ipc];
+            // Update pc value (for next instruction)
+            pc += insn.length();
+            // Debug info
+            // println!("[{ipc}:{}] {:?}",insns[ipc],states[ipc]);
+            //
+            match execute(insn,st) {
                 Outcome::Return|Outcome::Exception(_) => {
                     // For now, we don't do anything specicial with
                     // accumulated returns.  However, at some point,
                     // it probably makes sense.
+                    break;
                 }
                 Outcome::Continue(nst) => {
-                    // Execution continues.
-                    worklist.push(nst);
+                    // Check for branch
+                    if nst.pc() != pc {
+                        worklist.push(nst);
+                        break;
+                    } else {
+                        // Execution continues.
+                        st = nst;
+                    }
                 }
-                Outcome::Split(st1,st2) => {
+                Outcome::Split(nst,bst) => {
                     // Execution splits
-                    worklist.push(st1);
-                    worklist.push(st2);
+                    st = nst;
+                    // Add branch
+                    worklist.push(bst);
                 }                
             }
+            ipc += 1;
         }
-        // Debug info
-        //println!("{:?}",states[ipc]);        
     }
     // Done
     states
