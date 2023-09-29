@@ -60,6 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Command::new("infer")
                 .about("annotations on an assembly contract")
                 .arg(Arg::new("debug").short('d').long("debug"))
+                .arg(Arg::new("havoc").long("havoc"))                
                 .arg(Arg::new("deps").long("deps"))
                 .arg(Arg::new("target").required(true))
                 .visible_alias("i")
@@ -142,8 +143,6 @@ fn compile(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
 
 /// Disassemble a given bytecode sequence.
 fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
-    // Check whether to insert havocs (or not)
-    let havoc = args.contains_id("havoc");
     // Extract hex string to be disassembled.
     let mut hex = String::new();
     // Determine disassembly target
@@ -168,9 +167,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
         Assembly::from_legacy_bytes(&bytes)
     };
     //
-    if havoc { asm = infer_havoc_insns(asm); }
-    //
-    disassemble_assembly(args,&asm);
+    disassemble_assembly(args,asm);
     //
     Ok(true)
 }
@@ -182,17 +179,21 @@ fn infer(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Construct assembly from input file
     let asm = Assembly::from_str(&context)?;
     //
-    disassemble_assembly(args,&asm);
+    disassemble_assembly(args,asm);
     //
     Ok(true)
 }
 
-fn disassemble_assembly(args: &ArgMatches, asm: &Assembly) {
-    // Check whether debug information enabled (or not)
+fn disassemble_assembly(args: &ArgMatches, mut asm: Assembly) {
+    // Check whether to insert havocs (or not)
+    let havoc = args.contains_id("havoc");
+    // Check whether debug information enabled (or not)    
     let debug = args.contains_id("debug");
-    let deps = args.contains_id("deps");    
+    let deps = args.contains_id("deps");
+    // Apply havoc inference (if requested)
+    if havoc { asm = infer_havoc_insns(asm); }    
     //
-    for section in asm {
+    for section in &asm {
         match section {
             StructuredSection::Code(insns) => {
                 println!(".code");
@@ -237,7 +238,7 @@ fn disassemble_dep_code(insns: &[Instruction]) {
         if insn == &Instruction::JUMPDEST {
             println!("_{pc:#06x}:");
         }
-        print!("\t;; pc={pc:#02x} ");
+        print!("\t;; [{i}] pc={pc:#02x} ");
         for f in 0..deps.frames(i) {
             let fth = deps.get_frame(i,f);
             if fth.len() > 0 {
