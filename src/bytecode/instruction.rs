@@ -605,7 +605,7 @@ impl fmt::Display for Instruction {
                 write!(f, "swap{n}")
             }
             HAVOC(n) => {
-                write!(f, "havoc stack[{n}]")
+                write!(f, "havoc {n}")
             }            
             _ => {
                 let s = format!("{:?}",self).to_lowercase();

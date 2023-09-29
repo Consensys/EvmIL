@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::slice::{Iter};
+use std::slice::{Iter,IterMut};
 use super::{Instruction};
 use super::{eof,legacy};
 pub use super::eof::DecodingError;
@@ -79,6 +79,10 @@ impl Assembly {
         self.sections.iter()
     }
 
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a,StructuredSection> {
+        self.sections.iter_mut()
+    }
+
     /// Add a new section to this bytecode container
     pub fn add(&mut self, section: StructuredSection) {
         self.sections.push(section)
@@ -113,6 +117,15 @@ impl<'a> IntoIterator for &'a Assembly {
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Assembly {
+    type Item = &'a mut StructuredSection;
+    type IntoIter = IterMut<'a,StructuredSection>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.sections.iter_mut()
     }
 }
 

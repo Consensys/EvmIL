@@ -531,6 +531,7 @@ fn execute_havoc<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
     assert!(k < stack.size());
     // Havoc value at position k
     let val = stack.set(k,T::Word::from(w256::from(0))).havoc();
+    println!("HAVOC {k}");
     // Assign it back
     stack.set(k,val);
     // Move to next instruction
