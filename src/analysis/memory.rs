@@ -11,7 +11,8 @@
 // limitations under the License.
 use std::fmt;
 use std::marker::PhantomData;
-use crate::util::Top;
+use std::collections::HashMap;
+use crate::util::{w256,W256_ZERO,W256_THIRTYTWO,Top};
 use super::{EvmState,EvmWord};
 
 /// Abstraction of memory within an EVM.  This provides the minimal
@@ -86,6 +87,116 @@ impl<T:EvmWord+Top> fmt::Debug for UnknownMemory<T>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"???")?;
+        Ok(())
+    }
+}
+
+// ===================================================================
+// Concrete Memory
+// ===================================================================
+
+/// The next simplest possible implementation of `EvmMemory` which
+/// only manages "concrete" addresses (i.e. it doesn't perform any
+/// symbolic analysis).
+#[derive(Clone,PartialEq)]
+pub struct ConcreteMemory<T:EvmWord+Top> {
+    // Indicates whether or not locations stored outside of the words
+    // map have the known value zero (`top=false`), or an unknown
+    // value (`top=true`).
+    top: bool,
+    // This stores memory in a word-aligned fashioned.  Observe that
+    // we're making an implicit assumption here that addressable
+    // memory never exceeds 64bits.  That seems pretty reasonable for
+    // the forseeable future.
+    words: HashMap<u64,T>
+}
+
+impl<T:EvmWord+Top> ConcreteMemory<T> {
+    pub fn new() -> Self {
+        let words = HashMap::new();
+        // Memory is initially all zero
+        Self{top: false, words}
+    }
+}
+
+impl<T:EvmWord+Top> EvmMemory for ConcreteMemory<T> {
+    type Word = T;
+
+    fn read(&mut self, address: Self::Word) -> Self::Word {
+        if address.is_constant() {
+            // Note the conversion here should never fail since its
+            // impossible for addressible memory to exceed 64bits.            
+            let addr : u64 = address.constant().to();
+            // FIXME: for now assume all memory reads are
+            // word-aligned.  This is clearly not always true :)
+            assert!(addr % 32 == 0);
+            //
+            match self.words.get(&addr) {
+                Some(v) => v.clone(),
+                None => {
+                    if self.top {
+                        T::TOP
+                    } else {
+                        T::from(w256::ZERO)
+                    }
+                }
+            }
+        } else {
+            // Read address unknown, hence unknown value returned.
+            T::TOP
+        }
+    }
+
+    fn write(&mut self, address: Self::Word, item: Self::Word) {
+        // no op (for now)
+        if address.is_constant() {
+            // Note the conversion here should never fail since its
+            // impossible for addressible memory to exceed 64bits.
+            let addr = address.constant().to();
+            // FIXME: for now assume all memory reads are
+            // word-aligned.  This is clearly not always true :)
+            assert!(addr % 32 == 0);
+            // Update memory!
+            self.words.insert(addr,item);
+        } else {
+            self.top = true;
+            self.words.clear();
+        }
+    }
+
+    fn write8(&mut self, _address: Self::Word, _item: Self::Word) {
+        // FIXME: could improve this if the address is a known constant.
+        self.top = true;
+        self.words.clear();
+    }
+}
+
+impl<T:EvmWord+Top> Default for ConcreteMemory<T> {
+    fn default() -> Self {
+        Self::new()
+    }                         
+}
+
+impl<T:EvmWord+Top> fmt::Display for ConcreteMemory<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{:?}",self)?;
+        Ok(())
+    }
+}
+
+impl<T:EvmWord+Top> fmt::Debug for ConcreteMemory<T>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut first = true;
+        if self.top { write!(f,"?:")?; }
+        let mut keys = Vec::from_iter(self.words.keys());
+        keys.sort();
+        for k in keys {
+            if !first { write!(f,",")?; }
+            first = false;
+            write!(f,"{:#0x}:={:?}", k, self.words[k])?;
+        }
         Ok(())
     }
 }
