@@ -18,9 +18,11 @@ use crate::util;
 #[allow(non_camel_case_types)]
 pub type w256 = Uint<256,4>;
 
+pub const W256_ZERO : w256 = w256::from_limbs([0,0,0,0]);
 pub const W256_ONE : w256 = w256::from_limbs([1,0,0,0]);
 pub const W256_TWO : w256  = w256::from_limbs([2,0,0,0]);
 pub const W256_THREE : w256  = w256::from_limbs([3,0,0,0]);
+pub const W256_THIRTYTWO : w256  = w256::from_limbs([32,0,0,0]);
 
 // =====================================================================
 // Min / Max

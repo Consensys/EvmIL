@@ -18,7 +18,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 //
-use evmil::analysis::{aw256,ConcreteStack,ConcreteState,UnknownMemory,UnknownStorage};
+use evmil::analysis::{aw256,ConcreteStack,ConcreteState,ConcreteMemory,UnknownStorage};
 use evmil::analysis::{find_dependencies,insert_havocs,trace};
 use evmil::bytecode::{Assembly,Instruction,StructuredSection};
 use evmil::il::{Compiler,Parser};
@@ -251,7 +251,7 @@ fn disassemble_dep_code(insns: &[Instruction]) {
     } 
 }
 
-type DebugState = ConcreteState<ConcreteStack<aw256>,UnknownMemory<aw256>,UnknownStorage<aw256>>;
+type DebugState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,UnknownStorage<aw256>>;
 
 // Disassemble a code section _with_ debug information.  Note that
 // this can fail if the underlying static analysis fails.

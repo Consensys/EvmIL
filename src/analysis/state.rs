@@ -164,11 +164,11 @@ where S:EvmStack,
 
 impl<S,M,T> fmt::Display for ConcreteState<S,M,T>
 where S:EvmStack+Default+fmt::Display,
-      M:EvmMemory<Word=S::Word>+Default,
+      M:EvmMemory<Word=S::Word>+Default+fmt::Display,
       T:EvmStorage<Word=S::Word>+Default   
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"|{}|",self.stack)?;
+        write!(f,"|{}|{}|",self.stack,self.memory)?;        
         Ok(())
     }
 }
