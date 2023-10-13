@@ -10,15 +10,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 mod assembly;
+mod block;
 mod builder;
 mod eof;
+mod graph;
 mod instruction;
+mod iterator;
 mod legacy;
 mod lexer;
 pub mod opcode;
 mod parser;
 
 pub use assembly::*;
+pub use block::*;
 pub use builder::*;
+pub use graph::*;
 pub use instruction::*;
+pub use iterator::*;
 pub use parser::ParseError;

@@ -9,43 +9,75 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::fmt::Debug;
+use std::marker::PhantomData;
+use crate::bytecode::{BlockVec,BlockGraph,Instruction};
+use crate::util::{Bottom,Top,SubsliceOffset,Concretizable};
+use super::{EvmState,EvmStateSet,EvmStack};
+use super::{aw256,ConcreteStack,ConcreteState,EvmMemory,trace,ConcreteMemory,UnknownStorage};
 
-/// A generic mechanism for decomposing an instruction sequence into a
-/// collection of _basic blocks_, along with the _edges_ connecting
-/// them together.  In essence, a block graph is a form of
-/// _control-flow graph_.
-trait BlockGraph {
-    /// The type of _block identifiers_ used within this graph.
-    type Bid;
-    
-    /// Returns the number of basic blocks stored within this graph.
-    fn len(&self) -> usize;
+use Instruction::*;
 
-    /// Returns a given `BasicBlock` within this graph.
-    fn get(&self, ith: Bid) -> BasicBlock;
+type DefaultState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,UnknownStorage<aw256>>;
 
-    /// Returns the set of blocks which can transfer control _into_ a
-    /// given block.
-    fn incoming(&self, ith: Bid) -> &[Bid];
-
-    /// Returns the set of blocks to which a given block can transfer
-    /// control.
-    fn outgoing(&self, ith: Bid) -> &[Bid];
-
-    /// Add a new basic block into this graph, and return its block
-    /// identifier.
-    fn add(&mut self, blk: BasicBlock) -> Bid;
-}
-
-/// Identifies a set of consecutive instructions within the original
-/// instruction sequence.
-struct BasicBlock {
-    /// Byte offset (i.e. pc value) of the first instruction in this
-    /// block.
-    pub pc: usize,
-    /// Instruction offset of first instruction within this block.
-    pub start: usize,
-    /// Instruction offset of first instruction _not_ within this
-    /// block.  Thus, when `start == end` we have a _empty block_.
-    pub end: usize
+impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
+{
+    /// Construct a graph of the basic blocks for a given instruction
+    /// sequence.
+    fn from(insns: &'a [Instruction]) -> Self {
+        // Construct block graph
+        let mut graph = BlockGraph::new(BlockVec::new(insns));
+        // Compute analysis results
+        let init = DefaultState::new();
+        // Run the abstract trace
+        let trace : Vec<Vec<DefaultState>> = trace(&insns,init);        
+        // Connect edges!
+        for b in 0..graph.len() {
+            let blk = graph.get(b);
+            let start = insns.subslice_offset(blk);
+            let end = start + blk.len();
+            //
+            for i in start..end {
+                let insn = &insns[i];
+                match insn {
+                    JUMP|JUMPI => {
+                        for st in &trace[i] {
+                            let target : usize = st.stack().peek(0).constant().to();
+                            // Convert the branch target (which is a
+                            // byte offset) into the corresponding
+                            // block offset.
+                            let bid = graph.lookup_pc(target);
+                            // Connect edge
+                            graph.connect(b,bid);
+                        }
+                        if insn == &JUMP {
+                            // Jump instruction doesn't fall through.
+                            // Observe its safe to break here, since
+                            // we know this instruction terminate the
+                            // enclosinc basic block.
+                            break;
+                        }
+                    }
+                    INVALID|RETURN|REVERT|SELFDESTRUCT|STOP => {
+                        // Instructions which don't fall through.
+                        // Observe its safe to break here, since we
+                        // know these instructions terminate the
+                        // enclosinc basic block.
+                        break;
+                    }
+                    _ => {
+                        // Instructions which do not branch, but do
+                        // fall through to the following instruction.
+                    }
+                }
+                // If we get here, then we have an instruction which
+                // falls through to the next.  If this is the last
+                // instruction in the block, then add an edge
+                // accordingly in the graph.
+                if (i+1) == end { graph.connect(b,b+1); }
+            }
+        }
+        // Done
+        graph
+    }
 }

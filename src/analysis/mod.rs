@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+mod cfg;
 mod dependency;
 mod havoc;
 mod memory;
@@ -21,6 +22,7 @@ mod storage;
 mod trace;
 mod word;
 
+pub use cfg::*;
 pub use dependency::*;
 pub use havoc::*;
 pub use memory::*;

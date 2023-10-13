@@ -101,6 +101,14 @@ impl<T:Ord+Clone> From<Vec<T>> for SortedVec<T> {
     }
 }
 
+impl<T:Ord> ops::Deref for SortedVec<T> {
+    type Target = [T];
+    
+    fn deref(&self) -> &[T] {
+        &self.items
+    }
+}
+
 impl<T:Ord+Clone> cmp::PartialEq<[T]> for SortedVec<T> {
     fn eq(&self, other: &[T]) -> bool {
         self.items == other

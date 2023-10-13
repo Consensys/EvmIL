@@ -19,6 +19,7 @@ mod lattice;
 mod numeric;
 mod word256;
 mod sorted_vec;
+mod subslice;
 
 pub use byte_decoder::*;
 pub use byte_encoder::*;
@@ -30,3 +31,4 @@ pub use lattice::*;
 pub use numeric::*;
 pub use word256::*;
 pub use sorted_vec::*;
+pub use subslice::*;
