@@ -19,11 +19,13 @@ pub trait SubsliceOffset {
 
 impl<T> SubsliceOffset for [T] {
     fn subslice_offset(&self, inner: &Self) -> usize {
-        let outer = self.as_ptr() as usize;
-        let inner = inner.as_ptr() as usize;
+        let outer = self.as_ptr();
+        let inner = inner.as_ptr();
         // Sanity check this makes sense
-        assert!(inner >= outer && inner <= outer.wrapping_add(self.len()));
+        assert!(inner >= outer);
+        unsafe { assert!(inner <= outer.offset(self.len() as isize)); }
         // Calculate difference
-        inner.wrapping_sub(outer)
+        //inner.sub_ptr(outer) // <-- unstable
+        unsafe { inner.offset_from(outer) as usize }            
     }
 }

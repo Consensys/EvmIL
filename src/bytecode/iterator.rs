@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use crate::util::SubsliceOffset;
 use crate::bytecode::Instruction;
 use Instruction::*;
 
@@ -43,7 +44,11 @@ impl<'a> Iterator for ByteOffsetIterator<'a> {
             None
         } else {
             let mpc = self.pc;
+            // Update pc position
             self.pc += self.insns[0].length();
+            // Strip off head instruction
+            self.insns = &self.insns[1..];
+            // Done
             Some(mpc)
         }
     }                
@@ -112,6 +117,7 @@ impl<'a> Iterator for BlockIterator<'a> {
                 i += 1;
             }
             // Extract the block
+            let tmp = self.insns;
             let block = &self.insns[..i];
             // Update position within instruction sequence
             self.insns = &self.insns[i..];
