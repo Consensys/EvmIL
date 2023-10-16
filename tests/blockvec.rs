@@ -1,5 +1,5 @@
-use evmil::bytecode::{Assembly,BlockVec,Disassemble,Instruction,StructuredSection};
-use evmil::util::{FromHexString,SubsliceOffset};
+use evmil::bytecode::{Assembly,BlockVec,Instruction,StructuredSection};
+use evmil::util::{SubsliceOffset};
 
 use Instruction::*;
 

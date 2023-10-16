@@ -47,6 +47,7 @@ impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
                             // byte offset) into the corresponding
                             // block offset.
                             let bid = graph.lookup_pc(target);
+                            println!("PC {} --> BLOCK {}",target,bid);
                             // Connect edge
                             graph.connect(b,bid);
                         }

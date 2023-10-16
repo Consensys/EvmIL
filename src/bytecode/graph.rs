@@ -29,8 +29,8 @@ pub struct BlockGraph<'a> {
 
 impl<'a> BlockGraph<'a> {
     pub fn new(blocks: BlockVec<'a>) -> Self {
-        let incoming = Vec::new();
-        let outgoing = Vec::new();
+        let incoming = vec![SortedVec::new();blocks.len()+1];
+        let outgoing = vec![SortedVec::new();blocks.len()+1];
         Self{blocks,incoming,outgoing}
     }
 
@@ -62,10 +62,21 @@ impl<'a> BlockGraph<'a> {
         &self.outgoing[blk]
     }
 
+    /// Returns an iterator over the _outgoing edges_ in this graph
+    pub fn out_iter(&self) -> EdgeIterator {
+        EdgeIterator::new(true,&self.outgoing)
+    }
+
+    /// Returns an iterator over the _incoming edges_ in this graph
+    pub fn in_iter(&self) -> EdgeIterator {
+        EdgeIterator::new(false,&self.incoming)
+    }    
+    
     /// Connect one basic block to another which forms a directed edge
     /// in the graph.  Returns `true` if a connection was added.
     pub fn connect(&mut self, from: usize, to: usize) -> bool {
-        todo!();
+        self.incoming[to].insert(from);
+        self.outgoing[from].insert(to)
     }
 
     /// Remove a connection between two basic blocks from the graph.
@@ -74,3 +85,52 @@ impl<'a> BlockGraph<'a> {
         todo!();
     }
 }
+
+/// An iterator over the edges of a graph which iterates over the
+/// incoming or outgoing edges of the graph.
+pub struct EdgeIterator<'a> {
+    // Direction of edges which is either `true` (i.e. outgoing) or
+    // `false` (i.e. incoming).
+    dir: bool,
+    // Edge sets being iterated over.
+    items: &'a [EdgeSet],
+    // Current edgeset being considered.
+    i: usize,
+    // Current position within edgeset being considered.
+    j: usize 
+}
+
+impl<'a> EdgeIterator<'a> {
+    pub fn new(dir: bool, items: &'a [EdgeSet]) -> Self {
+        Self{dir,items,i:0,j:0}
+    }
+}
+
+impl<'a> Iterator for EdgeIterator<'a> {
+    // An edge
+    type Item = (usize,usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        //
+        while self.i < self.items.len() {
+            let head = &self.items[self.i];
+            // sanity check position
+            if self.j >= head.len() {
+                self.j = 0;
+                self.i += 1;
+            } else {
+                // Found an edge
+                let k = head[self.j];
+                self.j += 1;
+                // Construct edge
+                let edge = if self.dir { (self.i,k) } else { (k,self.i) };
+                // Done
+                return Some(edge);
+            }
+        }
+        // Empty
+        None
+    }
+}
+
+
