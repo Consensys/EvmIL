@@ -1,8 +1,6 @@
 use evmil::bytecode::{Assembly,BlockVec,Instruction,StructuredSection};
 use evmil::util::{SubsliceOffset};
 
-use Instruction::*;
-
 #[test]
 fn test_blockvec_01() {
     let asm = r#"

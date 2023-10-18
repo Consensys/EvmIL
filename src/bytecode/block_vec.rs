@@ -37,7 +37,7 @@ impl<'a> BlockVec<'a> {
         let b_iter = BlockIterator::new(insns);
         let bo_iter = ByteOffsetIterator::new(insns);
         // Identify block boundaries        
-        let mut insn_offsets: Vec<_> = b_iter.map(|b| insns.subslice_offset(b)+b.len()).collect();        
+        let insn_offsets: Vec<_> = b_iter.map(|b| insns.subslice_offset(b)+b.len()).collect();        
         // Identify PC offsets
         let pc_offsets: Vec<_> = bo_iter.collect();
         // Done

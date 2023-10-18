@@ -1,4 +1,4 @@
-use evmil::bytecode::{Assembly,BlockVec,Instruction,StructuredSection};
+use evmil::bytecode::{Assembly,Instruction,StructuredSection};
 use evmil::analysis::{BlockGraph};
 
 #[test]
@@ -154,8 +154,6 @@ fn check_asm(asm: &str, blocks: &[(usize,usize)]) {
 }
 
 fn check_insns(insns: &[Instruction], edges: &[(usize,usize)]) {
-    let bvec = BlockVec::new(insns);
-    println!("BLOCKS = {}",bvec);
     // Construct control-flow graph
     let cfg = BlockGraph::from(insns);
     // Extract edgesets from graph

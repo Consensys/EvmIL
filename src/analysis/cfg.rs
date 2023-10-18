@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::bytecode::{BlockVec,Instruction};
-use crate::util::{Digraph,Concretizable,Seq,SubsliceOffset};
+use crate::util::{Digraph,Concretizable,SubsliceOffset};
 use super::{EvmState,EvmStack};
 use super::{aw256,ConcreteStack,ConcreteState,trace,ConcreteMemory,UnknownStorage};
 
