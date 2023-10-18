@@ -37,9 +37,14 @@ where T:Seq {
         Self{nodes,incoming,outgoing}
     }
     
-    /// Returns the number of basic blocks stored within this graph.    
+    /// Returns the number of nodes stored within this graph.    
     pub fn len(&self) -> usize {
         self.nodes.len()
+    }
+
+    /// Returns `true` if the node set for this graph is empty.
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
     }
     
     /// Returns the ith block within this graph.    

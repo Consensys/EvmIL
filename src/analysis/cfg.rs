@@ -32,7 +32,7 @@ impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
         // Compute analysis results
         let init = DefaultState::new();
         // Run the abstract trace
-        let trace : Vec<Vec<DefaultState>> = trace(&insns,init);        
+        let trace : Vec<Vec<DefaultState>> = trace(insns,init);        
         // Connect edges!
         for b in 0..graph.len() {
             let blk = graph.get(b);

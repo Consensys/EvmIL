@@ -39,7 +39,7 @@ impl<'a> Iterator for ByteOffsetIterator<'a> {
     type Item = usize;
     
     fn next(&mut self) -> Option<Self::Item> {
-        if self.insns.len() == 0 {
+        if self.insns.is_empty() {
             None
         } else {
             let mpc = self.pc;
@@ -92,7 +92,7 @@ impl<'a> Iterator for BlockIterator<'a> {
     type Item = &'a [Instruction];
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.insns.len() == 0 {
+        if self.insns.is_empty() {
             None
         } else {
             let mut i = 0;

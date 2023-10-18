@@ -50,7 +50,7 @@ impl<T:Clone+EvmState+PartialEq> EvmStateSet for Vec<T> {
     }
     
     fn iter(&self) -> std::slice::Iter<'_,T> {
-        self.into_iter()
+        self.iter()
     }
 }
 

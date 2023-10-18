@@ -23,7 +23,7 @@ impl<T> SubsliceOffset for [T] {
         let inner = inner.as_ptr();
         // Sanity check this makes sense
         assert!(inner >= outer);
-        unsafe { assert!(inner <= outer.offset(self.len() as isize)); }
+        unsafe { assert!(inner <= outer.add(self.len())); }
         // Calculate difference
         //inner.sub_ptr(outer) // <-- unstable
         unsafe { inner.offset_from(outer) as usize }            

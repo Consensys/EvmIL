@@ -241,7 +241,7 @@ fn disassemble_dep_code(insns: &[Instruction]) {
         print!("\t;; [{i}] pc={pc:#02x} ");
         for f in 0..deps.frames(i) {
             let fth = deps.get_frame(i,f);
-            if fth.len() > 0 {
+            if !fth.is_empty() {
                 print!("{:?}",fth);
             }
         }
@@ -257,7 +257,7 @@ type DebugState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,Unkno
 // this can fail if the underlying static analysis fails.
 fn disassemble_debug_code(insns: &[Instruction]) {
     // Run the static analysis
-    let states : Vec<Vec<DebugState>> = trace(&insns,DebugState::new());
+    let states : Vec<Vec<DebugState>> = trace(insns,DebugState::new());
     // Print out info
     let mut pc = 0;
     for (i,insn) in insns.iter().enumerate() {

@@ -68,7 +68,7 @@ where
         // Should never be called on bottom
         assert!(self != &Self::BOTTOM);
         //
-        if val == T::TOP && self.upper.len() == 0 {
+        if val == T::TOP && self.upper.is_empty() {
             self.lower = self.lower.add(1.into());
         } else {
             // Pop target address off the stack.
@@ -101,7 +101,7 @@ where
     }
     /// Access the array of concrete values represented by this stack
     /// (i.e. the _upper_ portion of the stack).
-    pub fn values<'a>(&'a self) -> &'a [T] {
+    pub fn values(&self) -> &[T] {
         &self.upper
     }
 
@@ -151,7 +151,7 @@ where
             if self.upper[i] != T::TOP {
                 break;
             }
-            i = i + 1;
+            i += 1;
         }
         // Rebalance only if necessary
         if i > 0 {
@@ -190,7 +190,7 @@ where
 {
     fn clone(&self) -> Self {
         IntervalStack {
-            lower: self.lower.clone(),
+            lower: self.lower,
             upper: self.upper.clone(),
         }
     }

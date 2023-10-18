@@ -112,7 +112,7 @@ impl Compiler {
         // Translate assignent itself
         match lhs {
             Term::ArrayAccess(src, idx) => {
-                self.translate_assignment_array(&src, &idx)?;
+                self.translate_assignment_array(src, idx)?;
             }
             _ => {
                 return Err(CompilerError::InvalidLVal);
@@ -192,9 +192,9 @@ impl Compiler {
     }
 
     fn translate_return(&mut self, exprs: &[Term]) -> Result {
-        if exprs.len() > 0 {
+        if !exprs.is_empty() {
             // Translate each expression (except first)
-            for i in 1..exprs.len() { self.translate(&exprs[i])?; }
+            for e in exprs.iter().skip(1) { self.translate(e)?; }
             // Translate first expression
             self.translate(&exprs[0])?;
             // Swap with returna address
@@ -211,7 +211,7 @@ impl Compiler {
     }
 
     fn translate_succeed(&mut self, exprs: &[Term]) -> Result {
-        if exprs.len() == 0 {
+        if exprs.is_empty() {
             self.builder.push(STOP);
             Ok(())
         } else {
@@ -220,13 +220,13 @@ impl Compiler {
     }
 
     fn translate_succeed_revert(&mut self, insn: Instruction, exprs: &[Term]) -> Result {
-        if exprs.len() == 0 {
+        if exprs.is_empty() {
             self.builder.push(PUSH(vec![0]));
             self.builder.push(PUSH(vec![0]));
         } else {
-            for i in 0..exprs.len() {
+            for (i,e) in exprs.iter().enumerate() {
                 let addr = (i * 0x20) as u128;
-                self.translate(&exprs[i])?;
+                self.translate(e)?;
                 self.builder.push(make_push(addr)?);
                 self.builder.push(MSTORE);
             }

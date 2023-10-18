@@ -60,15 +60,15 @@ pub enum Token {
 // Rules
 // ======================================================
 
-const ASSERT: &'static [char] = &['a', 's', 's', 'e', 'r', 't'];
-const CALL: &'static [char] = &['c', 'a', 'l', 'l'];
-const FAIL: &'static [char] = &['f', 'a', 'i', 'l'];
-const GOTO: &'static [char] = &['g', 'o', 't', 'o'];
-const IF: &'static [char] = &['i', 'f'];
-const REVERT: &'static [char] = &['r', 'e', 'v', 'e', 'r', 't'];
-const RETURN: &'static [char] = &['r', 'e', 't', 'u', 'r', 'n'];
-const SUCCEED: &'static [char] = &['s', 'u', 'c', 'c', 'e', 'e', 'd'];
-const STOP: &'static [char] = &['s', 't', 'o', 'p'];
+const ASSERT: &[char] = &['a', 's', 's', 'e', 'r', 't'];
+const CALL: &[char] = &['c', 'a', 'l', 'l'];
+const FAIL: &[char] = &['f', 'a', 'i', 'l'];
+const GOTO: &[char] = &['g', 'o', 't', 'o'];
+const IF: &[char] = &['i', 'f'];
+const REVERT: &[char] = &['r', 'e', 'v', 'e', 'r', 't'];
+const RETURN: &[char] = &['r', 'e', 't', 'u', 'r', 'n'];
+const SUCCEED: &[char] = &['s', 'u', 'c', 'c', 'e', 'e', 'd'];
+const STOP: &[char] = &['s', 't', 'o', 'p'];
 
 /// Handy type alias for the result type used for all of the lexical
 /// rules.
@@ -84,7 +84,7 @@ fn scan_hex_literal(input: &[char]) -> ScannerResult {
     if input.len() < 2 || input[0] != '0' || input[1] != 'x' {
         Err(())
     } else {
-        let r = scan_whilst(&input[2..], Token::Hex, |c| c.is_digit(16))?;
+        let r = scan_whilst(&input[2..], Token::Hex, |c| c.is_ascii_hexdigit())?;
         // Update span information
         Ok(Span::new(Token::Hex, 0..r.region.end + 2))
     }
@@ -127,7 +127,7 @@ fn scan_identifier(input: &[char]) -> ScannerResult {
 
 /// Scan all single-character operators.
 fn scan_single_operators(input: &[char]) -> ScannerResult {
-    if input.len() == 0 {
+    if input.is_empty() {
         Err(())
     } else {
         let t = match input[0] {
@@ -184,7 +184,7 @@ fn is_identifier_start(c: char) -> bool {
 /// Determine whether a given character can occur in the middle of an
 /// identifier
 fn is_identifier_middle(c: char) -> bool {
-    c.is_digit(10) || is_identifier_start(c)
+    c.is_ascii_digit() || is_identifier_start(c)
 }
 
 /// Scan a "gap" which is a sequence of zero or more tabs and spaces.
@@ -236,7 +236,7 @@ fn scan_one(input: &[char], t: Token, c: char) -> ScannerResult {
 }
 
 /// The set of rules used for lexing.
-static RULES: &'static [Scanner<char, Token>] = &[
+static RULES: &[Scanner<char, Token>] = &[
     scan_double_operators,
     scan_single_operators,
     scan_keyword,
@@ -275,7 +275,7 @@ impl Lexer {
         // Extract characters from token.
         let chars = self.lexer.get(t);
         // Convert to string
-        let s: String = chars.into_iter().collect();
+        let s: String = chars.iter().collect();
         // Parse to i32
         s.parse().unwrap()
     }
@@ -284,7 +284,7 @@ impl Lexer {
         // Extract characters from token.
         let chars = self.lexer.get(t);
         // Convert to string
-        chars.into_iter().collect()
+        chars.iter().collect()
     }
 
     /// Pass through request to underlying lexer

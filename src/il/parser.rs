@@ -16,11 +16,11 @@ use std::fmt;
 
 /// Defines the set of tokens which are considered to identify logical
 /// connectives (e.g. `&&`, `||`, etc).
-pub const LOGICAL_CONNECTIVES: &'static [Token] = &[Token::AmpersandAmpersand, Token::BarBar];
+pub const LOGICAL_CONNECTIVES: &[Token] = &[Token::AmpersandAmpersand, Token::BarBar];
 
 /// Defines the set of tokens which are considered to identify
 /// arithmetic comparators (e.g. `<`, `<=`, `==`, etc).
-pub const ARITHMETIC_COMPARATORS: &'static [Token] = &[
+pub const ARITHMETIC_COMPARATORS: &[Token] = &[
     Token::EqualsEquals,
     Token::ShreakEquals,
     Token::LeftAngle,
@@ -31,7 +31,7 @@ pub const ARITHMETIC_COMPARATORS: &'static [Token] = &[
 
 /// Defines the set of tokens which are considered to identify
 /// arithmetic operators (e.g. `+`, `-`, `*`, etc).
-pub const ARITHMETIC_OPERATORS: &'static [Token] = &[
+pub const ARITHMETIC_OPERATORS: &[Token] = &[
     Token::Minus,
     Token::Percent,
     Token::Plus,
@@ -39,10 +39,10 @@ pub const ARITHMETIC_OPERATORS: &'static [Token] = &[
     Token::Star,
 ];
 
-pub const BINARY_CONNECTIVES: &'static [&'static [Token]] = &[
-    &ARITHMETIC_OPERATORS,
-    &ARITHMETIC_COMPARATORS,
-    &LOGICAL_CONNECTIVES,
+pub const BINARY_CONNECTIVES: &[&[Token]] = &[
+    ARITHMETIC_OPERATORS,
+    ARITHMETIC_COMPARATORS,
+    LOGICAL_CONNECTIVES,
 ];
 
 // =========================================================================
@@ -368,7 +368,7 @@ impl Parser {
     pub fn parse_expr_list(&mut self, terminator: Token) -> Result<Vec<Term>> {
         let mut exprs = Vec::new();
         while !self.lexer.is_eof() && self.lexer.peek().kind != terminator {
-            if exprs.len() > 0 {
+            if !exprs.is_empty() {
                 self.skip_whitespace();
                 self.lexer.snap(Token::Comma)?;
             }

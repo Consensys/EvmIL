@@ -20,7 +20,7 @@ pub fn to_be_bytes(mut val: u128) -> Vec<u8> {
     } else {
         while val != 0 {
             bytes.push((val % 256) as u8);
-            val = val >> 8;
+            val >>= 8;
         }
     }
     // Convert from little endian to big endian format.
@@ -34,8 +34,8 @@ pub fn to_be_bytes(mut val: u128) -> Vec<u8> {
 pub fn from_be_bytes(bytes: &[u8]) -> u128 {
     let mut val = 0;
     //
-    for i in 0..bytes.len() {
-        val = (val << 8) | (bytes[i] as u128);
+    for b in bytes {
+        val = (val << 8) | (*b as u128);
     }
     //
     val
@@ -49,11 +49,11 @@ pub fn from_be_digits(digits: &[u8], radix: u32) -> u128 {
     for i in (0..digits.len()).rev() {
         let d = digits[i] as u128;
         // NOTE: this could overflow.
-        acc = acc + (d * base);
+        acc += d * base;
         if i > 0 {
             // NOTE: Following overflows on last iteration, so just
             // don't do it :)
-            base = base * (radix as u128);
+            base *= radix as u128;
         }
     }
     // Done

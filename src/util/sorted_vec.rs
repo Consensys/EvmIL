@@ -19,6 +19,11 @@ impl<T:Ord> SortedVec<T> {
         self.items.len()
     }
 
+    /// Returns `true` if the vector is empty.
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+    
     /// Get item at given index in vector
     pub fn get(&self, index: usize) -> Option<&T> {
         self.items.get(index)
