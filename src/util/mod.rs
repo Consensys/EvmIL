@@ -12,21 +12,27 @@
 mod byte_decoder;
 mod byte_encoder;
 mod byte_utils;
+mod digraph;
 mod hex;
 mod interval;
 mod interval_stack;
 mod lattice;
 mod numeric;
 mod word256;
+mod seq;
 mod sorted_vec;
+mod subslice;
 
 pub use byte_decoder::*;
 pub use byte_encoder::*;
 pub use byte_utils::*;
+pub use digraph::*;
 pub use hex::*;
 pub use interval::*;
 pub use interval_stack::*;
 pub use lattice::*;
 pub use numeric::*;
 pub use word256::*;
+pub use seq::*;
 pub use sorted_vec::*;
+pub use subslice::*;

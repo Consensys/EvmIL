@@ -47,7 +47,7 @@ pub fn to_bytes(bytecode: &Assembly) -> Vec<u8> {
                 bytes.extend(bs);
             }
             StructuredSection::Code(insns) => {
-                let is : &[Instruction] = &insns;
+                let is : &[Instruction] = insns;
                 bytes.extend(is.assemble())
             }
         }        
@@ -84,8 +84,8 @@ fn find_data_start(insns: &[Instruction], bytes: &[u8], reachable: &[bool]) -> (
     let mut pc = bytes.len();
     //
     while i > 0 && !reachable[i-1] {
-        i = i - 1;
-        pc = pc - insns[i].length();
+        i -= 1;
+        pc -= insns[i].length();
     }
         //
     (i,pc)

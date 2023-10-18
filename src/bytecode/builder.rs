@@ -60,6 +60,10 @@ impl Builder {
     pub fn len(&self) -> usize {
         self.insns.len()
     }
+
+    /// Returns `true` if no instructions have yet been pushed into
+    /// this builder.
+    pub fn is_empty(&self) -> bool { self.insns.is_empty() }
     
     /// Get the _label index_ associated with a particular label.  If
     /// such an index does not already exist, then a new label is
@@ -138,7 +142,7 @@ impl Builder {
         match insn {
             PUSH(bytes) => {
                 // Extract the label
-                let lab = util::from_be_bytes(&bytes) as usize;
+                let lab = util::from_be_bytes(bytes) as usize;
                 let offset = self.labels[lab].1.unwrap();
                 // Always generate a push2 instruction
                 PUSH(vec![(offset/256) as u8, (offset%256) as u8])

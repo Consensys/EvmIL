@@ -21,7 +21,7 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
 {
     // initialise state data
     let mut states = Vec::new();
-    for i in insns { states.push(T::BOTTOM); }
+    for _ in insns { states.push(T::BOTTOM); }
     // calculate byte offsets
     let offsets = determine_byte_offsets(insns);
     // Initialise worklist
@@ -83,7 +83,7 @@ fn determine_byte_offsets(insns: &[Instruction]) -> Vec<usize> {
 
     for (i,insn) in insns.iter().enumerate() {
         let len = insn.length();
-        for j in 0..len { offsets.push(i); }       
+        for _ in 0..len { offsets.push(i); }       
     }
     // Done
     offsets

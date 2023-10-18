@@ -75,11 +75,16 @@ impl Assembly {
         self.sections.len()
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a,StructuredSection> {
+    /// Return `true` if the are no sections in this assembly.
+    pub fn is_empty(&self) -> bool {
+        self.sections.is_empty()
+    }
+
+    pub fn iter(&self) -> Iter<'_,StructuredSection> {
         self.sections.iter()
     }
 
-    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a,StructuredSection> {
+    pub fn iter_mut(&mut self) -> IterMut<'_,StructuredSection> {
         self.sections.iter_mut()
     }
 

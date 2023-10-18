@@ -52,7 +52,7 @@ impl FromHexString for str {
         let slice = if self.len() > 2 && &self[0..2] == "0x" {
             &self[2..]
         } else {
-            &self
+            self
         };
         // Account for an odd number of digits by assuming the leading
         // digit is zero.

@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::bytecode::Instruction;
-use crate::util::JoinInto;
 use super::{cw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
 
 /// For a given bytecode sequence, identify all _reachable_
@@ -46,7 +45,7 @@ pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
     for st in states {
         // Check whether corresponing instruction was reached during
         // the trace.
-        let reached = st.len() > 0;
+        let reached = !st.is_empty();
         //
         flags.push(reached);
     }

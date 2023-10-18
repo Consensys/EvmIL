@@ -10,8 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::util::JoinInto;
-use super::{EvmState,EvmWord};
+use super::{EvmWord};
 
 /// Abstraction of the operand stack within an EVM.  This provides the
 /// minimal set of operations required to implement the semantics of a
@@ -118,7 +117,7 @@ impl<T:EvmWord> EvmStack for ConcreteStack<T> {
     }
 
     /// Update internal position within code.
-    fn goto(&mut self, pc: usize) {
+    fn goto(&mut self, _pc: usize) {
         // nop
     }
 }
@@ -145,12 +144,11 @@ impl<T> fmt::Debug for ConcreteStack<T>
 where T:EvmWord+fmt::Debug
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"[");               
+        write!(f,"[")?;               
         for (i,w) in self.items.iter().rev().enumerate() {
             if i != 0 { write!(f,",")?; }
             write!(f,"{:?}",w)?;
         }
-        write!(f,"]");
-        Ok(())
+        write!(f,"]")
     }
 }

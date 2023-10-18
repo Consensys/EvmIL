@@ -87,7 +87,7 @@ pub fn find_dependencies(insns: &[Instruction]) -> Dependencies {
     // Run the abstract trace
     let states : Vec<Vec<State>> = trace(insns,init);
     // Convert over
-    let mut map = build_insn_map(insns);
+    let map = build_insn_map(insns);
     let mut deps = Dependencies::new(states.len());
     //
     for (i,insn) in insns.iter().enumerate() {

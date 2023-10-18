@@ -81,19 +81,18 @@ pub struct Fork {
 
 impl PartialOrd for Fork {
     fn partial_cmp(&self, other: &Fork) -> Option<Ordering> {
-        if self.id < other.id {
-            Some(Ordering::Less)
-        } else if self.id > other.id {
-            Some(Ordering::Greater)
-        } else {
-            Some(Ordering::Equal)
-        }
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for Fork {
     fn cmp(&self, other: &Fork) -> Ordering {
-        // Safe because we know `partiual_cmp` never returns `None`.
-        self.partial_cmp(other).unwrap()
+        if self.id < other.id {
+            Ordering::Less
+        } else if self.id > other.id {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
     }
 }

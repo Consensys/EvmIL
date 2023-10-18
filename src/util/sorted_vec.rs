@@ -19,6 +19,11 @@ impl<T:Ord> SortedVec<T> {
         self.items.len()
     }
 
+    /// Returns `true` if the vector is empty.
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+    
     /// Get item at given index in vector
     pub fn get(&self, index: usize) -> Option<&T> {
         self.items.get(index)
@@ -53,6 +58,20 @@ impl<T:Ord> SortedVec<T> {
             Err(i) => {
                 self.items.insert(i,item);
                 true
+            }
+        }
+    }
+
+    pub fn remove(&mut self, item: &T) -> bool {
+        // Find position of item (if present).
+        match self.items.binary_search(item) {
+            Ok(i) => {
+                self.items.remove(i);
+                true
+            },
+            Err(_) => {
+                // Not present, so do nothing.
+                false
             }
         }
     }
@@ -98,6 +117,14 @@ impl<T:Ord+Clone> From<Vec<T>> for SortedVec<T> {
         items.dedup();
         // Done
         SortedVec{items}
+    }
+}
+
+impl<T:Ord> ops::Deref for SortedVec<T> {
+    type Target = [T];
+    
+    fn deref(&self) -> &[T] {
+        &self.items
     }
 }
 

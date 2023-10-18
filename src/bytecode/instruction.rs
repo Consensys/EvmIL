@@ -222,13 +222,7 @@ impl Instruction {
     /// Determine whether or not this instruction can branch.  That
     /// is, whether or not it is a `JUMP` or `JUMPI` instruction.
     pub fn can_branch(&self) -> bool {
-        match self {
-            JUMP => true,
-            JUMPI => true,
-            RJUMP(_) => true,
-            RJUMPI(_) => true,
-            _ => false,
-        }
+       matches!(self, JUMP|JUMPI|RJUMP(_)|RJUMPI(_))
     }
     
     /// Encode an instruction into a byte sequence, assuming a given
@@ -304,9 +298,9 @@ impl Instruction {
             // 60s & 70s: Push Operations            
             PUSH(_) => 0,
             // 80s: Duplication Operations
-            DUP(n) => 0,
+            DUP(_) => 0,
             // 90s: Swap Operations
-            SWAP(n) => 0,
+            SWAP(_) => 0,
             // a0s: Log Operations
             LOG(n) => (2+n) as usize,
             // f0s: System Operations
@@ -328,7 +322,7 @@ impl Instruction {
     /// its slightly more involved as a calculation involving the
     /// operands is required.
     pub fn opcode(&self) -> u8 {
-        let op = match self {
+        match self {
             // 0s: Stop and Arithmetic Operations
             STOP => opcode::STOP,
             ADD => opcode::ADD,
@@ -402,7 +396,7 @@ impl Instruction {
             RJUMPI(_) => opcode::RJUMPI,
             // 60s & 70s: Push Operations            
             PUSH(bs) => {
-                if bs.len() == 0 || bs.len() > 32 {
+                if bs.is_empty() || bs.len() > 32 {
                     panic!("invalid push");
                 } else {
                     let n = (bs.len() as u8) - 1;
@@ -439,16 +433,14 @@ impl Instruction {
             _ => {
                 panic!("Invalid instruction ({:?})", self);
             }
-        };
-        //
-        op
+        }
     }
 
     /// Decode the next instruction in a given sequence of bytes.
     pub fn decode(pc: usize, bytes: &[u8]) -> Instruction {
         let opcode = if pc < bytes.len() { bytes[pc] } else { 0x00 };
         //
-        let insn = match opcode {
+        match opcode {
             // 0s: Stop and Arithmetic Operations
             opcode::STOP => STOP,
             opcode::ADD => ADD,
@@ -567,9 +559,7 @@ impl Instruction {
             opcode::SELFDESTRUCT => SELFDESTRUCT,
             // Unknown
             _ => DATA(vec![opcode]),
-        };
-        //
-        insn
+        }
     }    
 }
 

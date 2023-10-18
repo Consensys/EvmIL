@@ -140,14 +140,14 @@ impl std::error::Error for DecodingError {}
 /// generated.
 pub fn from_bytes(bytes: &[u8]) -> Result<Assembly,DecodingError> {
     let mut iter = ByteDecoder::new(bytes);
-    iter.match_u16(EOF_MAGIC,|w| DecodingError::InvalidMagicNumber(w))?;
+    iter.match_u16(EOF_MAGIC, DecodingError::InvalidMagicNumber)?;
     // Pull out static information
     let version = iter.decode_u8()?;
     // Sanity check version information
     if version != 1 { return Err(DecodingError::UnsupportedEofVersion(version)); }
-    iter.match_u8(0x01,|w| DecodingError::InvalidKindType(w))?;
+    iter.match_u8(0x01, DecodingError::InvalidKindType)?;
     let type_len = iter.decode_u16()?;
-    iter.match_u8(0x02,|w| DecodingError::InvalidKindCode(w))?;
+    iter.match_u8(0x02, DecodingError::InvalidKindCode)?;
     let num_code_sections = iter.decode_u16()? as usize;
     // Sanity check length of type section
     if (type_len as usize) != (num_code_sections * 4) {
@@ -158,9 +158,9 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Assembly,DecodingError> {
     for _i in 0..num_code_sections {
         code_sizes.push(iter.decode_u16()? as usize);
     }
-    iter.match_u8(0x03,|w| DecodingError::InvalidKindData(w))?;
+    iter.match_u8(0x03, DecodingError::InvalidKindData)?;
     let data_size = iter.decode_u16()? as usize;
-    iter.match_u8(0x00,|w| DecodingError::InvalidTerminator(w))?;
+    iter.match_u8(0x00, DecodingError::InvalidTerminator)?;
     // parse types section
     let mut types = Vec::new();
     for _i in 0..num_code_sections {
@@ -201,14 +201,14 @@ pub fn to_bytes(bytecode: &Assembly) -> Result<Vec<u8>,EncodingError> {
     for section in bytecode {
         match section {
             StructuredSection::Code(insns) => {
-                if data_section != None {
+                if data_section.is_some() {
                     return Err(EncodingError::DataSectionNotLast)
                 }
                 let code_bytes = insns.assemble();
                 code_sections.push(code_bytes);
             }
             StructuredSection::Data(data_bytes) => {
-                if data_section != None {
+                if data_section.is_some() {
                     return Err(EncodingError::MultipleDataSections)
                 } else {
                     data_section = Some(data_bytes.clone())
