@@ -56,6 +56,20 @@ impl<T:Ord> SortedVec<T> {
             }
         }
     }
+
+    pub fn remove(&mut self, item: &T) -> bool {
+        // Find position of item (if present).
+        match self.items.binary_search(item) {
+            Ok(i) => {
+                self.items.remove(i);
+                true
+            },
+            Err(_) => {
+                // Not present, so do nothing.
+                false
+            }
+        }
+    }
 }
 
 impl<T:Ord+Clone> SortedVec<T> {

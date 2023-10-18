@@ -9,16 +9,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::SortedVec;
-use super::Instruction;
-use super::BlockVec;
+use crate::util::{Seq,SortedVec};
 
 type EdgeSet = SortedVec<usize>;
 
-/// A _bidirectional_ directed graph which stores edges in an
-/// _adjacency list_ format.
-pub struct BlockGraph<'a> {
-    blocks: BlockVec<'a>,
+/// Represents a _bidirectional_ directed graph over a sequence of
+/// _nodes_.  Edges can be added/removed, and iterated over in the
+/// _forwards_ or _backwards_ direction.  The underlying datastructure
+/// is that of an adjacency list.
+pub struct Digraph<T>
+where T:Seq {
+    /// Node sequence underlying this representation.
+    nodes: T,
     /// For each block, the corresponding set of incoming edges
     /// (i.e. edges which transfer control into this block).
     incoming: Vec<EdgeSet>,
@@ -27,27 +29,28 @@ pub struct BlockGraph<'a> {
     outgoing: Vec<EdgeSet>    
 }
 
-impl<'a> BlockGraph<'a> {
-    pub fn new(blocks: BlockVec<'a>) -> Self {
-        let incoming = vec![SortedVec::new();blocks.len()+1];
-        let outgoing = vec![SortedVec::new();blocks.len()+1];
-        Self{blocks,incoming,outgoing}
+impl<T> Digraph<T>
+where T:Seq {
+    pub fn new(n: usize, nodes: T) -> Self {
+        let incoming = vec![SortedVec::new();n];
+        let outgoing = vec![SortedVec::new();n];
+        Self{nodes,incoming,outgoing}
     }
-
+    
     /// Returns the number of basic blocks stored within this graph.    
     pub fn len(&self) -> usize {
-        self.blocks.len()
+        self.nodes.len()
     }
     
     /// Returns the ith block within this graph.    
-    pub fn get(&self, blk: usize) -> &'a [Instruction] {
-        self.blocks.get(blk)
+    pub fn get(&self, index: usize) -> T::Output {
+        self.nodes.get(index).unwrap()
     }
-
-    /// Determine which block encloses the given `pc` position
-    /// (i.e. byte offset within original byte sequence).
-    pub fn lookup_pc(&self, pc: usize) -> usize {
-        self.blocks.lookup_pc(pc)
+    
+    /// Get the underlying nodes of this graph (in whatever form they
+    /// are provided).
+    pub fn nodes(&self) -> &T {
+        &self.nodes
     }
     
     /// Returns the set of blocks which can transfer control _into_ a
@@ -63,13 +66,13 @@ impl<'a> BlockGraph<'a> {
     }
 
     /// Returns an iterator over the _outgoing edges_ in this graph
-    pub fn out_iter(&self) -> EdgeIterator {
-        EdgeIterator::new(true,&self.outgoing)
+    pub fn out_iter(&self) -> DigraphIterator {
+        DigraphIterator::new(true,&self.outgoing)
     }
 
     /// Returns an iterator over the _incoming edges_ in this graph
-    pub fn in_iter(&self) -> EdgeIterator {
-        EdgeIterator::new(false,&self.incoming)
+    pub fn in_iter(&self) -> DigraphIterator {
+        DigraphIterator::new(false,&self.incoming)
     }    
     
     /// Connect one basic block to another which forms a directed edge
@@ -82,13 +85,14 @@ impl<'a> BlockGraph<'a> {
     /// Remove a connection between two basic blocks from the graph.
     /// Returns `true` if a connection was removed.
     pub fn disconnect(&mut self, from: usize, to: usize) -> bool {
-        todo!();
+        self.incoming[to].remove(&from);
+        self.outgoing[from].remove(&to)
     }
 }
 
 /// An iterator over the edges of a graph which iterates over the
 /// incoming or outgoing edges of the graph.
-pub struct EdgeIterator<'a> {
+pub struct DigraphIterator<'a> {
     // Direction of edges which is either `true` (i.e. outgoing) or
     // `false` (i.e. incoming).
     dir: bool,
@@ -100,13 +104,13 @@ pub struct EdgeIterator<'a> {
     j: usize 
 }
 
-impl<'a> EdgeIterator<'a> {
+impl<'a> DigraphIterator<'a> {
     pub fn new(dir: bool, items: &'a [EdgeSet]) -> Self {
         Self{dir,items,i:0,j:0}
     }
 }
 
-impl<'a> Iterator for EdgeIterator<'a> {
+impl<'a> Iterator for DigraphIterator<'a> {
     // An edge
     type Item = (usize,usize);
 

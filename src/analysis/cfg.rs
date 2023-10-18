@@ -9,16 +9,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use crate::bytecode::{BlockVec,BlockGraph,Instruction};
-use crate::util::{Bottom,Top,SubsliceOffset,Concretizable};
-use super::{EvmState,EvmStateSet,EvmStack};
-use super::{aw256,ConcreteStack,ConcreteState,EvmMemory,trace,ConcreteMemory,UnknownStorage};
+use crate::bytecode::{BlockVec,Instruction};
+use crate::util::{Digraph,Concretizable,Seq,SubsliceOffset};
+use super::{EvmState,EvmStack};
+use super::{aw256,ConcreteStack,ConcreteState,trace,ConcreteMemory,UnknownStorage};
 
 use Instruction::*;
 
 type DefaultState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,UnknownStorage<aw256>>;
+
+/// A block graph is a directed graph over the basic blocks of a
+/// bytecode sequence.
+pub type BlockGraph<'a> = Digraph<BlockVec<'a>>;
 
 impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
 {
@@ -26,7 +28,7 @@ impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
     /// sequence.
     fn from(insns: &'a [Instruction]) -> Self {
         // Construct block graph
-        let mut graph = BlockGraph::new(BlockVec::new(insns));
+        let mut graph = BlockGraph::new(insns.len()+1,BlockVec::new(insns));
         // Compute analysis results
         let init = DefaultState::new();
         // Run the abstract trace
@@ -46,8 +48,7 @@ impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
                             // Convert the branch target (which is a
                             // byte offset) into the corresponding
                             // block offset.
-                            let bid = graph.lookup_pc(target);
-                            println!("PC {} --> BLOCK {}",target,bid);
+                            let bid = graph.nodes().lookup_pc(target);
                             // Connect edge
                             graph.connect(b,bid);
                         }
@@ -59,7 +60,7 @@ impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
                             break;
                         }
                     }
-                    INVALID|RETURN|REVERT|SELFDESTRUCT|STOP => {
+                    INVALID|RETURN|REVERT|SELFDESTRUCT|STOP|DATA(_) => {
                         // Instructions which don't fall through.
                         // Observe its safe to break here, since we
                         // know these instructions terminate the

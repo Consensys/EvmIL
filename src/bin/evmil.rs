@@ -160,7 +160,7 @@ fn disassemble(args: &ArgMatches) -> Result<bool, Box<dyn Error>> {
     // Parse hex string into bytes
     let bytes = hex.from_hex_string().unwrap();
     // Construct bytecode representation
-    let mut asm = if args.contains_id("eof") {
+    let asm = if args.contains_id("eof") {
         todo!()
         //Assembly::from_eof_bytes(&bytes)?
     } else {

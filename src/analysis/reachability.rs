@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::bytecode::Instruction;
-use crate::util::JoinInto;
 use super::{cw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage};
 
 /// For a given bytecode sequence, identify all _reachable_

@@ -304,9 +304,9 @@ impl Instruction {
             // 60s & 70s: Push Operations            
             PUSH(_) => 0,
             // 80s: Duplication Operations
-            DUP(n) => 0,
+            DUP(_) => 0,
             // 90s: Swap Operations
-            SWAP(n) => 0,
+            SWAP(_) => 0,
             // a0s: Log Operations
             LOG(n) => (2+n) as usize,
             // f0s: System Operations

@@ -12,8 +12,8 @@
 use std::fmt;
 use std::marker::PhantomData;
 use std::collections::HashMap;
-use crate::util::{w256,W256_ZERO,W256_THIRTYTWO,Top};
-use super::{EvmState,EvmWord};
+use crate::util::{w256,Top};
+use super::{EvmWord};
 
 /// Abstraction of memory within an EVM.  This provides the minimal
 /// set of operations required to implement the semantics of a given

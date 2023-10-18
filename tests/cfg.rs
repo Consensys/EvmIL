@@ -1,9 +1,8 @@
-use evmil::bytecode::{Assembly,BlockGraph,BlockVec,Instruction,StructuredSection};
-
-use Instruction::*;
+use evmil::bytecode::{Assembly,BlockVec,Instruction,StructuredSection};
+use evmil::analysis::{BlockGraph};
 
 #[test]
-fn test_blockgraph_01() {
+fn test_cfg_01() {
     let asm = r#"
 .code
    push 0x80
@@ -12,7 +11,7 @@ fn test_blockgraph_01() {
 }
 
 #[test]
-fn test_blockgraph_02() {
+fn test_cfg_02() {
     let asm = r#"
 .code
    push 0x80
@@ -22,7 +21,7 @@ fn test_blockgraph_02() {
 }
 
 #[test]
-fn test_blockgraph_03() {
+fn test_cfg_03() {
     let asm = r#"
 .code
    push 0x80
@@ -32,7 +31,7 @@ fn test_blockgraph_03() {
 }
 
 #[test]
-fn test_blockgraph_04() {
+fn test_cfg_04() {
     let asm = r#"
 .code
    push 0x80 ;; blk 1
@@ -43,7 +42,7 @@ fn test_blockgraph_04() {
 }
 
 #[test]
-fn test_blockgraph_05() {
+fn test_cfg_05() {
     let asm = r#"
 .code
    push 0x80
@@ -57,7 +56,7 @@ lab:
 }
 
 #[test]
-fn test_blockgraph_06() {
+fn test_cfg_06() {
     let asm = r#"
 .code
    push 0x80
@@ -72,10 +71,10 @@ lab:
 }
 
 #[test]
-fn test_blockgraph_07() {
+fn test_cfg_07() {
     let asm = r#"
 .code
-   push 0x80 ;; blk 0
+   calldatasize ;; blk 0
    push lab
    jumpi
    revert    
@@ -87,10 +86,11 @@ lab:
 }
 
 #[test]
-fn test_blockgraph_08() {
+fn test_cfg_08() {
     let asm = r#"
-.code   
-   push lab1  ;; blk 0
+.code
+   calldatasize
+   push lab1  ;; blk 0   
    jumpi
    push lab2
    jump
@@ -102,6 +102,39 @@ lab2:
    return
 "#;
     check_asm(&asm,&[(0,1),(0,2)]);
+}
+
+#[test]
+fn test_cfg_10() {
+    let asm = r#"
+.code
+   calldatasize
+   push lab1  ;; blk 0   
+   jumpi
+   push lab2
+   jump
+lab1:
+   jumpdest   ;; blk 1
+   push lab3
+   jump
+lab2:
+   jumpdest   ;; blk 2
+   calldatasize
+lab3:
+   jumpdest   ;; blk 3
+   stop
+"#;
+    check_asm(&asm,&[(0,1),(0,2),(1,3),(2,3)]);
+}
+
+#[test]
+fn test_cfg_11() {
+    let asm = r#"
+.code
+   push 0x80
+   db 0xee
+"#;
+    check_asm(&asm,&[]);
 }
 
 

@@ -9,7 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::SubsliceOffset;
 use crate::bytecode::Instruction;
 use Instruction::*;
 
@@ -117,7 +116,6 @@ impl<'a> Iterator for BlockIterator<'a> {
                 i += 1;
             }
             // Extract the block
-            let tmp = self.insns;
             let block = &self.insns[..i];
             // Update position within instruction sequence
             self.insns = &self.insns[i..];

@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::util::SubsliceOffset;
+use std::ops::Index;
+use crate::util::{Seq,SubsliceOffset};
 use super::Instruction;
 use super::{BlockIterator,ByteOffsetIterator};
 
@@ -36,7 +37,7 @@ impl<'a> BlockVec<'a> {
         let b_iter = BlockIterator::new(insns);
         let bo_iter = ByteOffsetIterator::new(insns);
         // Identify block boundaries        
-        let insn_offsets: Vec<_> = b_iter.map(|b| insns.subslice_offset(b)+b.len()).collect();
+        let mut insn_offsets: Vec<_> = b_iter.map(|b| insns.subslice_offset(b)+b.len()).collect();        
         // Identify PC offsets
         let pc_offsets: Vec<_> = bo_iter.collect();
         // Done
@@ -89,15 +90,36 @@ impl<'a> BlockVec<'a> {
     }    
 }
 
+impl<'a> Index<usize> for BlockVec<'a> {
+    type Output = [Instruction];
+    
+    /// Used for indexing operations (e.g. `seq[i]`, etc)
+    fn index(&self, index: usize) -> &'a [Instruction] {
+        self.get(index)
+    }    
+}
+
+impl<'a> Seq for BlockVec<'a> {
+    type Output = &'a [Instruction];
+    
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn get(&self, index: usize) -> Option<Self::Output> {
+        Some(self.get(index))
+    }
+}
+
 impl<'a> fmt::Display for BlockVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"(")?;
         for i in 0..self.len() {
             let ith = self.get(i);            
-            if i!=0 { write!(f,";"); }
+            if i!=0 { write!(f,";")?; }
             for j in 0..ith.len() {
-                if j != 0 { write!(f,","); }
-                write!(f,"{}",ith[j]);
+                if j != 0 { write!(f,",")?; }
+                write!(f,"{}",ith[j])?;
             }
         }
         write!(f,")")

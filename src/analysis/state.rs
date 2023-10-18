@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use std::fmt;
-use crate::util::{JoinInto,Bottom};
 use super::{EvmWord,EvmMemory,EvmStack,EvmStorage};
 
 // ===================================================================

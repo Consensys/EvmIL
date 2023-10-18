@@ -283,17 +283,17 @@ impl Concretizable for cw256 {
 }
 
 impl EvmWord for cw256 {
-    fn less_than(self,rhs:Self)->Self { cw256::Unknown }
-    fn equal(self,rhs:Self)->Self { cw256::Unknown }
+    fn less_than(self,_rhs:Self)->Self { cw256::Unknown }
+    fn equal(self,_rhs:Self)->Self { cw256::Unknown }
     fn is_zero(self) -> Self { cw256::Unknown }
-    fn add(self, rhs: Self) -> Self { cw256::Unknown }
-    fn sub(self, rhs: Self) -> Self { cw256::Unknown }
-    fn mul(self, rhs: Self) -> Self { cw256::Unknown }
-    fn div(self, rhs: Self) -> Self { cw256::Unknown }
-    fn rem(self, rhs: Self) -> Self { cw256::Unknown }
-    fn and(self, rhs: Self) -> Self { cw256::Unknown }
-    fn or(self, rhs: Self) -> Self  { cw256::Unknown }
-    fn xor(self, rhs: Self) -> Self { cw256::Unknown }
+    fn add(self, _rhs: Self) -> Self { cw256::Unknown }
+    fn sub(self, _rhs: Self) -> Self { cw256::Unknown }
+    fn mul(self, _rhs: Self) -> Self { cw256::Unknown }
+    fn div(self, _rhs: Self) -> Self { cw256::Unknown }
+    fn rem(self, _rhs: Self) -> Self { cw256::Unknown }
+    fn and(self, _rhs: Self) -> Self { cw256::Unknown }
+    fn or(self, _rhs: Self) -> Self  { cw256::Unknown }
+    fn xor(self, _rhs: Self) -> Self { cw256::Unknown }
     fn not(self) -> Self { cw256::Unknown }
     fn havoc(self) -> Self { cw256::Unknown }    
 }
