@@ -48,6 +48,12 @@ impl<T:Ord> SortedVec<T> {
         self.items.binary_search(&item).is_ok()
     }
 
+    /// Shorten this vector by keeping the first `len` items and
+    /// dropping the rest.
+    pub fn truncate(&mut self, len: usize) {
+        self.items.truncate(len)
+    }
+    
     /// Insert a new item into this sorted vector, and indicate
     /// whether or not it was actually added.  The item will not be
     /// added if a duplicate already exists.
@@ -74,6 +80,11 @@ impl<T:Ord> SortedVec<T> {
                 false
             }
         }
+    }
+
+    /// Remove item at a given index in the vector.
+    pub fn remove_at(&mut self, index: usize) {
+        self.items.remove(index);
     }
 }
 

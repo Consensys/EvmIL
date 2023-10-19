@@ -141,5 +141,3 @@ impl<'a> Iterator for DigraphIterator<'a> {
         None
     }
 }
-
-
