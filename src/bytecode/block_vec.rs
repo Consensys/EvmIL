@@ -49,6 +49,11 @@ impl<'a> BlockVec<'a> {
         self.insn_offsets.len()
     }
 
+    /// Return the underlying instruction sequence for this block vector.
+    pub fn insns(&self) -> &'a [Instruction] {
+        &self.insns
+    }
+    
     /// Get the _ith_ block within this decomposition.
     pub fn get(&self, index: usize) -> &'a [Instruction] {
         let m = if index == 0 { 0 } else { self.insn_offsets[index-1] };

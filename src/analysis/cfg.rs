@@ -28,7 +28,18 @@ impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
     /// sequence.
     fn from(insns: &'a [Instruction]) -> Self {
         // Construct block graph
-        let mut graph = BlockGraph::new(insns.len()+1,BlockVec::new(insns));
+        BlockGraph::from(BlockVec::new(insns))
+    }
+}
+
+impl<'a> From<BlockVec<'a>> for BlockGraph<'a>
+{
+    /// Construct a graph of the basic blocks for a given instruction
+    /// sequence.
+    fn from(blocks: BlockVec<'a>) -> Self {
+        let insns = blocks.insns();
+        // Construct block graph
+        let mut graph = BlockGraph::new(blocks.len()+1,blocks);
         // Compute analysis results
         let init = DefaultState::new();
         // Run the abstract trace
