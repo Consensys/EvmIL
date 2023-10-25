@@ -46,6 +46,12 @@ where T:Seq {
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
+
+    /// Returns `true` if there is an edge from node `from` to node
+    /// `to`.
+    pub fn is_connected(&self, from: usize, to: usize) -> bool {
+        self.outgoing[from].contains(to)
+    }
     
     /// Returns the ith block within this graph.    
     pub fn get(&self, index: usize) -> T::Output {
