@@ -9,18 +9,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::util::{Digraph,Seq,SortedVec};
+use crate::util::{Digraph,EdgeSet,Seq,SortedVec};
 
-type DomSet = SortedVec<usize>;
+// ===================================================================
+// Dominators
+// ===================================================================
 
 /// Compute the set of nodes dominated by each node in a given graph.
-pub fn dominators<T:Seq>(graph: &Digraph<T>) -> Vec<DomSet> {
+pub fn dominators<T:Seq>(graph: &Digraph<T>) -> Vec<EdgeSet> {
     // NOTE: this is not particularly efficient
     let n = graph.len();
     // Construct empty relation
-    let mut dom : Vec<DomSet> = Vec::new();
+    let mut dom : Vec<EdgeSet> = Vec::new();
     //
-    let ns : DomSet = (0..n).collect::<Vec<_>>().into();
+    let ns : EdgeSet = (0..n).collect::<Vec<_>>().into();
     // Initialise dominators
     for i in 0..n {
         if graph.incoming(i).len() == 0 {
@@ -39,8 +41,8 @@ pub fn dominators<T:Seq>(graph: &Digraph<T>) -> Vec<DomSet> {
                 if i != *j {
                     // Edge j -> i
                     unsafe {
-                        let p : *mut DomSet = &mut dom[i];
-                        let q : *const DomSet = &mut dom[*j];
+                        let p : *mut EdgeSet = &mut dom[i];
+                        let q : *const EdgeSet = &mut dom[*j];
                         changes |= dom_intersect(i,p,q);
                     }
                 }
@@ -51,9 +53,48 @@ pub fn dominators<T:Seq>(graph: &Digraph<T>) -> Vec<DomSet> {
     dom
 }
 
+// ===================================================================
+// Transitive Closure
+// ===================================================================
+
+/// Compute the (forward) transitive closure of a graph.  That is, for
+/// each node, the set of nodes it can reach in one (or more) hops.
+pub fn transitive_closure<T:Seq>(graph: &Digraph<T>) -> Vec<EdgeSet> {
+    let mut changed = true;    
+    let mut closure = Vec::new();
+    // Initialise the closure
+    for i in 0..graph.len() {
+        closure.push(graph.outgoing(i).clone());
+    }
+    // Iterate to a fixed point
+    while changed {
+        changed = false;
+        //
+        for i in 0..graph.len() {
+            for j in graph.outgoing(i) {
+                if i != *j {
+                    unsafe {
+                        // This is safe because we know that i != j, and
+                        // hence the two sets are actually disjoint.
+                        let l : *mut EdgeSet = &mut closure[i];
+                        let r : *const EdgeSet = &mut closure[*j];
+                        changed |= (*l).insert_all(&(*r));
+                    }
+                }
+            }
+        }
+    }
+    //
+    closure
+}
+
+// ===================================================================
+// Helpers
+// ===================================================================
+
 /// Intersect two sets.  This is safe provided that both pointers are
 /// for _different_ sets.
-unsafe fn dom_intersect(n: usize, dom: *mut DomSet, pred: *const DomSet) -> bool {
+unsafe fn dom_intersect(n: usize, dom: *mut EdgeSet, pred: *const EdgeSet) -> bool {
     let l = (*dom).len();
     // Go through every element and check it
     let mut i = 0;

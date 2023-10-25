@@ -11,7 +11,7 @@
 // limitations under the License.
 use crate::util::{Seq,SortedVec};
 
-type EdgeSet = SortedVec<usize>;
+pub type EdgeSet = SortedVec<usize>;
 
 /// Represents a _bidirectional_ directed graph over a sequence of
 /// _nodes_.  Edges can be added/removed, and iterated over in the
@@ -60,13 +60,13 @@ where T:Seq {
     
     /// Returns the set of blocks which can transfer control _into_ a
     /// given block (`blk`).    
-    pub fn incoming(&self, blk: usize) -> &[usize] {
+    pub fn incoming(&self, blk: usize) -> &EdgeSet {
         &self.incoming[blk]        
     }
 
     /// Returns the set of blocks to which a given block (`blk`) can
     /// transfer control.    
-    pub fn outgoing(&self, blk: usize) -> &[usize] {
+    pub fn outgoing(&self, blk: usize) -> &EdgeSet {
         &self.outgoing[blk]
     }
 
