@@ -313,7 +313,8 @@ impl Instruction {
             CALL|CALLCODE => 7,
             // Virtual instructions
             HAVOC(_) => 0,
-            _ => { unreachable!(); }
+            DATA(_) => 0,
+            _ => { unreachable!("{:?}",self); }
         }
     }
     
