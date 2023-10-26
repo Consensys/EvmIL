@@ -117,20 +117,12 @@ impl<T:EvmWord+Top> ConcreteMemory<T> {
         // Memory is initially all zero
         Self{top: false, words}
     }
-}
 
-impl<T:EvmWord+Top> EvmMemory for ConcreteMemory<T> {
-    type Word = T;
-
-    fn read(&mut self, address: Self::Word) -> Self::Word {
-        if address.is_constant() {
-            // Note the conversion here should never fail since its
-            // impossible for addressible memory to exceed 64bits.            
-            let addr : u64 = address.constant().to();
-            // FIXME: for now assume all memory reads are
-            // word-aligned.  This is clearly not always true :)
-            assert!(addr % 32 == 0);
-            //
+    fn internal_read(&self, addr: u64) -> T {
+        let offset = addr%32;
+        // Check alignment
+        if offset == 0 {
+            // Aligned read
             match self.words.get(&addr) {
                 Some(v) => v.clone(),
                 None => {
@@ -142,6 +134,101 @@ impl<T:EvmWord+Top> EvmMemory for ConcreteMemory<T> {
                 }
             }
         } else {
+            // Unaligned read
+            let waddr = addr-offset;
+            let aw1 = self.internal_read(waddr);
+            let aw2 = self.internal_read(waddr+32);
+            // Check both are constants
+            if aw1.is_constant() && aw2.is_constant() {
+                let mut w1 = aw1.constant();
+                let mut w2 = aw2.constant();                
+                let boffset = (offset as usize) * 8;
+                // Yes, we can do something.
+                w1 <<= boffset;
+                w2 >>= 256 - boffset;
+                // Done
+                T::from(w1 | w2)
+            } else {
+                T::TOP                
+            }
+        }
+    }
+
+    fn internal_write(&mut self, addr: u64, aword: T) {
+        let offset = addr%32;
+        //
+        if offset == 0 {
+            // Aligned write
+            self.words.insert(addr,aword);
+        } else if aword.is_constant() {
+            // Unaligned (constant) write
+            let mut word = aword.constant();
+            // Write bytes individually
+            for i in (0..32).rev() {
+                let ith = word & w256::from(0xFF);
+                self.internal_write_byte(addr+i,ith.to());
+                word >>= 8;
+            }
+        } else {
+            let waddr = addr - offset;
+            // Unaligned (non-constant) write
+            self.words.insert(waddr,T::TOP);
+            self.words.insert(waddr+32,T::TOP);                            
+        }
+    }
+
+    fn internal_write8(&mut self, addr: u64, aword: T) {        
+        if aword.is_constant() {
+            // Byte being written is known, hence there is something
+            // useful we can do.
+            let abyte = aword.constant() & w256::from(0xFF);            
+            self.internal_write_byte(addr,abyte.to());
+        } else {
+            // Determine enclosing word
+            let word_addr = addr - (addr % 32);
+            // Set to unknown
+            self.words.insert(word_addr,T::TOP);                
+        }
+    }
+    
+    fn internal_write_byte(&mut self, addr: u64, byte: u8) {
+        // Determine byte offset
+        let offset = addr%32;
+        // Determine enclosing word
+        let waddr = addr - offset;
+        // Read current word
+        let w = self.internal_read(waddr);
+        // Update (if useful)
+        if w.is_constant() {
+            let mut v = w.constant();            
+            // Construct mask
+            let moffset = 8 * (31 - offset) as usize;
+            let mask = w256::from(0xFF) << moffset;
+            // Construct byte
+            let bword = w256::from(byte) << moffset;
+            // Update word
+            v &= !mask;
+            v |= bword;
+            // Done
+            self.words.insert(waddr,T::from(v));
+        } else {
+            // In this case, writing a constant byte to an unknow word
+            // leaves an unknown word.
+        }
+    }
+}
+
+impl<T:EvmWord+Top> EvmMemory for ConcreteMemory<T> {
+    type Word = T;
+
+    fn read(&mut self, address: Self::Word) -> Self::Word {
+        if address.is_constant() {
+            // Note the conversion here should never fail since its
+            // impossible for addressible memory to exceed 64bits.
+            let addr : u64 = address.constant().to();
+            // Read word
+            self.internal_read(addr)
+        } else {
             // Read address unknown, hence unknown value returned.
             T::TOP
         }
@@ -152,22 +239,25 @@ impl<T:EvmWord+Top> EvmMemory for ConcreteMemory<T> {
         if address.is_constant() {
             // Note the conversion here should never fail since its
             // impossible for addressible memory to exceed 64bits.
-            let addr = address.constant().to();
-            // FIXME: for now assume all memory reads are
-            // word-aligned.  This is clearly not always true :)
-            assert!(addr % 32 == 0);
-            // Update memory!
-            self.words.insert(addr,item);
+            let addr : u64 = address.constant().to();
+            self.internal_write(addr,item);
         } else {
             self.top = true;
             self.words.clear();
         }
     }
 
-    fn write8(&mut self, _address: Self::Word, _item: Self::Word) {
-        // FIXME: could improve this if the address is a known constant.
-        self.top = true;
-        self.words.clear();
+    fn write8(&mut self, address: Self::Word, item: Self::Word) {
+        if address.is_constant() {
+            // Note the conversion here should never fail since its
+            // impossible for addressible memory to exceed 64bits.
+            let addr : u64 = address.constant().to();            
+            self.internal_write8(addr,item);
+        } else {
+            // Unknown write.  Everything is lost.
+            self.top = true;
+            self.words.clear();
+        }
     }
 }
 
@@ -199,4 +289,138 @@ impl<T:EvmWord+Top> fmt::Debug for ConcreteMemory<T>
         }
         Ok(())
     }
+}
+
+// ===================================================================
+// Memory Tests
+// ===================================================================
+
+#[cfg(test)]
+mod memory_tests {
+    use crate::util::{w256,Top};
+    use crate::analysis::{aw256,ConcreteMemory};
+
+    // Adding these tests caught an awful lot of bugs in earlier
+    // versions of the above code.
+    
+    #[test]
+    fn mem_aligned_oob_read() {
+        let mem = ConcreteMemory::<aw256>::new();
+        let w = w256::from(0);
+        assert_eq!(mem.internal_read(0),aw256::from(w));
+    }
+
+    #[test]
+    fn mem_unaligned_oob_read() {
+        let mem = ConcreteMemory::<aw256>::new();
+        let w = w256::from(0);
+        assert_eq!(mem.internal_read(13),aw256::from(w));
+    }
+
+    #[test]
+    fn mem_aligned_known_read() {
+        let mut mem = ConcreteMemory::<aw256>::new();
+        let w = w256::from(12345);        
+        mem.internal_write(0,aw256::from(w));
+        assert_eq!(mem.internal_read(0),aw256::from(w));
+    }
+
+    #[test]
+    fn mem_unaligned_known_read_1() {
+        let mut mem = ConcreteMemory::<aw256>::new();
+        let mut w1 = w256::from(0xf0e0d0c0b0a090807060504030201000u128);
+        w1 <<= 16*8;
+        w1 |= w256::from(0xf1e1d1c1b1a191817161514131211101u128);
+        mem.internal_write(0,aw256::from(w1));
+        // Try every possible read
+        for i in 0..32 {
+            let w2 = w1 << ((i*8) as usize);
+            assert_eq!(mem.internal_read(i),aw256::from(w2));
+        }
+    }
+    
+    #[test]
+    fn mem_unaligned_known_read_2() {
+        let mut mem = ConcreteMemory::<aw256>::new();
+        let mut w1 = w256::from(0xf0e0d0c0b0a090807060504030201000u128);
+        w1 <<= 16*8;
+        w1 |= w256::from(0xf1e1d1c1b1a191817161514131211101u128);
+        mem.internal_write(32,aw256::from(w1));
+        // Try every possible read
+        for i in 0..32 {
+            let w2 = w1 >> (((32-i)*8) as usize);
+            assert_eq!(mem.internal_read(i),aw256::from(w2));
+        }
+    }
+
+    #[test]
+    fn mem_unaligned_unknown_read_1() {
+        let mut mem = ConcreteMemory::<aw256>::new();
+        mem.internal_write(0,aw256::TOP);
+        // Try every possible read
+        for i in 0..32 {
+            assert_eq!(mem.internal_read(i),aw256::TOP);
+        }
+    }
+    
+    #[test]
+    fn mem_unaligned_known_write() {
+        let zero = aw256::from(w256::ZERO);
+        let mut mem = ConcreteMemory::<aw256>::new();
+        let mut w1 = w256::from(0xf0e0d0c0b0a090807060504030201000u128);
+        w1 <<= 16*8;
+        w1 |= w256::from(0xf1e1d1c1b1a191817161514131211101u128);
+        // Try every possible read
+        for i in 0..32 {
+            mem.internal_write(0,zero); // reset
+            mem.internal_write(i,aw256::from(w1));            
+            let w2 = w1 >> ((i*8) as usize);
+            assert_eq!(mem.internal_read(0),aw256::from(w2));
+        }
+    }
+
+    #[test]
+    fn mem_unaligned_unknown_write() {
+        let zero = aw256::from(w256::ZERO);
+        let mut mem = ConcreteMemory::<aw256>::new();
+        // Try every possible read
+        for i in 0..32 {
+            mem.internal_write(i,aw256::TOP);            
+            assert_eq!(mem.internal_read(0),aw256::TOP);
+            if i > 0 {
+                assert_eq!(mem.internal_read(32),aw256::TOP);
+            } else {
+                assert_eq!(mem.internal_read(32),zero);                
+            }
+        }
+    }
+
+    #[test]
+    fn mem_known_write8() {
+        let mut mem = ConcreteMemory::<aw256>::new();
+        let mut w1 = w256::from(0xf0e0d0c0b0a0908070605040302010u128);
+        for i in 0..32 {
+            let w2 = w256::from(0x10) << 8*(31 - i);
+            // Reset
+            mem.internal_write(0,aw256::from(w256::ZERO));
+            // Write byte
+            mem.internal_write8(i as u64,aw256::from(w1));
+            // Check
+            assert_eq!(mem.internal_read(0),aw256::from(w2));
+        }
+    }
+
+    #[test]
+    fn mem_unknown_write8() {
+        let mut mem = ConcreteMemory::<aw256>::new();
+        let mut w1 = w256::from(0xf0e0d0c0b0a0908070605040302010u128);
+        for i in 0..32 {
+            // Reset
+            mem.internal_write(0,aw256::from(w1));
+            // Write byte
+            mem.internal_write8(i as u64,aw256::TOP);
+            // Check
+            assert_eq!(mem.internal_read(0),aw256::TOP);
+        }
+    }    
 }
