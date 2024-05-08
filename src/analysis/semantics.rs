@@ -143,6 +143,7 @@ where T::Word : Top {
         JUMP => execute_jump(state),
         JUMPI => execute_jumpi(state),
 
+        PUSH0 => execute_push(state,&[]),        
         // ===========================================================
         // 60 & 70s: Push Operations
         // ===========================================================
@@ -509,7 +510,7 @@ fn execute_swap<T:EvmState>(mut state: T, k: usize) -> Outcome<T> {
     assert!(1 <= k && k <= 16);
     let stack = state.stack_mut();
     //
-    if !stack.has_operands(k) {
+    if !stack.has_operands(k+1) {
         Outcome::Exception(StackUnderflow)
     } else {
         // FIXME: a proper swap operation would improve performance

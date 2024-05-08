@@ -81,6 +81,7 @@ pub const GAS: u8 = 0x5a;
 pub const JUMPDEST: u8 = 0x5b;
 pub const RJUMP: u8 = 0x5c;
 pub const RJUMPI: u8 = 0x5d;
+pub const PUSH0: u8 = 0x5f;
 // 60s & 70s: Push Operations
 pub const PUSH1: u8 = 0x60;
 pub const PUSH2: u8 = 0x61;
