@@ -173,6 +173,7 @@ pub enum Instruction {
     JUMPDEST,
     RJUMP(usize),  // EIP4200
     RJUMPI(usize), // EIP4200
+    PUSH0, // EIP3855
     // 60 & 70s: Push Operations
     PUSH(Vec<u8>),
     // 80s: Duplicate Operations
@@ -296,7 +297,7 @@ impl Instruction {
             MLOAD|SLOAD|JUMP|POP|RJUMPI(_) => 1,            
             MSTORE|MSTORE8|SSTORE|JUMPI => 2,
             // 60s & 70s: Push Operations            
-            PUSH(_) => 0,
+            PUSH0|PUSH(_) => 0,
             // 80s: Duplication Operations
             DUP(_) => 0,
             // 90s: Swap Operations
@@ -395,6 +396,7 @@ impl Instruction {
             JUMPDEST => opcode::JUMPDEST,
             RJUMP(_) => opcode::RJUMP,
             RJUMPI(_) => opcode::RJUMPI,
+            PUSH0 => opcode::PUSH0,
             // 60s & 70s: Push Operations            
             PUSH(bs) => {
                 if bs.is_empty() || bs.len() > 32 {
@@ -523,6 +525,7 @@ impl Instruction {
             //     let arg = [bytes[pc+1],bytes[pc+2]];
             //     RJUMPI(i16::from_be_bytes(arg))
             // }
+            opcode::PUSH0 => PUSH0,
             // 60s & 70s: Push Operations
             opcode::PUSH1..=opcode::PUSH32 => {
                 let m = pc + 1;
