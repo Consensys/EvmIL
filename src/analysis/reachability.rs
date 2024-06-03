@@ -43,7 +43,7 @@ pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
     let mut flags = Vec::new();
     //
     for st in states {
-        // Check whether corresponing instruction was reached during
+        // Check whether corresponding instruction was reached during
         // the trace.
         let reached = !st.is_empty();
         //
