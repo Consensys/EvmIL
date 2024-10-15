@@ -12,6 +12,7 @@
 use crate::util::{Concretizable,w256,Top};
 use crate::bytecode::{Instruction};
 use crate::bytecode::Instruction::*;
+use crate::util::{W256_ZERO};
 use super::{EvmState,EvmStack,EvmMemory,EvmStorage,EvmWord};
 
 /// Represents the possible outcomes from executing a given
@@ -54,6 +55,8 @@ use EvmException::*;
 /// more) output states.
 pub fn execute<T:EvmState+Clone>(insn: &Instruction, state: T) -> Outcome<T>
 where T::Word : Top {
+
+    let zero = T::Word::from(W256_ZERO); 
     
     match insn {
         // ===========================================================
@@ -63,12 +66,12 @@ where T::Word : Top {
         ADD => execute_binary(state,|l,r| l.add(r)),
         MUL => execute_binary(state, |l,r| l.mul(r)),
         SUB => execute_binary(state, |l,r| l.sub(r)),
-        DIV => execute_binary(state,  |l,r| l.div(r)),
+        DIV => execute_binary(state,  |l,r| if r == zero { zero.clone() } else { l.div(r) }),
         SDIV => execute_binary(state,  |_,_| T::Word::TOP),
-        MOD => execute_binary(state,  |l,r| l.rem(r)),
+        MOD => execute_binary(state,  |l,r| if r == zero { zero.clone() } else { l.rem(r) }),
         SMOD => execute_binary(state,  |_,_| T::Word::TOP),
-        ADDMOD => execute_ternary(state,  |l,r,m| l.add(r).rem(m)),
-        MULMOD => execute_ternary(state, |l,r,m| l.mul(r).rem(m)),
+        ADDMOD => execute_ternary(state,  |l,r,m| if r == zero { zero.clone() } else { l.add(r).rem(m) }),
+        MULMOD => execute_ternary(state, |l,r,m| if r == zero { zero.clone() } else { l.mul(r).rem(m) }),
         EXP => execute_binary(state,  |_,_| T::Word::TOP),
         SIGNEXTEND => execute_binary(state,  |_,_| T::Word::TOP),
 
