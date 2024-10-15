@@ -137,6 +137,51 @@ fn test_cfg_11() {
     check_asm(&asm,&[]);
 }
 
+#[test]
+fn test_cfg_12() {
+    let asm = r#"
+.code
+   push 0x0
+   push 0x1
+   div
+"#;
+    check_asm(&asm,&[(0,1)]);
+}
+
+#[test]
+fn test_cfg_13() {
+    let asm = r#"
+.code
+   push 0x0
+   push 0x1
+   mod
+"#;
+    check_asm(&asm,&[(0,1)]);
+}
+
+#[test]
+fn test_cfg_14() {
+    let asm = r#"
+.code
+   push 0x0
+   push 0x1
+   push 0x2
+   addmod
+"#;
+    check_asm(&asm,&[(0,1)]);
+}
+
+#[test]
+fn test_cfg_15() {
+    let asm = r#"
+.code
+   push 0x0
+   push 0x1
+   push 0x2
+   mulmod
+"#;
+    check_asm(&asm,&[(0,1)]);
+}
 
 fn check_asm(asm: &str, blocks: &[(usize,usize)]) {
     // Convert assembly into instructions

@@ -70,8 +70,8 @@ where T::Word : Top {
         SDIV => execute_binary(state,  |_,_| T::Word::TOP),
         MOD => execute_binary(state,  |l,r| if r == zero { zero.clone() } else { l.rem(r) }),
         SMOD => execute_binary(state,  |_,_| T::Word::TOP),
-        ADDMOD => execute_ternary(state,  |l,r,m| if r == zero { zero.clone() } else { l.add(r).rem(m) }),
-        MULMOD => execute_ternary(state, |l,r,m| if r == zero { zero.clone() } else { l.mul(r).rem(m) }),
+        ADDMOD => execute_ternary(state,  |l,r,m| if m == zero { zero.clone() } else { l.add(r).rem(m) }),
+        MULMOD => execute_ternary(state, |l,r,m| if m == zero { zero.clone() } else { l.mul(r).rem(m) }),
         EXP => execute_binary(state,  |_,_| T::Word::TOP),
         SIGNEXTEND => execute_binary(state,  |_,_| T::Word::TOP),
 
