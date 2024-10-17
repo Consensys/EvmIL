@@ -129,7 +129,7 @@ fn build_insn_map(insns: &[Instruction]) -> Vec<usize> {
 /// includes additional features.  In particular, it adds dependency
 /// information as required to implement the functionality in this
 /// file.
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,Debug,Eq,Ord,PartialEq,PartialOrd)]
 struct DependencyStack<T:EvmStack> {
     pc: usize,
     /// Inner stack implementing stack functionality however it

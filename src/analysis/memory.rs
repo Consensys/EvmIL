@@ -11,7 +11,7 @@
 // limitations under the License.
 use std::fmt;
 use std::marker::PhantomData;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use crate::util::{w256,Top};
 use super::{EvmWord};
 
@@ -44,7 +44,7 @@ pub trait EvmMemory : fmt::Debug {
 /// The simplest possible implementation of `EvmMemory` which simply
 /// returns "unknown" for every location.  In other words, it doesn't
 /// actually analyse memory at all.
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Eq,Ord,PartialEq,PartialOrd)]
 pub struct UnknownMemory<T:EvmWord+Top> {
     dummy: PhantomData<T>
 }
@@ -98,7 +98,7 @@ impl<T:EvmWord+Top> fmt::Debug for UnknownMemory<T>
 /// The next simplest possible implementation of `EvmMemory` which
 /// only manages "concrete" addresses (i.e. it doesn't perform any
 /// symbolic analysis).
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Eq,Ord,PartialEq,PartialOrd)]
 pub struct ConcreteMemory<T:EvmWord+Top> {
     // Indicates whether or not locations stored outside of the words
     // map have the known value zero (`top=false`), or an unknown
@@ -108,12 +108,12 @@ pub struct ConcreteMemory<T:EvmWord+Top> {
     // we're making an implicit assumption here that addressable
     // memory never exceeds 64bits.  That seems pretty reasonable for
     // the forseeable future.
-    words: HashMap<u64,T>
+    words: BTreeMap<u64,T>
 }
 
 impl<T:EvmWord+Top> ConcreteMemory<T> {
     pub fn new() -> Self {
-        let words = HashMap::new();
+        let words = BTreeMap::new();
         // Memory is initially all zero
         Self{top: false, words}
     }

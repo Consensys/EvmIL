@@ -9,6 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+use std::cmp::Ord;
 use crate::util::{Bottom,JoinInto};
 use super::EvmState;
 
@@ -30,11 +31,13 @@ pub trait EvmStateSet : JoinInto<Self::State> {
 // Vec<Vec<T>>
 // ===================================================================
 
-impl<T:Clone+EvmState+PartialEq> JoinInto<T> for Vec<T> {
+impl<T:Clone+Ord+EvmState+PartialEq> JoinInto<T> for Vec<T> {
     fn join_into(&mut self, other: &T) -> bool {
         let n = self.len();
         // Simplest possible join operator (for now)        
         self.push(other.clone());
+        // Sort vec
+        self.sort_unstable();
         // Deduplicate matching entries
         self.dedup();
         // Check whether anything actually changed.
@@ -42,7 +45,7 @@ impl<T:Clone+EvmState+PartialEq> JoinInto<T> for Vec<T> {
     }
 }
 
-impl<T:Clone+EvmState+PartialEq> EvmStateSet for Vec<T> {
+impl<T:Clone+Ord+EvmState+PartialEq> EvmStateSet for Vec<T> {
     type State = T;
 
     fn size(&self) -> usize {
@@ -50,7 +53,7 @@ impl<T:Clone+EvmState+PartialEq> EvmStateSet for Vec<T> {
     }
     
     fn iter(&self) -> std::slice::Iter<'_,T> {
-        self.iter()
+        <[T]>::iter(self)
     }
 }
 

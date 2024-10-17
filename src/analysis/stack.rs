@@ -75,7 +75,7 @@ pub trait EvmStack : fmt::Debug {
 
 /// An implementation of `EvmStack` which gives a concrete view of the
 /// stack.  In other words, it represents the stack exactly.
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Eq,Ord,PartialEq,PartialOrd)]
 pub struct ConcreteStack<T:EvmWord> {
     items: Vec<T>
 }
