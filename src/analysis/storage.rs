@@ -39,7 +39,7 @@ pub trait EvmStorage : fmt::Debug {
 /// The simplest possible implementation of `EvmStorage` which simply
 /// returns "unknown" for every location.  In other words, it doesn't
 /// actually analyse storage at all.
-#[derive(Clone,PartialEq)]
+#[derive(Clone,Eq,Ord,PartialEq,PartialOrd)]
 pub struct UnknownStorage<T:EvmWord+Top> {
     dummy: PhantomData<T>
 }

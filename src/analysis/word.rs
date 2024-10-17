@@ -45,7 +45,7 @@ pub trait EvmWord : Sized + Clone + fmt::Debug +
 
 /// Simplest possible (abstract) word which is either a _concrete_
 /// word or _unknown_.
-#[derive(Copy,Clone,PartialEq)]
+#[derive(Copy,Clone,Eq,Ord,PartialOrd,PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum aw256 {
     Word(w256),
@@ -215,7 +215,7 @@ impl EvmWord for aw256 {
 /// This is useful in some specific situations where we want to
 /// prevent the possibility of infinite ascending chains (i.e. prior
 /// to _havoc analysis_).
-#[derive(Copy,Clone,PartialEq)]
+#[derive(Copy,Clone,Eq,Ord,PartialOrd,PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum cw256 {
     Word(w256),

@@ -85,7 +85,7 @@ pub trait EvmState : fmt::Debug {
 
 /// An `EvmState` composed from three distinct (and potentially
 /// abstract) components: _stack_, _memory_ and _storage_.
-#[derive(Clone,Debug,PartialEq)]
+#[derive(Clone,Debug,Eq,Ord,PartialEq,PartialOrd)]
 pub struct ConcreteState<S,M,T>
 where S:EvmStack,
       M:EvmMemory<Word=S::Word>,
