@@ -29,7 +29,7 @@ use super::{cw256,ConcreteStack,ConcreteState,trace,UnknownMemory,UnknownStorage
 /// The reachability analysis would conclude that the `pop`
 /// instruction here is _unreachable_.  That is because there is no
 /// path through the control-flow graph which can lead to it.
-pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
+pub fn find_reachable(insns: &[Instruction], limit: usize) -> Result<Vec<bool>,()> {
     // Configure analysis
     type Stack = ConcreteStack<cw256>;
     type Memory = UnknownMemory<cw256>;
@@ -38,7 +38,7 @@ pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
     // Construct initial state of EVM
     let init = State::new();
     // Run the abstract trace
-    let states : Vec<Vec<State>> = trace(insns,init);
+    let states : Vec<Vec<State>> = trace(insns,init,limit)?;
     // Convert output into boolean reachability info
     let mut flags = Vec::new();
     //
@@ -50,5 +50,5 @@ pub fn find_reachable(insns: &[Instruction]) -> Vec<bool> {
         flags.push(reached);
     }
     // Done
-    flags
+    Ok(flags)
 }
