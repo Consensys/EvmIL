@@ -23,7 +23,7 @@ type DefaultState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,Unk
 pub type BlockGraph<'a> = Digraph<BlockVec<'a>>;
 
 impl<'a> BlockGraph<'a> {
-    fn from_blocks(blocks: BlockVec<'a>, limit: usize) -> Result<Self,Self> {
+    pub fn from_blocks(blocks: BlockVec<'a>, limit: usize) -> Result<Self,Self> {
 	let insns = blocks.insns();
         // Construct block graph
         let mut graph = BlockGraph::new(blocks.len()+1,blocks);

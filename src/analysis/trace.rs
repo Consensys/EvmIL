@@ -74,8 +74,8 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
                 }                
             }
             ipc += 1;
+	    count+=1;		    
         }
-	count+=1;	
     }
     // Sanity check whether hit the limit
     if count == limit {
