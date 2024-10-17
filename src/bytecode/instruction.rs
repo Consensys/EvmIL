@@ -171,6 +171,8 @@ pub enum Instruction {
     MSIZE,
     GAS,
     JUMPDEST,
+    TLOAD, // EIP1153
+    TSTORE, // EIP1153
     RJUMP(usize),  // EIP4200
     RJUMPI(usize), // EIP4200
     PUSH0, // EIP3855
@@ -294,8 +296,8 @@ impl Instruction {
             COINBASE|TIMESTAMP|NUMBER|DIFFICULTY|GASLIMIT|CHAINID|SELFBALANCE => 0,
             // 50s: Stack, Memory, Storage and Flow Operations
             MSIZE|PC|GAS|JUMPDEST|RJUMP(_) => 0,
-            MLOAD|SLOAD|JUMP|POP|RJUMPI(_) => 1,            
-            MSTORE|MSTORE8|SSTORE|JUMPI => 2,
+            MLOAD|SLOAD|JUMP|POP|TLOAD|RJUMPI(_) => 1,            
+            MSTORE|MSTORE8|SSTORE|JUMPI|TSTORE => 2,
             // 60s & 70s: Push Operations            
             PUSH0|PUSH(_) => 0,
             // 80s: Duplication Operations
@@ -394,8 +396,10 @@ impl Instruction {
             MSIZE => opcode::MSIZE,
             GAS => opcode::GAS,
             JUMPDEST => opcode::JUMPDEST,
-            RJUMP(_) => opcode::RJUMP,
-            RJUMPI(_) => opcode::RJUMPI,
+	    TLOAD => opcode::TLOAD,
+	    TSTORE => opcode::TSTORE,
+            // RJUMP(_) => opcode::RJUMP,
+            // RJUMPI(_) => opcode::RJUMPI,
             PUSH0 => opcode::PUSH0,
             // 60s & 70s: Push Operations            
             PUSH(bs) => {
@@ -513,6 +517,8 @@ impl Instruction {
             opcode::MSIZE => MSIZE,
             opcode::GAS => GAS,
             opcode::JUMPDEST => JUMPDEST,
+	    opcode::TLOAD => TLOAD,
+	    opcode::TSTORE => TSTORE,
             // opcode::RJUMP => {
             //     // NOTE: these instructions are not permitted to
             //     // overflow, and therefore don't require padding.

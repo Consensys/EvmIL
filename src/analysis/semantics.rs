@@ -145,6 +145,8 @@ where T::Word : Top {
         JUMPDEST => execute_nop(state),
         JUMP => execute_jump(state),
         JUMPI => execute_jumpi(state),
+	TLOAD => execute_unary(state, |_| T::Word::TOP),
+	TSTORE => execute_consumer(state, 2),
 
         PUSH0 => execute_push(state,&[]),        
         // ===========================================================

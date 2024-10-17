@@ -344,6 +344,8 @@ fn parse_opcode(insn: &str) -> Result<Instruction,ParseError> {
         "msize"|"MSIZE" => MSIZE,
         "gas"|"GAS" => GAS,
         "jumpdest"|"JUMPDEST" => JUMPDEST,
+	"tload"|"TLOAD" => TLOAD,
+	"tstore"|"TSTORE" => TSTORE,
         "push0" => PUSH0,
         // 60s & 70s: Push Operations
         "push"|"PUSH" => {
