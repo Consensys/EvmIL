@@ -22,28 +22,19 @@ type DefaultState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,Unk
 /// bytecode sequence.
 pub type BlockGraph<'a> = Digraph<BlockVec<'a>>;
 
-impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
-{
-    /// Construct a graph of the basic blocks for a given instruction
-    /// sequence.
-    fn from(insns: &'a [Instruction]) -> Self {
-        // Construct block graph
-        BlockGraph::from(BlockVec::new(insns))
-    }
-}
-
-impl<'a> From<BlockVec<'a>> for BlockGraph<'a>
-{
-    /// Construct a graph of the basic blocks for a given instruction
-    /// sequence.
-    fn from(blocks: BlockVec<'a>) -> Self {
-        let insns = blocks.insns();
+impl<'a> BlockGraph<'a> {
+    fn from_blocks(blocks: BlockVec<'a>, limit: usize) -> Result<Self,Self> {
+	let insns = blocks.insns();
         // Construct block graph
         let mut graph = BlockGraph::new(blocks.len()+1,blocks);
         // Compute analysis results
         let init = DefaultState::new();
         // Run the abstract trace
-        let trace : Vec<Vec<DefaultState>> = trace(insns,init,usize::MAX).unwrap();
+	let mut err = false;
+        let trace : Vec<Vec<DefaultState>> = match trace(insns,init,limit) {
+	    Ok(states) => states,
+	    Err(states) => { err = true; states} 
+	};
         // Connect edges!
         for b in 0..graph.len() {
             let blk = graph.get(b);
@@ -91,6 +82,29 @@ impl<'a> From<BlockVec<'a>> for BlockGraph<'a>
             }
         }
         // Done
-        graph
+	if err {
+	    Err(graph)
+	} else {
+            Ok(graph)
+	}
+    }
+}
+
+impl<'a> From<&'a [Instruction]> for BlockGraph<'a>
+{
+    /// Construct a graph of the basic blocks for a given instruction
+    /// sequence.
+    fn from(insns: &'a [Instruction]) -> Self {
+        // Construct block graph
+        BlockGraph::from(BlockVec::new(insns))
+    }
+}
+
+impl<'a> From<BlockVec<'a>> for BlockGraph<'a>
+{
+    /// Construct a graph of the basic blocks for a given instruction
+    /// sequence.
+    fn from(blocks: BlockVec<'a>) -> Self {
+	Self::from_blocks(blocks, usize::MAX).map_err(|_| ()).unwrap()
     }
 }
