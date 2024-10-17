@@ -15,7 +15,7 @@ use crate::bytecode::Instruction;
 use super::{EvmState,EvmStateSet};
 use super::semantics::{execute,Outcome};
 
-pub fn trace<T>(insns: &[Instruction], init: T::State) -> Vec<T>
+pub fn trace<T>(insns: &[Instruction], init: T::State, limit: usize) -> Result<Vec<T>, ()>
 where T:EvmStateSet+Bottom+PartialEq+Debug,
       T::State: Clone, <T::State as EvmState>::Word: Top 
 {
@@ -26,8 +26,10 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
     let offsets = determine_byte_offsets(insns);
     // Initialise worklist
     let mut worklist = vec![init];
+    // Terminator
+    let mut count = 0usize;
     // Iterate to a fixed point
-    while !worklist.is_empty() {
+    while !worklist.is_empty() && count != limit {
         let mut st = worklist.pop().unwrap();
         // Sanity check bytecode position
         if st.pc() >= offsets.len() {
@@ -73,9 +75,14 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
             }
             ipc += 1;
         }
+	count+=1;	
+    }
+    // Sanity check whether hit the limit
+    if count == limit {
+	return Err(())
     }
     // Done
-    states
+    Ok(states)
 }
 
 fn determine_byte_offsets(insns: &[Instruction]) -> Vec<usize> {

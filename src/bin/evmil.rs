@@ -232,7 +232,7 @@ fn disassemble_code(insns: &[Instruction]) {
 fn disassemble_dep_code(insns: &[Instruction]) {
     let mut pc = 0;
     //
-    let deps = find_dependencies(insns);
+    let deps = find_dependencies(insns, usize::MAX).unwrap();
     //
     for (i,insn) in insns.iter().enumerate() {    
         if insn == &Instruction::JUMPDEST {
@@ -257,7 +257,7 @@ type DebugState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,Unkno
 // this can fail if the underlying static analysis fails.
 fn disassemble_debug_code(insns: &[Instruction]) {
     // Run the static analysis
-    let states : Vec<Vec<DebugState>> = trace(insns,DebugState::new());
+    let states : Vec<Vec<DebugState>> = trace(insns,DebugState::new(),usize::MAX).unwrap();
     // Print out info
     let mut pc = 0;
     for (i,insn) in insns.iter().enumerate() {
@@ -277,7 +277,7 @@ fn infer_havoc_insns(mut asm: Assembly) -> Assembly {
     let sections = asm.iter_mut().map(|section| {
         match section {
             StructuredSection::Code(ref mut insns) => {    
-                let ninsns = insert_havocs(insns.clone());
+                let ninsns = insert_havocs(insns.clone(), usize::MAX).unwrap();
 	        StructuredSection::Code(ninsns)
             }
             _ => section.clone()

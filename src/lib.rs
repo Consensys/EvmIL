@@ -24,7 +24,7 @@
 /// // Disassemble bytes into instructions.
 /// let insns = bytes.disassemble();
 /// // Compute reachability information.
-/// let reachable = find_reachable(&insns);
+/// let reachable = find_reachable(&insns,usize::MAX).unwrap();
 /// // Check `INVALID` instruction (`0xfe`) is never executed.
 /// assert_eq!(reachable,vec![true,true,false,true]);
 /// ```

@@ -18,7 +18,7 @@ pub fn from_bytes(bytes: &[u8]) -> Assembly {
     // Disassemble bytes into instructions.
     let mut insns = bytes.disassemble();
     // Compute reachability information.
-    let reachable = find_reachable(&insns);
+    let reachable = find_reachable(&insns, usize::MAX).unwrap();
     // Mark all unreachable instructions
     mark_unreachable(&mut insns,bytes,&reachable);
     // Determine start of data section using reachability infor.
