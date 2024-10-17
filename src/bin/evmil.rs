@@ -232,7 +232,7 @@ fn disassemble_code(insns: &[Instruction]) {
 fn disassemble_dep_code(insns: &[Instruction]) {
     let mut pc = 0;
     //
-    let deps = find_dependencies(insns, usize::MAX).unwrap();
+    let deps = find_dependencies(insns, usize::MAX).map_err(|_| ()).unwrap();
     //
     for (i,insn) in insns.iter().enumerate() {    
         if insn == &Instruction::JUMPDEST {
@@ -257,7 +257,7 @@ type DebugState = ConcreteState<ConcreteStack<aw256>,ConcreteMemory<aw256>,Unkno
 // this can fail if the underlying static analysis fails.
 fn disassemble_debug_code(insns: &[Instruction]) {
     // Run the static analysis
-    let states : Vec<Vec<DebugState>> = trace(insns,DebugState::new(),usize::MAX).unwrap();
+    let states : Vec<Vec<DebugState>> = trace(insns,DebugState::new(),usize::MAX).map_err(|_| ()).unwrap();
     // Print out info
     let mut pc = 0;
     for (i,insn) in insns.iter().enumerate() {

@@ -47,12 +47,16 @@ use super::{Dependencies,find_dependencies};
 ///   havoc 0x0
 ///   ...
 /// ```
-pub fn insert_havocs(mut insns: Vec<Instruction>, limit: usize) -> Result<Vec<Instruction>,()> {
+pub fn insert_havocs(mut insns: Vec<Instruction>, limit: usize) -> Result<Vec<Instruction>,Vec<Instruction>> {
     let mut havocs = Vec::new();
     // Allocate storage to reuse for each instruction.
     let mut visited = vec![false;insns.len()];
     // Determine dependency information
-    let deps = find_dependencies(&insns,limit)?;
+    let mut err = false;    
+    let deps = match find_dependencies(&insns,limit) {
+	Ok(deps) => deps,
+	Err(deps) => { err = true; deps }
+    };
     // Look for cycles in the dependency graph
     for i in 0..insns.len() {
         if detect_cycle(i,&deps, &mut visited) {
@@ -64,7 +68,11 @@ pub fn insert_havocs(mut insns: Vec<Instruction>, limit: usize) -> Result<Vec<In
         insns.insert(idx+i,Instruction::HAVOC(0));
     }
     //
-    Ok(insns)
+    if err {
+	Err(insns)
+    } else {
+	Ok(insns)
+    }
 }
 
 /// Implements a straightforward (and somewhat naive) cycle detection

@@ -38,7 +38,7 @@ pub fn find_reachable(insns: &[Instruction], limit: usize) -> Result<Vec<bool>,(
     // Construct initial state of EVM
     let init = State::new();
     // Run the abstract trace
-    let states : Vec<Vec<State>> = trace(insns,init,limit)?;
+    let states : Vec<Vec<State>> = trace(insns,init,limit).map_err(|e| ())?;
     // Convert output into boolean reachability info
     let mut flags = Vec::new();
     //

@@ -15,7 +15,7 @@ use crate::bytecode::Instruction;
 use super::{EvmState,EvmStateSet};
 use super::semantics::{execute,Outcome};
 
-pub fn trace<T>(insns: &[Instruction], init: T::State, limit: usize) -> Result<Vec<T>, ()>
+pub fn trace<T>(insns: &[Instruction], init: T::State, limit: usize) -> Result<Vec<T>,Vec<T>>
 where T:EvmStateSet+Bottom+PartialEq+Debug,
       T::State: Clone, <T::State as EvmState>::Word: Top 
 {
@@ -79,7 +79,7 @@ where T:EvmStateSet+Bottom+PartialEq+Debug,
     }
     // Sanity check whether hit the limit
     if count == limit {
-	return Err(())
+	return Err(states)
     }
     // Done
     Ok(states)

@@ -77,7 +77,7 @@ impl Dependencies {
 /// frames indicating its dependency is either `push 0x1` _or_ `push
 /// 0x2` (i.e. depending on which path was taken through the
 /// control-flow graph).
-pub fn find_dependencies(insns: &[Instruction], limit: usize) -> Result<Dependencies,()> {
+pub fn find_dependencies(insns: &[Instruction], limit: usize) -> Result<Dependencies,Dependencies> {
     type Stack = DependencyStack<ConcreteStack<cw256>>;
     type Memory = UnknownMemory<cw256>;
     type Storage = UnknownStorage<cw256>;
@@ -85,7 +85,11 @@ pub fn find_dependencies(insns: &[Instruction], limit: usize) -> Result<Dependen
     // Construct initial state of EVM
     let init : State = State::new();
     // Run the abstract trace
-    let states : Vec<Vec<State>> = trace(insns,init,limit)?;
+    let mut err = false;
+    let states : Vec<Vec<State>> = match trace(insns,init,limit) {
+	Ok(states) => { states }
+	Err(states) => { err = true; states }
+    };
     // Convert over
     let map = build_insn_map(insns);
     let mut deps = Dependencies::new(states.len());
@@ -112,7 +116,11 @@ pub fn find_dependencies(insns: &[Instruction], limit: usize) -> Result<Dependen
         deps.frames[i].dedup();
     }
     //
-    Ok(deps)
+    if err {
+	Err(deps)
+    } else {
+	Ok(deps)
+    }
 }
 
 fn build_insn_map(insns: &[Instruction]) -> Vec<usize> {
